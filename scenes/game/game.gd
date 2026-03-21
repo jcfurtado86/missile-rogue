@@ -23,6 +23,8 @@ var spawn_timer := 0.0
 
 var PlayerMissileScene := preload("res://entities/missiles/player_missile.tscn")
 var BasicEnemyScene := preload("res://entities/missiles/basic_enemy.tscn")
+var FastEnemyScene := preload("res://entities/missiles/fast_enemy.tscn")
+var ClusterEnemyScene := preload("res://entities/missiles/cluster_enemy.tscn")
 
 var hud: CanvasLayer
 
@@ -55,7 +57,6 @@ func _ready() -> void:
 		add_child(city)
 		cities.append(city)
 
-	# Head start credits
 	if upgrade_system:
 		var head_start = upgrade_system.get_effect("head_start")
 		if head_start > 0:
@@ -72,12 +73,12 @@ func _apply_upgrades() -> void:
 func _physics_process(delta: float) -> void:
 	if is_game_over:
 		return
-
 	threat.update_time(delta)
 	_handle_spawning(delta)
+	_connect_fragments()
 	_check_game_over()
 	hud.update_threat(threat.get_level())
-	hud.update_credits(currency.get_amount("credits"))
+	hud.update_currencies(currency.get_amount("credits"), currency.get_amount("crystals"), currency.get_amount("void"))
 
 func _unhandled_input(event: InputEvent) -> void:
 	if is_game_over:
@@ -117,21 +118,51 @@ func _spawn_enemy() -> void:
 		return
 
 	var target_city = alive_cities.pick_random()
-
-	var enemy = BasicEnemyScene.instantiate()
-	enemy.position = Vector2(randf_range(50, SCREEN_WIDTH - 50), -20)
-	enemy.target_position = target_city.global_position
-
 	var threat_level = threat.get_level()
-	enemy.speed = lerpf(150.0, 400.0, threat_level / 100.0)
+	var dist = spawner.get_spawn_distribution(threat_level)
 
-	enemy.destroyed.connect(_on_enemy_destroyed)
+	# Boss handled in Fase 9
+	if dist.has("boss"):
+		return
+
+	# Rola tipo de inimigo por distribuicao
+	var roll = randf()
+	var enemy: Area2D
+	var drop_currency := "credits"
+	var drop_amount := 1
+
+	if dist.has("cluster") and roll > (dist["basic"] + dist["fast"]):
+		enemy = ClusterEnemyScene.instantiate()
+		enemy.target_position = target_city.global_position
+		drop_currency = ""
+		drop_amount = 0
+	elif dist.has("fast") and roll > dist["basic"]:
+		enemy = FastEnemyScene.instantiate()
+		enemy.target_position = target_city.global_position
+		drop_currency = "crystals"
+	else:
+		enemy = BasicEnemyScene.instantiate()
+		enemy.target_position = target_city.global_position
+		enemy.speed = lerpf(150.0, 400.0, threat_level / 100.0)
+
+	enemy.position = Vector2(randf_range(50, SCREEN_WIDTH - 50), -20)
+	enemy.destroyed.connect(_on_enemy_destroyed.bind(drop_currency, drop_amount))
 	add_child(enemy)
 
-func _on_enemy_destroyed(_enemy: Area2D) -> void:
+func _on_enemy_destroyed(_enemy: Area2D, drop_currency: String = "credits", drop_amount: int = 1) -> void:
 	threat.register_kill()
-	var credits = int(1 * credits_mult)
-	currency.add("credits", credits)
+	if drop_currency != "" and drop_amount > 0:
+		var amount = int(drop_amount * credits_mult) if drop_currency == "credits" else drop_amount
+		currency.add(drop_currency, amount)
+
+func _connect_fragments() -> void:
+	for frag in get_tree().get_nodes_in_group("fragment"):
+		if not frag.destroyed.is_connected(_on_fragment_destroyed):
+			frag.destroyed.connect(_on_fragment_destroyed)
+
+func _on_fragment_destroyed(_frag: Area2D) -> void:
+	threat.register_kill()
+	currency.add("void", 1)
 
 func _check_game_over() -> void:
 	if is_game_over:

@@ -229,8 +229,7 @@ Nenhum — fase de UI pura, validada visualmente no Godot.
 ## Fase 7 — Inimigos Tier 2 e 3
 
 ### Implementacao
-- Missil Rapido: ziguezague, velocidade alta, drop Cristal, aparece Ameaca 50+
-- Missil Cluster: lento, ao ser atingido explode em 3-5 fragmentos, drop Void por fragmento, aparece Ameaca 75+
+
 - Distribuicao de spawn por faixa de ameaca (tabela GDD)
 - Upgrades Tier 2 (8 upgrades, Cristais) e Tier 3 (6 upgrades, Void)
 - Desbloqueio de Tier ao matar primeiro inimigo do tipo

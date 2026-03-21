@@ -12,8 +12,8 @@ func update_threat(level: float) -> void:
 	threat_label.text = "AMEACA: %d" % int(level)
 	threat_bar.value = level
 
-func update_credits(amount: int) -> void:
-	credits_label.text = "%d CR" % amount
+func update_currencies(credits: int, crystals: int, void_amount: int) -> void:
+	credits_label.text = "%d CR  %d CS  %d VO" % [credits, crystals, void_amount]
 
 func show_game_over() -> void:
 	game_over_label.visible = true
