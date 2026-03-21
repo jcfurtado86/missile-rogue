@@ -2,6 +2,7 @@ extends Control
 
 signal start_run
 signal ascend_requested
+signal purchase_made
 
 var currency: CurrencySystem
 var upgrade_system: UpgradeSystem
@@ -111,6 +112,7 @@ func _create_item(key: String, u: Dictionary) -> HBoxContainer:
 func _on_buy_pressed(key: String) -> void:
 	if upgrade_system.buy(key, currency):
 		_build_shop()
+		purchase_made.emit()
 
 func _update_credits() -> void:
 	if credits_label and currency:

@@ -2,34 +2,45 @@ class_name SaveSystem
 extends RefCounted
 
 func to_dict(upgrade_system: UpgradeSystem, ascension: AscensionSystem, currency: CurrencySystem) -> Dictionary:
-	var tier4_levels := {}
+	var upgrade_levels := {}
 	for name in upgrade_system.upgrades:
 		var u = upgrade_system.upgrades[name]
-		if u["tier"] == 4:
-			tier4_levels[name] = u["level"]
+		upgrade_levels[name] = u["level"]
 
 	return {
+		"credits": currency.get_amount("credits"),
+		"crystals": currency.get_amount("crystals"),
+		"void": currency.get_amount("void"),
 		"eter": currency.get_amount("eter"),
-		"tier4": tier4_levels,
+		"upgrades": upgrade_levels,
+		"total_invested": upgrade_system.get_total_invested(),
 		"ascension_count": ascension.get_ascension_count(),
 		"total_eter": ascension.get_total_eter(),
 	}
 
 func from_dict(data: Dictionary, upgrade_system: UpgradeSystem, ascension: AscensionSystem, currency: CurrencySystem) -> void:
-	if not data.has("eter"):
+	if not data is Dictionary or data.is_empty():
 		return
+	currency.add("credits", data.get("credits", 0))
+	currency.add("crystals", data.get("crystals", 0))
+	currency.add("void", data.get("void", 0))
 	currency.add("eter", data.get("eter", 0))
 	ascension.ascension_count = data.get("ascension_count", 0)
 	ascension.total_eter = data.get("total_eter", 0)
-	var tier4 = data.get("tier4", {})
-	for name in tier4:
+	upgrade_system.total_invested = data.get("total_invested", 0)
+	var levels = data.get("upgrades", {})
+	for name in levels:
 		if upgrade_system.upgrades.has(name):
-			upgrade_system.upgrades[name]["level"] = tier4[name]
+			upgrade_system.upgrades[name]["level"] = levels[name]
 
 static func get_defaults() -> Dictionary:
 	return {
+		"credits": 0,
+		"crystals": 0,
+		"void": 0,
 		"eter": 0,
-		"tier4": {},
+		"upgrades": {},
+		"total_invested": 0,
 		"ascension_count": 0,
 		"total_eter": 0,
 	}
