@@ -1,0 +1,3 @@
+[gd_scene format=3 uid="uid://cg4td3a1aegvn"]
+
+[node name="ClusterFragment" type="Area2D"]

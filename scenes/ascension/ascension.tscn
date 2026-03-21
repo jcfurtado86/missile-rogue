@@ -1,0 +1,5 @@
+[gd_scene format=3 uid="uid://b8o2f65ydqqgh"]
+
+[node name="Ascension" type="Control"]
+layout_mode = 3
+anchors_preset = 0
