@@ -3,6 +3,7 @@ extends Node
 var current_scene: Node = null
 var currency := CurrencySystem.new()
 var upgrade_system := UpgradeSystem.new()
+var ascension_system := AscensionSystem.new()
 
 func _ready() -> void:
 	_start_game()
@@ -17,7 +18,6 @@ func _start_game() -> void:
 	current_scene = game
 
 func _on_game_over() -> void:
-	# Delay pra jogador ver o GAME OVER
 	get_tree().create_timer(2.0).timeout.connect(_open_shop)
 
 func _open_shop() -> void:
@@ -25,8 +25,21 @@ func _open_shop() -> void:
 	var shop = preload("res://scenes/shop/shop.tscn").instantiate()
 	shop.setup(currency, upgrade_system)
 	shop.start_run.connect(_on_start_run)
+	shop.ascend_requested.connect(_open_ascension)
 	add_child(shop)
 	current_scene = shop
+
+func _open_ascension() -> void:
+	_clear_current()
+	var ascension = preload("res://scenes/ascension/ascension.tscn").instantiate()
+	ascension.setup(currency, upgrade_system, ascension_system)
+	ascension.ascension_confirmed.connect(_on_ascension_confirmed)
+	ascension.ascension_cancelled.connect(_open_shop)
+	add_child(ascension)
+	current_scene = ascension
+
+func _on_ascension_confirmed() -> void:
+	_open_shop()
 
 func _on_start_run() -> void:
 	_start_game()

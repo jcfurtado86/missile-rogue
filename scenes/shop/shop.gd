@@ -1,6 +1,7 @@
 extends Control
 
 signal start_run
+signal ascend_requested
 
 var currency: CurrencySystem
 var upgrade_system: UpgradeSystem
@@ -43,7 +44,8 @@ func _ready() -> void:
 	credits_label = $MarginContainer/VBoxContainer/Header/CreditsLabel
 	item_container = $MarginContainer/VBoxContainer/ScrollContainer/ItemList
 
-	$MarginContainer/VBoxContainer/PlayButton.pressed.connect(_on_play_pressed)
+	$MarginContainer/VBoxContainer/BottomButtons/PlayButton.pressed.connect(_on_play_pressed)
+	$MarginContainer/VBoxContainer/BottomButtons/AscendButton.pressed.connect(_on_ascend_pressed)
 
 	_build_shop()
 
@@ -113,6 +115,9 @@ func _on_buy_pressed(key: String) -> void:
 func _update_credits() -> void:
 	if credits_label and currency:
 		credits_label.text = "%d CR" % currency.get_amount("credits")
+
+func _on_ascend_pressed() -> void:
+	ascend_requested.emit()
 
 func _on_play_pressed() -> void:
 	start_run.emit()
