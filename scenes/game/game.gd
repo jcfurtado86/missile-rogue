@@ -209,7 +209,12 @@ func _nova_bomb_destroy_all() -> void:
 				enemy.destroyed.emit(enemy)
 				enemy.queue_free()
 			continue
-		if enemy.has_signal("destroyed"):
+		# Cluster: dar 1 void direto (normalmente vem dos fragmentos)
+		if enemy is Area2D and enemy.get_script() == preload("res://entities/missiles/cluster_enemy.gd"):
+			threat.register_kill()
+			currency.add("void", 1)
+			run_earnings["void"] += 1
+		elif enemy.has_signal("destroyed"):
 			enemy.destroyed.emit(enemy)
 		enemy.queue_free()
 	for frag in get_tree().get_nodes_in_group("fragment"):

@@ -8,8 +8,20 @@ var wallet: Dictionary = {
 	"eter": 0,
 }
 
+var unlocked: Dictionary = {
+	"credits": true,
+	"crystals": false,
+	"void": false,
+	"eter": false,
+}
+
 func add(type: String, amount: int) -> void:
 	wallet[type] += amount
+	if amount > 0 and not unlocked.get(type, false):
+		unlocked[type] = true
+
+func is_unlocked(type: String) -> bool:
+	return unlocked.get(type, false)
 
 func spend(type: String, amount: int) -> bool:
 	if wallet[type] < amount:

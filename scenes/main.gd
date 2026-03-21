@@ -49,7 +49,16 @@ func _open_ascension() -> void:
 
 func _on_ascension_confirmed() -> void:
 	_save_game()
-	_open_shop()
+	_open_eter_shop()
+
+func _open_eter_shop() -> void:
+	_clear_current()
+	var eter_shop = load("res://scenes/shop/eter_shop.tscn").instantiate()
+	eter_shop.setup(currency, upgrade_system)
+	eter_shop.start_run.connect(_on_start_run)
+	eter_shop.purchase_made.connect(_save_game)
+	add_child(eter_shop)
+	current_scene = eter_shop
 
 func _on_start_run() -> void:
 	_save_game()
