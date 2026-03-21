@@ -7,7 +7,7 @@ var currency := CurrencySystem.new()
 var upgrade_system := UpgradeSystem.new()
 var ascension_system := AscensionSystem.new()
 var save_system := SaveSystem.new()
-var ad_system := preload("res://systems/ad_system.gd").new()
+var ad_system := AdSystem.new()
 
 func _ready() -> void:
 	_load_game()
@@ -53,12 +53,13 @@ func _on_ascension_confirmed() -> void:
 
 func _open_eter_shop() -> void:
 	_clear_current()
-	var eter_shop = load("res://scenes/shop/eter_shop.tscn").instantiate()
-	eter_shop.setup(currency, upgrade_system)
-	eter_shop.start_run.connect(_on_start_run)
-	eter_shop.purchase_made.connect(_save_game)
-	add_child(eter_shop)
-	current_scene = eter_shop
+	var shop = preload("res://scenes/shop/shop.tscn").instantiate()
+	shop.setup(currency, upgrade_system)
+	shop.set_meta("eter_mode", true)
+	shop.start_run.connect(_on_start_run)
+	shop.purchase_made.connect(_save_game)
+	add_child(shop)
+	current_scene = shop
 
 func _on_start_run() -> void:
 	_save_game()

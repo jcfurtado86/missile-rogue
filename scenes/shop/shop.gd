@@ -8,6 +8,7 @@ var currency: CurrencySystem
 var upgrade_system: UpgradeSystem
 var item_container: VBoxContainer
 var credits_label: Label
+var eter_mode := false
 
 const CURRENCY_LABELS := {
 	"credits": "CR",
@@ -59,6 +60,11 @@ const UPGRADE_NAMES := {
 	"singularity": "SINGULARITY",
 	"mirror_array": "MIRROR ARRAY",
 	"overclock": "OVERCLOCK",
+	# Tier 4
+	"ascendant_core": "ASCENDANT CORE",
+	"void_resonance": "VOID RESONANCE",
+	"eternal_city": "ETERNAL CITY",
+	"omega_protocol": "OMEGA PROTOCOL",
 }
 
 const UPGRADE_DESCRIPTIONS := {
@@ -91,6 +97,11 @@ const UPGRADE_DESCRIPTIONS := {
 	"singularity": "+15% forca de atracao",
 	"mirror_array": "+3% chance de refletir",
 	"overclock": "+2s de cadencia dobrada",
+	# Tier 4
+	"ascendant_core": "+5% boost de void por nivel",
+	"void_resonance": "+1 void ao usar especial",
+	"eternal_city": "1 cidade indestrutivel",
+	"omega_protocol": "+50% recompensas",
 }
 
 func _ready() -> void:
@@ -99,6 +110,13 @@ func _ready() -> void:
 
 	$MarginContainer/VBoxContainer/BottomButtons/PlayButton.pressed.connect(_on_play_pressed)
 	$MarginContainer/VBoxContainer/BottomButtons/AscendButton.pressed.connect(_on_ascend_pressed)
+
+	if has_meta("eter_mode"):
+		eter_mode = get_meta("eter_mode")
+
+	if eter_mode:
+		$MarginContainer/VBoxContainer/Header/TitleLabel.text = "UPGRADES ETERNOS"
+		$MarginContainer/VBoxContainer/BottomButtons/AscendButton.visible = false
 
 	_build_shop()
 
@@ -113,6 +131,16 @@ func _build_shop() -> void:
 	# Limpa itens anteriores
 	for child in item_container.get_children():
 		child.queue_free()
+
+	if eter_mode:
+		# Modo eter: so mostra tier 4
+		for key in upgrade_system.upgrades:
+			var u = upgrade_system.upgrades[key]
+			if u["tier"] == 4:
+				var item = _create_item(key, u)
+				item_container.add_child(item)
+		_update_header()
+		return
 
 	# Itera por tiers 1-3, mostrando apenas os desbloqueados
 	for tier in [1, 2, 3]:
@@ -189,7 +217,7 @@ func _update_header() -> void:
 	if not credits_label or not currency:
 		return
 	var parts: Array[String] = []
-	for cur_type in ["credits", "crystals", "void", "eter"]:
+	for cur_type in ["eter", "void", "crystals", "credits"]:
 		var amount = currency.get_amount(cur_type)
 		if amount > 0 and currency.is_unlocked(cur_type):
 			parts.append("%d %s" % [amount, CURRENCY_LABELS[cur_type]])
