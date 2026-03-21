@@ -34,8 +34,15 @@ func update_threat(level: float) -> void:
 	threat_label.text = "AMEACA: %d" % int(level)
 	threat_bar.value = level
 
-func update_currencies(credits: int, crystals: int, void_amount: int) -> void:
-	credits_label.text = "%d CR  %d CS  %d VO" % [credits, crystals, void_amount]
+func update_currencies(earnings: Dictionary) -> void:
+	var parts: Array[String] = []
+	if earnings.get("void", 0) > 0:
+		parts.append("%d VO" % earnings["void"])
+	if earnings.get("crystals", 0) > 0:
+		parts.append("%d CS" % earnings["crystals"])
+	if earnings.get("credits", 0) > 0:
+		parts.append("%d CR" % earnings["credits"])
+	credits_label.text = "  ".join(parts)
 
 func update_special(charge: float, is_ready: bool) -> void:
 	special_bar.value = charge

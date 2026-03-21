@@ -12,8 +12,8 @@ func _ready() -> void:
 	queue_redraw()
 
 func _draw() -> void:
-	draw_circle(Vector2.ZERO, 6.0, Color(1.0, 0.3, 0.4))
-	draw_circle(Vector2(0, -8), 3.0, Color(1.0, 0.3, 0.4, 0.5))
+	draw_circle(Vector2.ZERO, 10.0, Color(1.0, 0.3, 0.4))
+	draw_circle(Vector2(0, -14), 5.0, Color(1.0, 0.3, 0.4, 0.5))
 
 func _physics_process(delta: float) -> void:
 	var direction = global_position.direction_to(target_position)

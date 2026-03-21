@@ -84,11 +84,12 @@ func _create_item(key: String, u: Dictionary) -> HBoxContainer:
 	var name_label = Label.new()
 	name_label.text = "%s (Lv %d/%d)" % [UPGRADE_NAMES.get(key, key), u["level"], u["max_level"]]
 	name_label.name = "NameLabel"
+	name_label.add_theme_font_size_override("font_size", 24)
 	info.add_child(name_label)
 
 	var desc_label = Label.new()
 	desc_label.text = UPGRADE_DESCRIPTIONS.get(key, "")
-	desc_label.add_theme_font_size_override("font_size", 12)
+	desc_label.add_theme_font_size_override("font_size", 18)
 	info.add_child(desc_label)
 
 	row.add_child(info)
@@ -102,8 +103,9 @@ func _create_item(key: String, u: Dictionary) -> HBoxContainer:
 		var cost = upgrade_system.get_cost(key)
 		buy_button.text = "%d CR" % cost
 		buy_button.disabled = currency.get_amount("credits") < cost
+	buy_button.add_theme_font_size_override("font_size", 22)
 	buy_button.pressed.connect(_on_buy_pressed.bind(key))
-	buy_button.custom_minimum_size = Vector2(120, 40)
+	buy_button.custom_minimum_size = Vector2(150, 50)
 	row.add_child(buy_button)
 
 	return row

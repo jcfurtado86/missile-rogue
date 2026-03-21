@@ -28,12 +28,12 @@ func _ready() -> void:
 
 func _draw() -> void:
 	# Corpo principal — vermelho escuro grande
-	draw_circle(Vector2.ZERO, 30.0, Color(0.8, 0.1, 0.1))
+	draw_circle(Vector2.ZERO, 45.0, Color(0.8, 0.1, 0.1))
 	# Aura
 	var aura_color = Color(1.0, 0.2, 0.0, 0.3) if not data.is_rage_mode() else Color(1.0, 0.0, 0.0, 0.5)
-	draw_circle(Vector2.ZERO, 40.0, aura_color)
+	draw_circle(Vector2.ZERO, 60.0, aura_color)
 	# Olho central
-	draw_circle(Vector2.ZERO, 8.0, Color(1.0, 0.9, 0.0))
+	draw_circle(Vector2.ZERO, 12.0, Color(1.0, 0.9, 0.0))
 
 func _physics_process(delta: float) -> void:
 	# Movimento horizontal
@@ -68,7 +68,7 @@ func _fire_burst() -> void:
 	for i in count:
 		var angle = base_angle + lerpf(-spread / 2, spread / 2, float(i) / max(count - 1, 1))
 		var missile = BurstMissileScene.instantiate()
-		missile.position = global_position + Vector2(0, 30)
+		missile.position = global_position + Vector2(0, 45)
 		# Misseis do boss nao contam como kill nem dropam moeda
 		missile.speed = 300.0 if data.is_rage_mode() else 200.0
 		# Setar target bem longe na direcao do angulo pra ele ir reto

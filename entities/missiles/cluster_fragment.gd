@@ -14,7 +14,7 @@ func _ready() -> void:
 
 func _draw() -> void:
 	# Roxo menor
-	draw_circle(Vector2.ZERO, 4.0, Color(0.7, 0.2, 1.0))
+	draw_circle(Vector2.ZERO, 7.0, Color(0.7, 0.2, 1.0))
 
 func _physics_process(delta: float) -> void:
 	if invuln_timer > 0.0:

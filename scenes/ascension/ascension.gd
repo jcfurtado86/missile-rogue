@@ -33,7 +33,7 @@ func _update_display() -> void:
 	eter_total_label.text = "ETER TOTAL: %d → %d" % [ascension_system.get_total_eter(), ascension_system.get_total_eter() + eter_gain]
 	invested_label.text = "TOTAL INVESTIDO: %d / %d = %d ETER" % [total_invested, ascension_system.conversion_factor, eter_gain]
 	ascension_count_label.text = "ASCENSOES: %d" % ascension_system.get_ascension_count()
-	confirm_button.disabled = eter_gain <= 0
+	confirm_button.disabled = false
 
 func _on_confirm() -> void:
 	ascension_system.perform_ascension(upgrade_system, currency)

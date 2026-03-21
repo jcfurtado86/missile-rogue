@@ -15,7 +15,7 @@ func _ready() -> void:
 func _draw() -> void:
 	var color = Color(0.4, 0.8, 1.0) if ammo > 0 else Color(0.2, 0.3, 0.4)
 	draw_polygon(
-		[Vector2(0, -20), Vector2(-15, 15), Vector2(15, 15)],
+		[Vector2(0, -35), Vector2(-25, 25), Vector2(25, 25)],
 		[color, color, color]
 	)
 

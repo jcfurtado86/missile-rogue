@@ -7,11 +7,9 @@ var currency := CurrencySystem.new()
 var upgrade_system := UpgradeSystem.new()
 var ascension_system := AscensionSystem.new()
 var save_system := SaveSystem.new()
-var ad_system = null
+var ad_system := preload("res://systems/ad_system.gd").new()
 
 func _ready() -> void:
-	var AdSystemClass = load("res://systems/ad_system.gd")
-	ad_system = AdSystemClass.new()
 	_load_game()
 	_start_game()
 

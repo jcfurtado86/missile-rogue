@@ -85,7 +85,7 @@ func _physics_process(delta: float) -> void:
 	_connect_fragments()
 	_check_game_over()
 	hud.update_threat(threat.get_level())
-	hud.update_currencies(currency.get_amount("credits"), currency.get_amount("crystals"), currency.get_amount("void"))
+	hud.update_currencies(run_earnings)
 	hud.update_special(special.get_charge(), special.is_ready())
 	if boss and is_instance_valid(boss):
 		hud.show_boss_hp(boss.get_hp_ratio())
@@ -241,6 +241,12 @@ func revive() -> void:
 func _do_revive() -> void:
 	ad_system.use_revive()
 	is_game_over = false
+	# Limpa todos os inimigos da tela
+	for enemy in get_tree().get_nodes_in_group("enemy"):
+		if not enemy.is_in_group("boss"):
+			enemy.queue_free()
+	for frag in get_tree().get_nodes_in_group("fragment"):
+		frag.queue_free()
 	# Revive a primeira cidade morta
 	for city in cities:
 		if not city.is_alive():

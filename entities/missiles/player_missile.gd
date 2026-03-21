@@ -14,7 +14,7 @@ func _ready() -> void:
 
 func _draw() -> void:
 	if not arrived:
-		draw_circle(Vector2.ZERO, 4.0, Color(1.0, 1.0, 1.0))
+		draw_circle(Vector2.ZERO, 7.0, Color(1.0, 1.0, 1.0))
 	else:
 		draw_circle(Vector2.ZERO, explosion_radius, Color(1.0, 0.4, 0.2, 0.6))
 

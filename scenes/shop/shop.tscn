@@ -37,10 +37,12 @@ layout_mode = 2
 [node name="TitleLabel" type="Label" parent="MarginContainer/VBoxContainer/Header"]
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 36
 text = "LOJA"
 
 [node name="CreditsLabel" type="Label" parent="MarginContainer/VBoxContainer/Header"]
 layout_mode = 2
+theme_override_font_sizes/font_size = 28
 horizontal_alignment = 2
 text = "0 CR"
 
@@ -54,7 +56,7 @@ size_flags_vertical = 3
 [node name="ItemList" type="VBoxContainer" parent="MarginContainer/VBoxContainer/ScrollContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 8
+theme_override_constants/separation = 16
 
 [node name="BottomButtons" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
 layout_mode = 2
@@ -63,11 +65,13 @@ theme_override_constants/separation = 20
 [node name="AscendButton" type="Button" parent="MarginContainer/VBoxContainer/BottomButtons"]
 layout_mode = 2
 size_flags_horizontal = 3
-custom_minimum_size = Vector2(0, 60)
+custom_minimum_size = Vector2(0, 70)
+theme_override_font_sizes/font_size = 28
 text = "ASCENDER"
 
 [node name="PlayButton" type="Button" parent="MarginContainer/VBoxContainer/BottomButtons"]
 layout_mode = 2
 size_flags_horizontal = 3
-custom_minimum_size = Vector2(0, 60)
+custom_minimum_size = Vector2(0, 70)
+theme_override_font_sizes/font_size = 28
 text = "JOGAR"

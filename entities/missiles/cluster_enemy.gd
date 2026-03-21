@@ -17,8 +17,8 @@ func _ready() -> void:
 
 func _draw() -> void:
 	# Roxo intenso, maior, trail pulsante
-	draw_circle(Vector2.ZERO, 10.0, Color(0.6, 0.1, 0.9))
-	draw_circle(Vector2.ZERO, 14.0, Color(0.6, 0.1, 0.9, 0.3))
+	draw_circle(Vector2.ZERO, 16.0, Color(0.6, 0.1, 0.9))
+	draw_circle(Vector2.ZERO, 22.0, Color(0.6, 0.1, 0.9, 0.3))
 
 func _physics_process(delta: float) -> void:
 	var direction = global_position.direction_to(target_position)

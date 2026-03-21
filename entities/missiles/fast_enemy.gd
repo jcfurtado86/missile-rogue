@@ -20,9 +20,9 @@ func _ready() -> void:
 	queue_redraw()
 
 func _draw() -> void:
-	draw_circle(Vector2.ZERO, 5.0, Color(0.0, 0.9, 1.0))
-	draw_circle(Vector2(0, -6), 3.0, Color(0.0, 0.9, 1.0, 0.6))
-	draw_circle(Vector2(0, -12), 2.0, Color(0.0, 0.9, 1.0, 0.3))
+	draw_circle(Vector2.ZERO, 9.0, Color(0.0, 0.9, 1.0))
+	draw_circle(Vector2(0, -11), 5.0, Color(0.0, 0.9, 1.0, 0.6))
+	draw_circle(Vector2(0, -20), 3.0, Color(0.0, 0.9, 1.0, 0.3))
 
 func _physics_process(delta: float) -> void:
 	# Troca de alvo

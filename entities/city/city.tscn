@@ -3,7 +3,7 @@
 [ext_resource type="Script" path="res://entities/city/city.gd" id="1_city"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_1"]
-size = Vector2(44, 30)
+size = Vector2(76, 52)
 
 [node name="City" type="Area2D"]
 collision_layer = 4

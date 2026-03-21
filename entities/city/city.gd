@@ -9,15 +9,15 @@ func _ready() -> void:
 func _draw() -> void:
 	if data.is_alive():
 		# Cidade viva: retangulo azul
-		draw_rect(Rect2(-20, -10, 40, 20), Color(0.2, 0.5, 1.0))
+		draw_rect(Rect2(-35, -18, 70, 36), Color(0.2, 0.5, 1.0))
 		# Telhado
 		draw_polygon(
-			[Vector2(-22, -10), Vector2(0, -25), Vector2(22, -10)],
+			[Vector2(-38, -18), Vector2(0, -42), Vector2(38, -18)],
 			[Color(0.3, 0.6, 1.0), Color(0.3, 0.6, 1.0), Color(0.3, 0.6, 1.0)]
 		)
 	else:
 		# Cidade destruida: cinza escuro
-		draw_rect(Rect2(-20, -5, 40, 15), Color(0.15, 0.15, 0.15))
+		draw_rect(Rect2(-35, -8, 70, 26), Color(0.15, 0.15, 0.15))
 
 func take_hit() -> void:
 	if not data.is_alive():
