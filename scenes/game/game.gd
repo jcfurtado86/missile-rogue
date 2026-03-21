@@ -17,7 +17,8 @@ var is_game_over := false
 
 var threat := ThreatSystem.new()
 var spawner := SpawnSystem.new()
-var currency := CurrencySystem.new()
+var currency: CurrencySystem
+var upgrade_system: UpgradeSystem
 var spawn_timer := 0.0
 
 var PlayerMissileScene := preload("res://entities/missiles/player_missile.tscn")
@@ -25,7 +26,15 @@ var BasicEnemyScene := preload("res://entities/missiles/basic_enemy.tscn")
 
 var hud: CanvasLayer
 
+# Efeitos calculados dos upgrades
+var missile_speed_mult := 1.0
+var explosion_radius_mult := 1.0
+var credits_mult := 1.0
+var base_ammo := 10
+
 func _ready() -> void:
+	_apply_upgrades()
+
 	var hud_scene := preload("res://scenes/game/hud.tscn")
 	hud = hud_scene.instantiate()
 	add_child(hud)
@@ -34,6 +43,8 @@ func _ready() -> void:
 	for x in BATTERY_POSITIONS:
 		var battery = battery_scene.instantiate()
 		battery.position = Vector2(x, BATTERY_Y)
+		battery.max_ammo = base_ammo
+		battery.ammo = base_ammo
 		add_child(battery)
 		batteries.append(battery)
 
@@ -43,6 +54,20 @@ func _ready() -> void:
 		city.position = Vector2(x, CITY_Y)
 		add_child(city)
 		cities.append(city)
+
+	# Head start credits
+	if upgrade_system:
+		var head_start = upgrade_system.get_effect("head_start")
+		if head_start > 0:
+			currency.add("credits", int(head_start))
+
+func _apply_upgrades() -> void:
+	if not upgrade_system:
+		return
+	missile_speed_mult = 1.0 + upgrade_system.get_effect("hyper_drive")
+	explosion_radius_mult = 1.0 + upgrade_system.get_effect("warhead")
+	credits_mult = 1.0 + upgrade_system.get_effect("profit_matrix")
+	base_ammo = 10 + int(upgrade_system.get_effect("ammo_pack"))
 
 func _physics_process(delta: float) -> void:
 	if is_game_over:
@@ -75,7 +100,7 @@ func _fire_at(target: Vector2) -> void:
 			closest_battery = battery
 
 	if closest_battery:
-		closest_battery.fire(target, PlayerMissileScene)
+		closest_battery.fire(target, PlayerMissileScene, missile_speed_mult, explosion_radius_mult)
 
 func _handle_spawning(delta: float) -> void:
 	spawn_timer -= delta
@@ -84,7 +109,6 @@ func _handle_spawning(delta: float) -> void:
 		spawn_timer = spawner.get_spawn_interval(threat.get_level())
 
 func _spawn_enemy() -> void:
-	# Escolhe cidade alvo aleatoria (entre as vivas)
 	var alive_cities: Array[Node2D] = []
 	for city in cities:
 		if city.is_alive():
@@ -98,7 +122,6 @@ func _spawn_enemy() -> void:
 	enemy.position = Vector2(randf_range(50, SCREEN_WIDTH - 50), -20)
 	enemy.target_position = target_city.global_position
 
-	# Escala velocidade com ameaca
 	var threat_level = threat.get_level()
 	enemy.speed = lerpf(150.0, 400.0, threat_level / 100.0)
 
@@ -107,7 +130,8 @@ func _spawn_enemy() -> void:
 
 func _on_enemy_destroyed(_enemy: Area2D) -> void:
 	threat.register_kill()
-	currency.add("credits", 1)
+	var credits = int(1 * credits_mult)
+	currency.add("credits", credits)
 
 func _check_game_over() -> void:
 	if is_game_over:

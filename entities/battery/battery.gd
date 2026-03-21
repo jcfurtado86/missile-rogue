@@ -22,13 +22,15 @@ func _draw() -> void:
 func can_fire() -> bool:
 	return ammo > 0
 
-func fire(target: Vector2, missile_scene: PackedScene) -> void:
+func fire(target: Vector2, missile_scene: PackedScene, speed_mult: float = 1.0, radius_mult: float = 1.0) -> void:
 	if ammo <= 0:
 		return
 	ammo -= 1
 	var missile = missile_scene.instantiate()
 	missile.global_position = global_position
 	missile.target = target
+	missile.speed *= speed_mult
+	missile.explosion_radius *= radius_mult
 	get_tree().current_scene.add_child(missile)
 
 	queue_redraw()
