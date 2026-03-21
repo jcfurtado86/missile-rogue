@@ -7,21 +7,21 @@ func before_test() -> void:
 	spawner = SpawnSystem.new()
 
 # 24
-func test_only_basic_below_50() -> void:
-	var dist = spawner.get_spawn_distribution(30.0)
+func test_only_basic_below_30() -> void:
+	var dist = spawner.get_spawn_distribution(20.0)
 	assert_bool(dist.has("basic")).is_true()
 	assert_float(dist["basic"]).is_equal(1.0)
 	assert_bool(dist.has("fast")).is_false()
 
 # 25
-func test_fast_appears_at_50() -> void:
-	var dist = spawner.get_spawn_distribution(50.0)
+func test_fast_appears_at_30() -> void:
+	var dist = spawner.get_spawn_distribution(30.0)
 	assert_bool(dist.has("fast")).is_true()
 	assert_float(dist["fast"]).is_equal(0.35)
 
 # 26
-func test_cluster_appears_at_75() -> void:
-	var dist = spawner.get_spawn_distribution(75.0)
+func test_cluster_appears_at_65() -> void:
+	var dist = spawner.get_spawn_distribution(65.0)
 	assert_bool(dist.has("cluster")).is_true()
 	assert_float(dist["cluster"]).is_equal(0.15)
 

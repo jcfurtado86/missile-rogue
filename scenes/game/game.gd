@@ -17,6 +17,7 @@ var is_game_over := false
 
 var threat := ThreatSystem.new()
 var spawner := SpawnSystem.new()
+var special := SpecialSystem.new()
 var currency: CurrencySystem
 var upgrade_system: UpgradeSystem
 var spawn_timer := 0.0
@@ -74,11 +75,13 @@ func _physics_process(delta: float) -> void:
 	if is_game_over:
 		return
 	threat.update_time(delta)
+	special.update_time(delta)
 	_handle_spawning(delta)
 	_connect_fragments()
 	_check_game_over()
 	hud.update_threat(threat.get_level())
 	hud.update_currencies(currency.get_amount("credits"), currency.get_amount("crystals"), currency.get_amount("void"))
+	hud.update_special(special.get_charge(), special.is_ready())
 
 func _unhandled_input(event: InputEvent) -> void:
 	if is_game_over:
@@ -121,9 +124,9 @@ func _spawn_enemy() -> void:
 	var threat_level = threat.get_level()
 	var dist = spawner.get_spawn_distribution(threat_level)
 
-	# Boss handled in Fase 9
+	# Boss handled in Fase 9 — por enquanto continua spawnando normalmente
 	if dist.has("boss"):
-		return
+		dist = {"basic": 0.55, "fast": 0.30, "cluster": 0.15}
 
 	# Rola tipo de inimigo por distribuicao
 	var roll = randf()
@@ -163,6 +166,21 @@ func _connect_fragments() -> void:
 func _on_fragment_destroyed(_frag: Area2D) -> void:
 	threat.register_kill()
 	currency.add("void", 1)
+
+func activate_nova_bomb() -> void:
+	if not special.activate():
+		return
+	call_deferred("_nova_bomb_destroy_all")
+
+func _nova_bomb_destroy_all() -> void:
+	for enemy in get_tree().get_nodes_in_group("enemy"):
+		if enemy.has_signal("destroyed"):
+			enemy.destroyed.emit(enemy)
+		enemy.queue_free()
+	for frag in get_tree().get_nodes_in_group("fragment"):
+		if frag.has_signal("destroyed"):
+			frag.destroyed.emit(frag)
+		frag.queue_free()
 
 func _check_game_over() -> void:
 	if is_game_over:

@@ -7,6 +7,7 @@ signal destroyed(enemy: Area2D)
 var target_position := Vector2.ZERO
 
 func _ready() -> void:
+	add_to_group("enemy")
 	area_entered.connect(_on_area_entered)
 	queue_redraw()
 
@@ -23,11 +24,9 @@ func _physics_process(delta: float) -> void:
 
 func _on_area_entered(area: Area2D) -> void:
 	if area.collision_layer == 1:
-		# Atingido por explosao do jogador
 		destroyed.emit(self)
-		queue_free()
+		call_deferred("queue_free")
 	elif area.collision_layer == 4:
-		# Atingiu uma cidade
 		if area.has_method("take_hit"):
-			area.take_hit()
-		queue_free()
+			area.call_deferred("take_hit")
+		call_deferred("queue_free")
