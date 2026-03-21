@@ -28,5 +28,11 @@ func take_hit() -> void:
 	set_deferred("monitorable", false)
 	set_deferred("monitoring", false)
 
+func revive() -> void:
+	data.alive = true
+	queue_redraw()
+	set_deferred("monitorable", true)
+	set_deferred("monitoring", true)
+
 func is_alive() -> bool:
 	return data.is_alive()

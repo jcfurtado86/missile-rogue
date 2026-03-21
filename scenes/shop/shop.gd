@@ -6,7 +6,6 @@ signal purchase_made
 
 var currency: CurrencySystem
 var upgrade_system: UpgradeSystem
-
 var item_container: VBoxContainer
 var credits_label: Label
 
@@ -50,7 +49,7 @@ func _ready() -> void:
 
 	_build_shop()
 
-func setup(p_currency: CurrencySystem, p_upgrades: UpgradeSystem) -> void:
+func setup(p_currency: CurrencySystem, p_upgrades: UpgradeSystem, _p_ads = null) -> void:
 	currency = p_currency
 	upgrade_system = p_upgrades
 
@@ -117,6 +116,7 @@ func _on_buy_pressed(key: String) -> void:
 func _update_credits() -> void:
 	if credits_label and currency:
 		credits_label.text = "%d CR" % currency.get_amount("credits")
+
 
 func _on_ascend_pressed() -> void:
 	ascend_requested.emit()

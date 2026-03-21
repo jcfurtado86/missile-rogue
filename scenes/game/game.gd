@@ -20,7 +20,9 @@ var spawner := SpawnSystem.new()
 var special := SpecialSystem.new()
 var currency: CurrencySystem
 var upgrade_system: UpgradeSystem
+var ad_system = null
 var spawn_timer := 0.0
+var run_earnings := {"credits": 0, "crystals": 0, "void": 0}
 
 var PlayerMissileScene := preload("res://entities/missiles/player_missile.tscn")
 var BasicEnemyScene := preload("res://entities/missiles/basic_enemy.tscn")
@@ -75,7 +77,7 @@ func _apply_upgrades() -> void:
 	base_ammo = 10 + int(upgrade_system.get_effect("ammo_pack"))
 
 func _physics_process(delta: float) -> void:
-	if is_game_over:
+	if is_game_over or not currency:
 		return
 	threat.update_time(delta)
 	special.update_time(delta)
@@ -181,6 +183,7 @@ func _on_enemy_destroyed(_enemy: Area2D, drop_currency: String = "credits", drop
 	if drop_currency != "" and drop_amount > 0:
 		var amount = int(drop_amount * credits_mult) if drop_currency == "credits" else drop_amount
 		currency.add(drop_currency, amount)
+		run_earnings[drop_currency] += amount
 
 func _connect_fragments() -> void:
 	for frag in get_tree().get_nodes_in_group("fragment"):
@@ -190,6 +193,7 @@ func _connect_fragments() -> void:
 func _on_fragment_destroyed(_frag: Area2D) -> void:
 	threat.register_kill()
 	currency.add("void", 1)
+	run_earnings["void"] += 1
 
 func activate_nova_bomb() -> void:
 	if not special.activate():
@@ -220,5 +224,42 @@ func _check_game_over() -> void:
 		if city.is_alive():
 			return
 	is_game_over = true
-	hud.show_game_over()
+	if ad_system and ad_system.can_revive():
+		hud.show_revive_offer()
+	elif ad_system and ad_system.can_show_shop_ad():
+		hud.show_game_over()
+		hud.show_double_offer(run_earnings)
+	else:
+		hud.show_game_over()
+		game_over.emit()
+
+func revive() -> void:
+	if not ad_system:
+		return
+	ad_system.show_rewarded_ad(_do_revive)
+
+func _do_revive() -> void:
+	ad_system.use_revive()
+	is_game_over = false
+	# Revive a primeira cidade morta
+	for city in cities:
+		if not city.is_alive():
+			city.revive()
+			break
+	hud.hide_revive_offer()
+
+func double_run_earnings() -> void:
+	if not ad_system or not ad_system.can_show_shop_ad():
+		return
+	ad_system.show_rewarded_ad(func():
+		for key in run_earnings:
+			if run_earnings[key] > 0:
+				currency.add(key, run_earnings[key])
+		ad_system.use_shop_ad()
+		hud.hide_double_offer()
+		game_over.emit()
+	)
+
+func decline_double() -> void:
+	hud.hide_double_offer()
 	game_over.emit()

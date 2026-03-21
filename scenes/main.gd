@@ -7,16 +7,21 @@ var currency := CurrencySystem.new()
 var upgrade_system := UpgradeSystem.new()
 var ascension_system := AscensionSystem.new()
 var save_system := SaveSystem.new()
+var ad_system = null
 
 func _ready() -> void:
+	var AdSystemClass = load("res://systems/ad_system.gd")
+	ad_system = AdSystemClass.new()
 	_load_game()
 	_start_game()
 
 func _start_game() -> void:
 	_clear_current()
+	ad_system.reset_run()
 	var game = preload("res://scenes/game/game.tscn").instantiate()
 	game.currency = currency
 	game.upgrade_system = upgrade_system
+	game.ad_system = ad_system
 	game.game_over.connect(_on_game_over)
 	add_child(game)
 	current_scene = game
@@ -28,7 +33,7 @@ func _on_game_over() -> void:
 func _open_shop() -> void:
 	_clear_current()
 	var shop = preload("res://scenes/shop/shop.tscn").instantiate()
-	shop.setup(currency, upgrade_system)
+	shop.setup(currency, upgrade_system, ad_system)
 	shop.start_run.connect(_on_start_run)
 	shop.ascend_requested.connect(_open_ascension)
 	shop.purchase_made.connect(_save_game)

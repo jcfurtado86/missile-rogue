@@ -6,6 +6,7 @@ var total_eter: int = 0
 var conversion_factor: int = 200
 
 func calculate_eter(upgrade_system: UpgradeSystem) -> int:
+	@warning_ignore("integer_division")
 	return upgrade_system.get_total_invested() / conversion_factor
 
 func perform_ascension(upgrade_system: UpgradeSystem, currency: CurrencySystem) -> void:
