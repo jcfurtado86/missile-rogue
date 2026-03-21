@@ -17,12 +17,19 @@ var is_game_over := false
 
 var threat := ThreatSystem.new()
 var spawner := SpawnSystem.new()
+var currency := CurrencySystem.new()
 var spawn_timer := 0.0
 
 var PlayerMissileScene := preload("res://entities/missiles/player_missile.tscn")
 var BasicEnemyScene := preload("res://entities/missiles/basic_enemy.tscn")
 
+var hud: CanvasLayer
+
 func _ready() -> void:
+	var hud_scene := preload("res://scenes/game/hud.tscn")
+	hud = hud_scene.instantiate()
+	add_child(hud)
+
 	var battery_scene := preload("res://entities/battery/battery.tscn")
 	for x in BATTERY_POSITIONS:
 		var battery = battery_scene.instantiate()
@@ -44,6 +51,8 @@ func _physics_process(delta: float) -> void:
 	threat.update_time(delta)
 	_handle_spawning(delta)
 	_check_game_over()
+	hud.update_threat(threat.get_level())
+	hud.update_credits(currency.get_amount("credits"))
 
 func _unhandled_input(event: InputEvent) -> void:
 	if is_game_over:
@@ -98,6 +107,7 @@ func _spawn_enemy() -> void:
 
 func _on_enemy_destroyed(_enemy: Area2D) -> void:
 	threat.register_kill()
+	currency.add("credits", 1)
 
 func _check_game_over() -> void:
 	if is_game_over:
@@ -106,4 +116,5 @@ func _check_game_over() -> void:
 		if city.is_alive():
 			return
 	is_game_over = true
+	hud.show_game_over()
 	game_over.emit()
