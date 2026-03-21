@@ -1,3 +1,11 @@
-[gd_scene format=3 uid="uid://bd5s1f1ylosaq"]
+[gd_scene load_steps=2 format=3 uid="uid://bd5s1f1ylosaq"]
+
+[ext_resource type="Script" path="res://entities/battery/battery.gd" id="1_battery"]
 
 [node name="Battery" type="Node2D"]
+script = ExtResource("1_battery")
+
+[node name="ReloadTimer" type="Timer" parent="."]
+one_shot = true
+
+[connection signal="timeout" from="ReloadTimer" to="." method="_on_reload_timer_timeout"]
