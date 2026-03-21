@@ -26,8 +26,11 @@ var PlayerMissileScene := preload("res://entities/missiles/player_missile.tscn")
 var BasicEnemyScene := preload("res://entities/missiles/basic_enemy.tscn")
 var FastEnemyScene := preload("res://entities/missiles/fast_enemy.tscn")
 var ClusterEnemyScene := preload("res://entities/missiles/cluster_enemy.tscn")
+var BossScene := preload("res://entities/boss/overlord.tscn")
 
 var hud: CanvasLayer
+var boss: Area2D = null
+var boss_spawned := false
 
 # Efeitos calculados dos upgrades
 var missile_speed_mult := 1.0
@@ -82,6 +85,8 @@ func _physics_process(delta: float) -> void:
 	hud.update_threat(threat.get_level())
 	hud.update_currencies(currency.get_amount("credits"), currency.get_amount("crystals"), currency.get_amount("void"))
 	hud.update_special(special.get_charge(), special.is_ready())
+	if boss and is_instance_valid(boss):
+		hud.show_boss_hp(boss.get_hp_ratio())
 
 func _unhandled_input(event: InputEvent) -> void:
 	if is_game_over:
@@ -124,9 +129,10 @@ func _spawn_enemy() -> void:
 	var threat_level = threat.get_level()
 	var dist = spawner.get_spawn_distribution(threat_level)
 
-	# Boss handled in Fase 9 — por enquanto continua spawnando normalmente
 	if dist.has("boss"):
-		dist = {"basic": 0.55, "fast": 0.30, "cluster": 0.15}
+		if not boss_spawned:
+			_spawn_boss()
+		return
 
 	# Rola tipo de inimigo por distribuicao
 	var roll = randf()
@@ -142,6 +148,10 @@ func _spawn_enemy() -> void:
 	elif dist.has("fast") and roll > dist["basic"]:
 		enemy = FastEnemyScene.instantiate()
 		enemy.target_position = target_city.global_position
+		var positions: Array[Vector2] = []
+		for c in alive_cities:
+			positions.append(c.global_position)
+		enemy.city_positions = positions
 		drop_currency = "crystals"
 	else:
 		enemy = BasicEnemyScene.instantiate()
@@ -151,6 +161,20 @@ func _spawn_enemy() -> void:
 	enemy.position = Vector2(randf_range(50, SCREEN_WIDTH - 50), -20)
 	enemy.destroyed.connect(_on_enemy_destroyed.bind(drop_currency, drop_amount))
 	add_child(enemy)
+
+func _spawn_boss() -> void:
+	boss_spawned = true
+	boss = BossScene.instantiate()
+	boss.position.x = 540.0
+	boss.boss_defeated.connect(_on_boss_defeated)
+	add_child(boss)
+
+func _on_boss_defeated() -> void:
+	boss = null
+	is_game_over = true
+	hud.hide_boss_hp()
+	hud.show_victory()
+	game_over.emit()
 
 func _on_enemy_destroyed(_enemy: Area2D, drop_currency: String = "credits", drop_amount: int = 1) -> void:
 	threat.register_kill()
@@ -174,6 +198,13 @@ func activate_nova_bomb() -> void:
 
 func _nova_bomb_destroy_all() -> void:
 	for enemy in get_tree().get_nodes_in_group("enemy"):
+		if enemy.is_in_group("boss"):
+			enemy.data.take_damage(50)
+			if enemy.data.is_dead():
+				enemy.boss_defeated.emit()
+				enemy.destroyed.emit(enemy)
+				enemy.queue_free()
+			continue
 		if enemy.has_signal("destroyed"):
 			enemy.destroyed.emit(enemy)
 		enemy.queue_free()

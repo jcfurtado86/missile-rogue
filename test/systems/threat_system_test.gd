@@ -16,20 +16,16 @@ func test_threat_increases_over_time() -> void:
 	assert_float(threat.get_level()).is_greater(0.0)
 
 # 21
-func test_threat_increases_on_kill() -> void:
+func test_kill_does_not_increase_threat() -> void:
 	threat.register_kill()
-	assert_float(threat.get_level()).is_greater(0.0)
+	assert_float(threat.get_level()).is_equal(0.0)
 
 # 22
 func test_threat_caps_at_100() -> void:
-	for i in 200:
-		threat.register_kill()
+	threat.update_time(300.0)
 	assert_float(threat.get_level()).is_equal(100.0)
 
 # 23
-func test_kill_increases_faster_than_time() -> void:
-	var threat_time = ThreatSystem.new()
-	var threat_kill = ThreatSystem.new()
-	threat_time.update_time(1.0)
-	threat_kill.register_kill()
-	assert_float(threat_kill.get_level()).is_greater(threat_time.get_level())
+func test_threat_rate_is_consistent() -> void:
+	threat.update_time(10.0)
+	assert_float(threat.get_level()).is_equal(5.0)
