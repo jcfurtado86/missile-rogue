@@ -6,6 +6,8 @@
 radius = 60.0
 
 [node name="PlayerMissile" type="Area2D"]
+collision_layer = 1
+collision_mask = 2
 script = ExtResource("1_missile")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
