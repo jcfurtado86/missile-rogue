@@ -29,6 +29,26 @@ func _ready() -> void:
 	decline_button.pressed.connect(_on_decline_pressed)
 	double_button.pressed.connect(_on_double_pressed)
 	double_decline_button.pressed.connect(_on_double_decline_pressed)
+	_reposition_for_screen()
+
+func _reposition_for_screen() -> void:
+	var screen_h := get_viewport().get_visible_rect().size.y
+	# Barra especial e botao nova bomb — base da tela
+	special_bar.offset_top = screen_h - 100.0
+	special_bar.offset_bottom = screen_h - 70.0
+	nova_button.offset_top = screen_h - 65.0
+	nova_button.offset_bottom = screen_h - 10.0
+	# Game over e vitoria — centro vertical
+	var center_y := screen_h * 0.42
+	game_over_label.offset_top = center_y
+	game_over_label.offset_bottom = center_y + 100.0
+	victory_label.offset_top = center_y
+	victory_label.offset_bottom = center_y + 100.0
+	# Containers de revive/double — logo abaixo do centro
+	revive_container.offset_top = center_y + 100.0
+	revive_container.offset_bottom = center_y + 170.0
+	double_container.offset_top = center_y + 100.0
+	double_container.offset_bottom = center_y + 260.0
 
 func update_threat(level: float) -> void:
 	threat_label.text = "AMEACA: %d" % int(level)

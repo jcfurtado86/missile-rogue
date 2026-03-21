@@ -3,13 +3,12 @@ extends Node2D
 signal game_over
 
 const SCREEN_WIDTH := 1080
-const SCREEN_HEIGHT := 1920
-
-const BATTERY_Y := 1750.0
 const BATTERY_POSITIONS := [270.0, 540.0, 810.0]
-
-const CITY_Y := 1820.0
 const CITY_POSITIONS := [170.0, 540.0, 910.0]
+const BATTERY_Y_OFFSET := 170.0  # distancia do fundo
+const CITY_Y_OFFSET := 100.0     # distancia do fundo
+
+var screen_height: float
 
 var batteries: Array[Node2D] = []
 var cities: Array[Node2D] = []
@@ -41,25 +40,28 @@ var credits_mult := 1.0
 var base_ammo := 10
 
 func _ready() -> void:
+	screen_height = get_viewport().get_visible_rect().size.y
 	_apply_upgrades()
 
 	var hud_scene := preload("res://scenes/game/hud.tscn")
 	hud = hud_scene.instantiate()
 	add_child(hud)
 
+	var battery_y := screen_height - BATTERY_Y_OFFSET
 	var battery_scene := preload("res://entities/battery/battery.tscn")
 	for x in BATTERY_POSITIONS:
 		var battery = battery_scene.instantiate()
-		battery.position = Vector2(x, BATTERY_Y)
+		battery.position = Vector2(x, battery_y)
 		battery.max_ammo = base_ammo
 		battery.ammo = base_ammo
 		add_child(battery)
 		batteries.append(battery)
 
+	var city_y := screen_height - CITY_Y_OFFSET
 	var city_scene := preload("res://entities/city/city.tscn")
 	for x in CITY_POSITIONS:
 		var city = city_scene.instantiate()
-		city.position = Vector2(x, CITY_Y)
+		city.position = Vector2(x, city_y)
 		add_child(city)
 		cities.append(city)
 
