@@ -68,7 +68,6 @@ func _draw() -> void:
 		draw_circle(Vector2(10, -10), 3.0, Color(1.0, 0.0, 0.3, 0.03))
 
 func take_hit() -> void:
-	return  # TEMP: imortal para teste
 	if not data.is_alive():
 		return
 	data.take_hit()

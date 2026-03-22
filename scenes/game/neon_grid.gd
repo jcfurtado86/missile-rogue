@@ -26,8 +26,8 @@ var mountain_triangles: Array[Dictionary] = []
 # Animacao
 var anim_time := 0.0
 
-# Flyby (OVNI ou Nyan Cat)
-enum FlybyType { UFO, NYAN }
+# Flyby (OVNI, Nyan Cat ou Papai Noel)
+enum FlybyType { UFO, NYAN, SANTA }
 var flyby_active := false
 var flyby_type: FlybyType = FlybyType.UFO
 var flyby_x := 0.0
@@ -338,12 +338,17 @@ func _spawn_flyby() -> void:
 	flyby_active = true
 	flyby_y = randf_range(horizon_y * 0.15, horizon_y * 0.55)
 	nyan_anim = 0.0
-	# Sorteia tipo
-	flyby_type = FlybyType.NYAN if randf() > 0.5 else FlybyType.UFO
-	if flyby_type == FlybyType.NYAN:
+	# Sorteia tipo (80% UFO, 10% Nyan, 10% Santa)
+	var roll := randf()
+	if roll < 0.8:
+		flyby_type = FlybyType.UFO
+		flyby_speed = randf_range(30.0, 80.0)
+	elif roll < 0.9:
+		flyby_type = FlybyType.NYAN
 		flyby_speed = randf_range(80.0, 140.0)
 	else:
-		flyby_speed = randf_range(30.0, 80.0)
+		flyby_type = FlybyType.SANTA
+		flyby_speed = randf_range(60.0, 110.0)
 	# Direcao aleatoria
 	if randf() > 0.5:
 		flyby_direction = 1.0
@@ -357,8 +362,10 @@ func _draw_flyby() -> void:
 		return
 	if flyby_type == FlybyType.UFO:
 		_draw_ufo()
-	else:
+	elif flyby_type == FlybyType.NYAN:
 		_draw_nyan()
+	else:
+		_draw_santa()
 
 func _draw_ufo() -> void:
 	var pos := Vector2(flyby_x, flyby_y)
@@ -513,6 +520,127 @@ func _draw_nyan() -> void:
 	var tail_x := pos.x - dir * 22.0
 	var tail_wave := sin(nyan_anim * 6.0) * 4.0
 	draw_line(Vector2(tail_x, pos.y), Vector2(tail_x - dir * 8, pos.y - 5 + tail_wave), paw_col, 3.0, true)
+
+func _draw_santa() -> void:
+	var pos := Vector2(flyby_x, flyby_y)
+	var alpha := 0.55
+	var dir := flyby_direction
+	var bounce := sin(nyan_anim * 5.0) * 2.0
+	pos.y += bounce
+
+	# --- Renas (2, na frente do treno) ---
+	var leg_phase := sin(nyan_anim * 10.0)
+	for ri in 2:
+		var rx := pos.x + dir * (60.0 + ri * 35.0)
+		var ry := pos.y - 2.0 + sin(nyan_anim * 5.0 + ri * 1.5) * 2.0
+		var body_col := Color(0.55, 0.3, 0.15, alpha)
+		# Corpo
+		draw_rect(Rect2(rx - 10, ry - 5, 20, 10), body_col)
+		# Cabeca
+		var head_x := rx + dir * 12.0
+		draw_rect(Rect2(head_x - 4, ry - 8, 8, 8), body_col)
+		# Chifres
+		var antler_col := Color(0.7, 0.5, 0.2, alpha * 0.8)
+		draw_line(Vector2(head_x - 2, ry - 8), Vector2(head_x - 5, ry - 16), antler_col, 1.5, true)
+		draw_line(Vector2(head_x - 5, ry - 16), Vector2(head_x - 8, ry - 13), antler_col, 1.5, true)
+		draw_line(Vector2(head_x + 2, ry - 8), Vector2(head_x + 5, ry - 16), antler_col, 1.5, true)
+		draw_line(Vector2(head_x + 5, ry - 16), Vector2(head_x + 8, ry - 13), antler_col, 1.5, true)
+		# Nariz vermelho (Rudolph na primeira rena)
+		if ri == 1:
+			draw_circle(Vector2(head_x + dir * 5, ry - 5), 2.5, Color(1.0, 0.0, 0.0, alpha))
+			draw_circle(Vector2(head_x + dir * 5, ry - 5), 5.0, Color(1.0, 0.0, 0.0, alpha * 0.2))
+		# Patas
+		var lp := leg_phase if ri % 2 == 0 else -leg_phase
+		draw_line(Vector2(rx - 5, ry + 5), Vector2(rx - 5, ry + 12 + lp * 3), body_col, 1.5, true)
+		draw_line(Vector2(rx + 5, ry + 5), Vector2(rx + 5, ry + 12 - lp * 3), body_col, 1.5, true)
+		# Corda ligando ao treno
+		if ri == 0:
+			draw_line(Vector2(rx - dir * 10, ry), Vector2(pos.x + dir * 22, pos.y), Color(0.6, 0.5, 0.3, alpha * 0.5), 1.0, true)
+
+	# --- Treno ---
+	var sled_col := Color(0.8, 0.0, 0.0, alpha)
+	var sled_dark := Color(0.5, 0.0, 0.0, alpha)
+	# Base do treno (curvada)
+	var sled_pts := PackedVector2Array([
+		pos + Vector2(-dir * 25, 8),
+		pos + Vector2(-dir * 22, 12),
+		pos + Vector2(dir * 22, 12),
+		pos + Vector2(dir * 25, 8),
+		pos + Vector2(dir * 25, 5),
+		pos + Vector2(-dir * 22, 5),
+	])
+	var sled_cols := PackedColorArray()
+	for _i in sled_pts.size():
+		sled_cols.append(sled_dark)
+	draw_polygon(sled_pts, sled_cols)
+	for i in sled_pts.size():
+		draw_line(sled_pts[i], sled_pts[(i + 1) % sled_pts.size()], sled_col, 1.5, true)
+	# Patins
+	draw_line(pos + Vector2(-dir * 24, 13), pos + Vector2(-dir * 28, 15), Color(0.7, 0.7, 0.7, alpha), 2.0, true)
+	draw_line(pos + Vector2(-dir * 28, 15), pos + Vector2(dir * 20, 15), Color(0.7, 0.7, 0.7, alpha), 2.0, true)
+
+	# --- Papai Noel ---
+	var santa_x := pos.x - dir * 5.0
+	var santa_y := pos.y
+	# Corpo (casaco vermelho)
+	draw_rect(Rect2(santa_x - 8, santa_y - 12, 16, 17), Color(0.9, 0.0, 0.0, alpha))
+	# Cinto
+	draw_rect(Rect2(santa_x - 8, santa_y + 0, 16, 3), Color(0.1, 0.1, 0.1, alpha))
+	draw_rect(Rect2(santa_x - 2, santa_y - 1, 4, 5), Color(1.0, 0.85, 0.0, alpha))
+	# Cabeca
+	draw_circle(Vector2(santa_x, santa_y - 16), 7.0, Color(0.95, 0.75, 0.6, alpha))
+	# Barba branca
+	var beard_pts := PackedVector2Array([
+		Vector2(santa_x - 6, santa_y - 13),
+		Vector2(santa_x, santa_y - 7),
+		Vector2(santa_x + 6, santa_y - 13),
+	])
+	var beard_cols := PackedColorArray([
+		Color(1.0, 1.0, 1.0, alpha), Color(1.0, 1.0, 1.0, alpha), Color(1.0, 1.0, 1.0, alpha),
+	])
+	draw_polygon(beard_pts, beard_cols)
+	# Gorro
+	var hat_pts := PackedVector2Array([
+		Vector2(santa_x - 7, santa_y - 19),
+		Vector2(santa_x + dir * 10, santa_y - 30),
+		Vector2(santa_x + 7, santa_y - 19),
+	])
+	var hat_cols := PackedColorArray([
+		Color(0.9, 0.0, 0.0, alpha), Color(0.9, 0.0, 0.0, alpha), Color(0.9, 0.0, 0.0, alpha),
+	])
+	draw_polygon(hat_pts, hat_cols)
+	# Pompom
+	draw_circle(Vector2(santa_x + dir * 10, santa_y - 30), 3.0, Color(1.0, 1.0, 1.0, alpha))
+	# Borda do gorro
+	draw_line(Vector2(santa_x - 8, santa_y - 19), Vector2(santa_x + 8, santa_y - 19), Color(1.0, 1.0, 1.0, alpha), 3.0, true)
+	# Olhos
+	draw_circle(Vector2(santa_x - 3, santa_y - 17), 1.0, Color(0.1, 0.1, 0.1, alpha))
+	draw_circle(Vector2(santa_x + 3, santa_y - 17), 1.0, Color(0.1, 0.1, 0.1, alpha))
+
+	# --- Saco de presentes ---
+	var bag_x := pos.x - dir * 16.0
+	var bag_col := Color(0.5, 0.2, 0.0, alpha)
+	draw_circle(Vector2(bag_x, santa_y - 10), 10.0, bag_col)
+	draw_circle(Vector2(bag_x, santa_y - 10), 10.0, Color(0.6, 0.3, 0.1, alpha * 0.5))
+	# Amarro do saco
+	draw_line(Vector2(bag_x - 2, santa_y - 19), Vector2(bag_x + 2, santa_y - 22), Color(0.6, 0.5, 0.2, alpha), 1.5, true)
+
+	# --- Estrelinhas caindo (presentes?) ---
+	var sparkle_cols: Array[Color] = [
+		Color(1.0, 1.0, 0.0, alpha * 0.5),
+		Color(1.0, 0.0, 0.0, alpha * 0.4),
+		Color(0.0, 1.0, 0.3, alpha * 0.4),
+	]
+	for si in 5:
+		var st := fmod(nyan_anim * 1.5 + float(si) * 1.3, 3.0)
+		var sx := pos.x - dir * (10.0 + si * 15.0)
+		var sy := pos.y + 18.0 + st * 20.0
+		var sa := (1.0 - st / 3.0) * alpha * 0.6
+		if sa < 0.02:
+			continue
+		var sc := sparkle_cols[si % sparkle_cols.size()]
+		draw_circle(Vector2(sx, sy), 2.0, Color(sc.r, sc.g, sc.b, sa))
+		draw_circle(Vector2(sx, sy), 4.0, Color(sc.r, sc.g, sc.b, sa * 0.3))
 
 # --- HORIZONTE ---
 

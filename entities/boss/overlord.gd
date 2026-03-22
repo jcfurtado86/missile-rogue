@@ -8,7 +8,7 @@ var data := EnemyData.new(EnemyData.Type.BOSS)
 var move_speed := 120.0
 var move_direction := 1.0
 const MARGIN := 100.0
-const BOSS_Y := 200.0
+const BOSS_Y := 300.0
 
 # Rajadas em leque
 var anim_time := 0.0
