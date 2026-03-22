@@ -1,6 +1,8 @@
 class_name SaveSystem
 extends RefCounted
 
+const SAVE_KEY := "m1ss1l3-r0gu3-s4lt-k3y-2024"
+
 func to_dict(upgrade_system: UpgradeSystem, ascension: AscensionSystem, currency: CurrencySystem) -> Dictionary:
 	var upgrade_levels := {}
 	for name in upgrade_system.upgrades:
@@ -50,10 +52,18 @@ static func get_defaults() -> Dictionary:
 		"total_eter": 0,
 	}
 
+func _compute_hash(json_str: String) -> String:
+	var ctx := HashingContext.new()
+	ctx.start(HashingContext.HASH_SHA256)
+	ctx.update((SAVE_KEY + json_str + SAVE_KEY).to_utf8_buffer())
+	return ctx.finish().hex_encode()
+
 func save_to_file(path: String, data: Dictionary) -> void:
 	var file = FileAccess.open(path, FileAccess.WRITE)
 	if file:
-		file.store_string(JSON.stringify(data))
+		var json_str := JSON.stringify(data)
+		var checksum := _compute_hash(json_str)
+		file.store_string(json_str + "\n" + checksum)
 
 func load_from_file(path: String) -> Dictionary:
 	if not FileAccess.file_exists(path):
@@ -61,8 +71,16 @@ func load_from_file(path: String) -> Dictionary:
 	var file = FileAccess.open(path, FileAccess.READ)
 	if not file:
 		return get_defaults()
+	var content := file.get_as_text()
+	var parts := content.rsplit("\n", true, 1)
+	if parts.size() != 2:
+		return get_defaults()
+	var json_str := parts[0]
+	var saved_hash := parts[1]
+	if _compute_hash(json_str) != saved_hash:
+		return get_defaults()
 	var json = JSON.new()
-	var error = json.parse(file.get_as_text())
+	var error = json.parse(json_str)
 	if error != OK:
 		return get_defaults()
 	if json.data is Dictionary:
