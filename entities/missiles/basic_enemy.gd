@@ -13,6 +13,7 @@ const MISSILE_RADIUS := 10.0
 var trail: Array[Vector2] = []
 
 var DeathParticlesScene := preload("res://entities/missiles/death_particles.tscn")
+var MushroomCloudScene := preload("res://entities/missiles/mushroom_cloud.tscn")
 
 func _ready() -> void:
 	add_to_group("enemy")
@@ -48,7 +49,14 @@ func _physics_process(delta: float) -> void:
 	global_position += direction * speed * delta
 
 	if global_position.y >= target_position.y:
+		_spawn_mushroom_cloud()
 		queue_free()
+
+func _spawn_mushroom_cloud() -> void:
+	var mc = MushroomCloudScene.instantiate()
+	mc.position = global_position
+	mc.color = BASE_COLOR
+	get_parent().add_child(mc)
 
 func _spawn_death_particles() -> void:
 	var dp = DeathParticlesScene.instantiate()
@@ -64,4 +72,5 @@ func _on_area_entered(area: Area2D) -> void:
 	elif area.collision_layer == 4:
 		if area.has_method("take_hit"):
 			area.call_deferred("take_hit")
+		call_deferred("_spawn_mushroom_cloud")
 		call_deferred("queue_free")

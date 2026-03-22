@@ -23,6 +23,11 @@ var ad_system = null
 var spawn_timer := 0.0
 var run_earnings := {"credits": 0, "crystals": 0, "void": 0}
 
+# Screen effects
+var shake_intensity := 0.0
+var shake_timer := 0.0
+var flash_alpha := 0.0
+
 var PlayerMissileScene := preload("res://entities/missiles/player_missile.tscn")
 var BasicEnemyScene := preload("res://entities/missiles/basic_enemy.tscn")
 var FastEnemyScene := preload("res://entities/missiles/fast_enemy.tscn")
@@ -62,6 +67,7 @@ func _ready() -> void:
 	for x in CITY_POSITIONS:
 		var city = city_scene.instantiate()
 		city.position = Vector2(x, city_y)
+		city.city_destroyed.connect(_on_city_destroyed)
 		add_child(city)
 		cities.append(city)
 
@@ -79,6 +85,8 @@ func _apply_upgrades() -> void:
 	base_ammo = 10 + int(upgrade_system.get_effect("ammo_pack"))
 
 func _physics_process(delta: float) -> void:
+	# Screen effects rodam sempre
+	_update_screen_effects(delta)
 	if is_game_over or not currency:
 		return
 	threat.update_time(delta)
@@ -258,3 +266,31 @@ func double_run_earnings() -> void:
 func decline_double() -> void:
 	hud.hide_double_offer()
 	game_over.emit()
+
+# --- Screen effects ---
+
+func _on_city_destroyed() -> void:
+	flash_alpha = 0.7
+	shake_intensity = 8.0
+	shake_timer = 0.3
+
+func _update_screen_effects(delta: float) -> void:
+	if shake_timer > 0.0:
+		shake_timer -= delta
+		var offset := Vector2(
+			randf_range(-shake_intensity, shake_intensity),
+			randf_range(-shake_intensity, shake_intensity),
+		)
+		position = offset
+		if shake_timer <= 0.0:
+			position = Vector2.ZERO
+			shake_intensity = 0.0
+	if flash_alpha > 0.0:
+		flash_alpha -= delta * 3.0
+		if flash_alpha < 0.0:
+			flash_alpha = 0.0
+		queue_redraw()
+
+func _draw() -> void:
+	if flash_alpha > 0.0:
+		draw_rect(Rect2(-SCREEN_WIDTH, -screen_height, SCREEN_WIDTH * 3, screen_height * 3), Color(1.0, 0.3, 0.2, flash_alpha))

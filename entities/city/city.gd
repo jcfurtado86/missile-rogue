@@ -1,5 +1,7 @@
 extends Area2D
 
+signal city_destroyed
+
 var data: CityData
 
 func _ready() -> void:
@@ -33,6 +35,7 @@ func take_hit() -> void:
 		return
 	data.take_hit()
 	queue_redraw()
+	city_destroyed.emit()
 	# Desativa colisao
 	set_deferred("monitorable", false)
 	set_deferred("monitoring", false)
