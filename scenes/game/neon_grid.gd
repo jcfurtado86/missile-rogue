@@ -20,8 +20,9 @@ var scenery: Scenery
 var skyline_back: Array[Dictionary] = []
 var skyline_front: Array[Dictionary] = []
 
-# Dados montanhas (low-poly triangles)
-var mountain_triangles: Array[Dictionary] = []
+# Dados montanhas (low-poly triangles) — duas camadas
+var mountains_back: Array[Dictionary] = []
+var mountains_front: Array[Dictionary] = []
 
 # Animacao
 var anim_time := 0.0
@@ -103,79 +104,95 @@ func _gen_building_layer(seed_val: int, min_w: float, max_w: float, min_h: float
 	return buildings
 
 func _generate_mountains(run_seed: int) -> void:
-	mountain_triangles.clear()
-	var rng := RandomNumberGenerator.new()
-	rng.seed = run_seed
+	mountains_back.clear()
+	mountains_front.clear()
+	# Camada de fundo — picos mais altos, mais distante
+	mountains_back = _gen_mountain_ridge(run_seed, 100.0, 320.0, 0.3, 24)
+	# Camada da frente — picos um pouco menores, mais proxima
+	mountains_front = _gen_mountain_ridge(run_seed + 500, 80.0, 240.0, 0.4, 20)
 
-	# Gera pontos da crista — pico central dominante, menores nas pontas
-	var num_points := 18
-	var ridge_points: Array[Vector2] = []
+# Gera uma ridge continua com facetas de relevo
+func _gen_mountain_ridge(seed_val: int, min_h: float, max_h: float, envelope_strength: float, num_peaks: int) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed_val
 	var center_x := screen_size.x / 2.0
 
-	for i in range(num_points + 1):
-		var t := float(i) / num_points
-		var x := lerpf(-MARGIN, screen_size.x + MARGIN, t)
-		# Altura baseada na distancia do centro (mais alto no centro)
+	# Gera pontos da ridge (picos alternados com vales)
+	var ridge: PackedVector2Array = []
+	for i in range(num_peaks + 1):
+		var t := float(i) / num_peaks
+		var x := lerpf(-MARGIN * 2, screen_size.x + MARGIN * 2, t)
 		var dist_from_center := absf(x - center_x) / ((screen_size.x + MARGIN) * 0.5)
-		var envelope := 1.0 - dist_from_center * 0.45
-		envelope = maxf(envelope, 0.35)
-		var h := rng.randf_range(96.0, 462.0) * envelope
-		# Vales entre picos
-		if i % 2 == 0 and i > 0 and i < num_points:
-			h *= rng.randf_range(0.3, 0.55)
+		var envelope := 1.0 - dist_from_center * envelope_strength
+		envelope = maxf(envelope, 0.3)
+		var h := rng.randf_range(min_h, max_h) * envelope
+		if i % 2 == 1:
+			h *= rng.randf_range(0.2, 0.5)
 		var y := horizon_y - h
-		ridge_points.append(Vector2(x, y))
+		ridge.append(Vector2(x, y))
 
-	# Gera linha de base no horizonte
-	var base_points: Array[Vector2] = []
-	for i in range(num_points + 1):
-		var t := float(i) / num_points
-		var x := lerpf(-MARGIN, screen_size.x + MARGIN, t)
-		base_points.append(Vector2(x, horizon_y))
+	# Gera camadas de pontos intermediarios entre ridge e horizonte
+	# Cada camada e uma sub-ridge com perturbacao, criando malha de facetas
+	var num_layers := 4
+	var layers: Array[PackedVector2Array] = []
+	layers.append(ridge)  # camada 0 = topo
+	for li in range(1, num_layers):
+		var layer_t := float(li) / num_layers  # 0=topo, 1=base
+		var layer: PackedVector2Array = []
+		for pi in ridge.size():
+			var top_pt := ridge[pi]
+			var base_x := top_pt.x + rng.randf_range(-20.0, 20.0)
+			var base_y := lerpf(top_pt.y, horizon_y, layer_t)
+			base_y += rng.randf_range(-15.0, 15.0)
+			base_y = minf(base_y, horizon_y - 2.0)
+			base_y = maxf(base_y, top_pt.y)
+			layer.append(Vector2(base_x, base_y))
+		layers.append(layer)
+	# Camada final = horizonte
+	var base_layer: PackedVector2Array = []
+	for pi in ridge.size():
+		base_layer.append(Vector2(ridge[pi].x, horizon_y))
+	layers.append(base_layer)
 
-	# Gera pontos intermedios (entre crista e base)
-	var mid_points: Array[Vector2] = []
-	for i in range(num_points):
-		var mid_x := (ridge_points[i].x + ridge_points[i + 1].x) / 2.0 + rng.randf_range(-15.0, 15.0)
-		var mid_y := lerpf(ridge_points[i].y, horizon_y, rng.randf_range(0.4, 0.7))
-		mid_y += rng.randf_range(-20.0, 20.0)
-		mid_points.append(Vector2(mid_x, mid_y))
+	# Triangula entre camadas adjacentes — cada par de pontos forma 2 triangulos
+	var facets: Array[Dictionary] = []  # {"pts": PackedVector2Array, "shade": float}
+	for li in layers.size() - 1:
+		var upper := layers[li]
+		var lower := layers[li + 1]
+		for pi in upper.size() - 1:
+			var u0 := upper[pi]
+			var u1 := upper[pi + 1]
+			var l0 := lower[pi]
+			var l1 := lower[pi + 1]
+			# Triangulo superior
+			var shade1 := rng.randf_range(0.01, 0.07)
+			facets.append({"pts": PackedVector2Array([u0, u1, l0]), "shade": shade1})
+			# Triangulo inferior
+			var shade2 := rng.randf_range(0.01, 0.07)
+			facets.append({"pts": PackedVector2Array([u1, l1, l0]), "shade": shade2})
 
-	# Triangula: conecta crista -> mid -> crista -> base
-	for i in range(num_points):
-		var r0 := ridge_points[i]
-		var r1 := ridge_points[i + 1]
-		var mid := mid_points[i]
-		var b0 := base_points[i]
-		var b1 := base_points[i + 1]
+	# Pontos de luz espalhados
+	var lights: PackedVector2Array = []
+	var num_lights := rng.randi_range(4, 10)
+	for _li in num_lights:
+		var ri := rng.randi_range(0, ridge.size() - 2)
+		var a := ridge[ri]
+		var b := ridge[ri + 1]
+		var lt := rng.randf()
+		var lx := lerpf(a.x, b.x, lt)
+		var top_at_x := lerpf(a.y, b.y, lt)
+		if top_at_x >= horizon_y - 10:
+			continue
+		var ly := rng.randf_range(top_at_x + 5.0, horizon_y - 5.0)
+		lights.append(Vector2(lx, ly))
 
-		# Triangulo superior esquerdo: r0, mid, r1 (a face da montanha)
-		var shade1 := rng.randf_range(0.02, 0.06)
-		mountain_triangles.append({
-			"points": PackedVector2Array([r0, mid, r1]),
-			"shade": shade1,
-		})
-
-		# Triangulo inferior esquerdo: r0, b0, mid
-		var shade2 := rng.randf_range(0.01, 0.04)
-		mountain_triangles.append({
-			"points": PackedVector2Array([r0, b0, mid]),
-			"shade": shade2,
-		})
-
-		# Triangulo inferior direito: mid, b0, b1
-		var shade3 := rng.randf_range(0.015, 0.045)
-		mountain_triangles.append({
-			"points": PackedVector2Array([mid, b0, b1]),
-			"shade": shade3,
-		})
-
-		# Triangulo inferior direito 2: mid, b1, r1
-		var shade4 := rng.randf_range(0.01, 0.035)
-		mountain_triangles.append({
-			"points": PackedVector2Array([mid, b1, r1]),
-			"shade": shade4,
-		})
+	result.append({
+		"ridge": ridge,
+		"facets": facets,
+		"lights": lights,
+	})
+	return result
 
 # ============================================================
 # DRAW
@@ -265,9 +282,10 @@ func _draw_building_layer(buildings: Array[Dictionary], fill_color: Color, outli
 			var blink_period := 1.0 + fmod(absf(bx * 0.07), 2.5)
 			var blink_phase := fmod(absf(bx * 0.13 + bw * 0.3), TAU)
 			var blink_val := sin(anim_time / blink_period + blink_phase)
-			var light_alpha := 0.9 if blink_val > 0.3 else 0.1
-			draw_circle(Vector2(mid_x, antenna_top), 2.5, Color(1.0, 0.0, 0.3, light_alpha))
-			draw_circle(Vector2(mid_x, antenna_top), 5.0, Color(1.0, 0.0, 0.3, light_alpha * 0.2))
+			var light_alpha := 1.0 if blink_val > 0.3 else 0.15
+			draw_circle(Vector2(mid_x, antenna_top), 8.0, Color(1.0, 0.0, 0.3, light_alpha * 0.12))
+			draw_circle(Vector2(mid_x, antenna_top), 4.0, Color(1.0, 0.0, 0.3, light_alpha * 0.5))
+			draw_circle(Vector2(mid_x, antenna_top), 2.0, Color(1.0, 0.3, 0.5, light_alpha))
 
 		var num_win: int = b["num_windows"]
 		if num_win >= 2:
@@ -281,37 +299,63 @@ func _draw_building_layer(buildings: Array[Dictionary], fill_color: Color, outli
 				var win_alpha_mult := 1.0
 				if flicker_id < 3:
 					win_alpha_mult = (sin(anim_time * (0.4 + flicker_id * 0.2) + flicker_id) + 1.0) * 0.5
-				var wc := Color(window_color.r, window_color.g, window_color.b, window_color.a * win_alpha_mult)
-				draw_line(Vector2(wx, top_y + 6.0), Vector2(wx, horizon_y - 4.0), wc, 1.0, true)
+				var wc := Color(window_color.r, window_color.g, window_color.b, window_color.a * win_alpha_mult * 2.0)
+				draw_line(Vector2(wx, top_y + 6.0), Vector2(wx, horizon_y - 4.0), wc, 1.5, true)
 
 # --- MONTANHAS ---
 
 func _draw_mountains() -> void:
 	var pulse := (sin(anim_time * 0.5) + 1.0) * 0.5
-	var outline_alpha := lerpf(0.2, 0.7, pulse)
-	var glow_alpha := lerpf(0.05, 0.3, pulse)
-	var outline_color := Color(1.0, 0.0, 0.6, outline_alpha)
-	var glow_color := Color(1.0, 0.0, 0.6, glow_alpha)
 
-	# Desenha cada triangulo
-	for tri in mountain_triangles:
-		var pts: PackedVector2Array = tri["points"]
-		var shade: float = tri["shade"]
-		var fill := Color(shade, shade * 0.3, shade * 1.5, 1.0)
-		var fill_colors := PackedColorArray([fill, fill, fill])
-		draw_polygon(pts, fill_colors)
+	# Camada de fundo — picos altos, roxo distante
+	var back_outline_alpha := lerpf(0.2, 0.5, pulse)
+	var back_glow_alpha := lerpf(0.05, 0.2, pulse)
+	_draw_mountain_ridge(mountains_back, Color(0.6, 0.0, 0.8), back_outline_alpha, back_glow_alpha, 0.6)
 
-	# Outlines por cima de tudo
-	for tri in mountain_triangles:
-		var pts: PackedVector2Array = tri["points"]
-		for edge_i in 3:
-			var a := pts[edge_i]
-			var b := pts[(edge_i + 1) % 3]
-			# Nao desenha outlines na base (horizonte)
-			if absf(a.y - horizon_y) < 3.0 and absf(b.y - horizon_y) < 3.0:
-				continue
-			draw_line(a, b, glow_color, 4.0, true)
-			draw_line(a, b, outline_color, 1.0, true)
+	# Camada da frente — picos menores, magenta proxima
+	var front_outline_alpha := lerpf(0.3, 0.8, pulse)
+	var front_glow_alpha := lerpf(0.08, 0.35, pulse)
+	_draw_mountain_ridge(mountains_front, Color(1.0, 0.0, 0.6), front_outline_alpha, front_glow_alpha, 1.0)
+
+func _draw_mountain_ridge(layer: Array[Dictionary], base_color: Color, outline_alpha: float, glow_alpha: float, shade_mult: float) -> void:
+	for entry in layer:
+		var ridge: PackedVector2Array = entry["ridge"]
+		var facets: Array = entry["facets"]
+		var lights: PackedVector2Array = entry["lights"]
+
+		var edge_col := Color(base_color.r, base_color.g, base_color.b, outline_alpha * 0.2)
+
+		# Facetas — triangulos com shades variados criando relevo
+		for facet in facets:
+			var pts: PackedVector2Array = facet["pts"]
+			var shade: float = facet["shade"] * shade_mult
+			var fill := Color(shade, shade * 0.3, shade * 1.5, 1.0)
+			draw_polygon(pts, PackedColorArray([fill, fill, fill]))
+			# Arestas internas — wireframe sutil
+			for ei in 3:
+				var a := pts[ei]
+				var b := pts[(ei + 1) % 3]
+				# Nao desenha aresta na base (horizonte)
+				if absf(a.y - horizon_y) < 3.0 and absf(b.y - horizon_y) < 3.0:
+					continue
+				draw_line(a, b, edge_col, 1.0, true)
+
+		# Pontos de luz — piscam lentamente
+		for li in lights.size():
+			var lp := lights[li]
+			var blink_phase := fmod(float(li) * 2.7, TAU)
+			var blink_val := sin(anim_time * 0.6 + blink_phase)
+			var light_alpha := 0.6 if blink_val > 0.2 else 0.1
+			draw_circle(lp, 4.0, Color(base_color.r, base_color.g, base_color.b, light_alpha * 0.15))
+			draw_circle(lp, 2.0, Color(base_color.r, base_color.g, base_color.b, light_alpha * 0.5))
+			draw_circle(lp, 1.0, Color(1.0, 0.8, 0.9, light_alpha))
+
+		# Outline neon na ridge (silhueta superior — por cima de tudo)
+		var glow_col := Color(base_color.r, base_color.g, base_color.b, glow_alpha)
+		var outline_col := Color(base_color.r, base_color.g, base_color.b, outline_alpha)
+		for i in ridge.size() - 1:
+			draw_line(ridge[i], ridge[i + 1], glow_col, 5.0, true)
+			draw_line(ridge[i], ridge[i + 1], outline_col, 1.5, true)
 
 # --- FLYBY (OVNI / NYAN CAT) ---
 
@@ -670,7 +714,7 @@ func _draw_perspective_grid() -> void:
 	var floor_h := screen_size.y - horizon_y
 	var bottom := screen_size.y
 
-	var num_lines := 8
+	var num_lines := 6
 	for i in range(-num_lines, num_lines + 1):
 		var bottom_x := vanish.x + (float(i) / num_lines) * screen_size.x * 1.2
 		var alpha := lerpf(0.7, 0.25, absf(float(i) / num_lines))
@@ -678,7 +722,7 @@ func _draw_perspective_grid() -> void:
 		draw_line(vanish, Vector2(bottom_x, bottom), Color(1.0, 0.0, 0.8, alpha * 0.15), width + 4.0, true)
 		draw_line(vanish, Vector2(bottom_x, bottom), Color(1.0, 0.0, 0.8, alpha), width, true)
 
-	var num_h_lines := 10
+	var num_h_lines := 6
 	for i in range(1, num_h_lines + 1):
 		var t := float(i) / num_h_lines
 		var perspective_t := t * t

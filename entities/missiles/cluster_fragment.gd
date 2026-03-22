@@ -31,9 +31,10 @@ func _draw() -> void:
 		var colors := PackedColorArray()
 		pts.append(Vector2.ZERO)
 		colors.append(Color(BASE_COLOR.r, BASE_COLOR.g, BASE_COLOR.b, 0.4))
+		var inv_transform := global_transform.affine_inverse()
 		for i in trail.size():
 			var t := 1.0 - float(i) / trail.size()
-			pts.append(trail[i] - global_position)
+			pts.append(inv_transform * trail[i])
 			colors.append(Color(BASE_COLOR.r, BASE_COLOR.g, BASE_COLOR.b, 0.4 * t))
 		draw_polyline_colors(pts, colors, MISSILE_RADIUS * 2.0)
 		draw_polyline_colors(pts, colors, MISSILE_RADIUS * 0.5)
@@ -64,6 +65,7 @@ func _physics_process(delta: float) -> void:
 
 	velocity.y += GRAVITY * delta
 	global_position += velocity * delta
+	rotation = velocity.angle() - PI / 2.0
 
 	if global_position.y > ground_y:
 		_spawn_mushroom_cloud()

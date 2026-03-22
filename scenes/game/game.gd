@@ -2,16 +2,18 @@ extends Node2D
 
 signal game_over
 
-const SCREEN_WIDTH := 1080
-const BATTERY_POSITIONS := [270.0, 540.0, 810.0]
-const CITY_POSITIONS := [135.0, 405.0, 675.0, 945.0]
+# Posicoes como fracao da largura da tela (0.0 a 1.0)
+const BATTERY_RATIOS := [0.25, 0.5, 0.75]
+const CITY_RATIOS := [0.167, 0.367, 0.633, 0.833]
 const BATTERY_Y_OFFSET := 170.0  # distancia do fundo
 const CITY_Y_OFFSET := 100.0     # distancia do fundo
 
+var screen_width: float
 var screen_height: float
 
 var batteries: Array[Node2D] = []
 var cities: Array[Node2D] = []
+var destroyed_order: Array[Node2D] = []  # ordem de destruicao das cidades
 var is_game_over := false
 
 var threat := ThreatSystem.new()
@@ -52,11 +54,12 @@ func _ready() -> void:
 	hud = hud_scene.instantiate()
 	add_child(hud)
 
+	screen_width = get_viewport().get_visible_rect().size.x
 	var battery_y := screen_height - BATTERY_Y_OFFSET
 	var battery_scene := preload("res://entities/battery/battery.tscn")
-	for x in BATTERY_POSITIONS:
+	for ratio in BATTERY_RATIOS:
 		var battery = battery_scene.instantiate()
-		battery.position = Vector2(x, battery_y)
+		battery.position = Vector2(ratio * screen_width, battery_y)
 		battery.max_ammo = base_ammo
 		battery.ammo = base_ammo
 		add_child(battery)
@@ -64,10 +67,10 @@ func _ready() -> void:
 
 	var city_y := screen_height - CITY_Y_OFFSET
 	var city_scene := preload("res://entities/city/city.tscn")
-	for x in CITY_POSITIONS:
+	for ratio in CITY_RATIOS:
 		var city = city_scene.instantiate()
-		city.position = Vector2(x, city_y)
-		city.city_destroyed.connect(_on_city_destroyed)
+		city.position = Vector2(ratio * screen_width, city_y)
+		city.city_destroyed.connect(_on_city_destroyed.bind(city))
 		add_child(city)
 		cities.append(city)
 
@@ -170,7 +173,7 @@ func _spawn_enemy() -> void:
 		enemy.target_position = target_city.global_position
 		enemy.speed = lerpf(150.0, 400.0, threat_level / 100.0)
 
-	enemy.position = Vector2(randf_range(50, SCREEN_WIDTH - 50), -20)
+	enemy.position = Vector2(randf_range(50, screen_width - 50), -20)
 	enemy.destroyed.connect(_on_enemy_destroyed.bind(drop_currency, drop_amount))
 	add_child(enemy)
 
@@ -251,8 +254,9 @@ func _do_revive() -> void:
 			enemy.queue_free()
 	for frag in get_tree().get_nodes_in_group("fragment"):
 		frag.queue_free()
-	# Revive a primeira cidade morta
-	for city in cities:
+	# Revive a ultima cidade destruida
+	while not destroyed_order.is_empty():
+		var city = destroyed_order.pop_back()
 		if not city.is_alive():
 			city.revive()
 			break
@@ -276,7 +280,8 @@ func decline_double() -> void:
 
 # --- Screen effects ---
 
-func _on_city_destroyed() -> void:
+func _on_city_destroyed(city: Node2D) -> void:
+	destroyed_order.append(city)
 	flash_alpha = 0.7
 	shake_intensity = 8.0
 	shake_timer = 0.3
@@ -300,4 +305,4 @@ func _update_screen_effects(delta: float) -> void:
 
 func _draw() -> void:
 	if flash_alpha > 0.0:
-		draw_rect(Rect2(-SCREEN_WIDTH, -screen_height, SCREEN_WIDTH * 3, screen_height * 3), Color(1.0, 0.3, 0.2, flash_alpha))
+		draw_rect(Rect2(-screen_width, -screen_height, screen_width * 3, screen_height * 3), Color(1.0, 0.3, 0.2, flash_alpha))

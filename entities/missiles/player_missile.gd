@@ -73,6 +73,7 @@ func _physics_process(delta: float) -> void:
 		_explode()
 	else:
 		global_position += direction * step
+		rotation = direction.angle() + PI / 2.0
 
 func _explode() -> void:
 	arrived = true

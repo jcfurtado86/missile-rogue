@@ -14,55 +14,98 @@ func _ready() -> void:
 
 func _draw() -> void:
 	if ammo > 0:
-		var neon := Color(0.0, 1.0, 1.0, 0.9)
-		var fill := Color(0.0, 0.08, 0.12)
-		# Glow da base
-		draw_circle(Vector2(0, 5), 30.0, Color(0.0, 1.0, 1.0, 0.05))
-		# Base — trapezio
-		var base := PackedVector2Array([
-			Vector2(-28, 25), Vector2(-20, 10), Vector2(20, 10), Vector2(28, 25),
-		])
-		draw_polygon(base, PackedColorArray([fill, fill, fill, fill]))
-		for i in base.size():
-			draw_line(base[i], base[(i + 1) % base.size()], neon, 1.5, true)
-		# Torreta — hexagono
-		var turret := PackedVector2Array([
-			Vector2(-14, 10), Vector2(-16, 0), Vector2(-10, -8),
-			Vector2(10, -8), Vector2(16, 0), Vector2(14, 10),
-		])
-		draw_polygon(turret, PackedColorArray([fill, fill, fill, fill, fill, fill]))
-		for i in turret.size():
-			draw_line(turret[i], turret[(i + 1) % turret.size()], neon, 2.0, true)
-		# Cano — retangulo fino pra cima
-		draw_rect(Rect2(-3, -30, 6, 22), fill)
-		draw_rect(Rect2(-3, -30, 6, 22), neon, false, 1.5)
-		# Ponta do cano
-		draw_circle(Vector2(0, -30), 2.0, Color(0.0, 1.0, 1.0, 0.7))
-		# Indicador de municao — linhas internas
-		var ammo_ratio := float(ammo) / max_ammo
-		var bar_h := 10.0 * ammo_ratio
-		draw_rect(Rect2(-5, 4 - bar_h, 10, bar_h), Color(0.0, 1.0, 1.0, 0.25))
+		_draw_armed()
 	else:
-		var dim := Color(0.0, 0.3, 0.4, 0.3)
-		var fill := Color(0.02, 0.03, 0.05)
-		# Base dim
-		var base := PackedVector2Array([
-			Vector2(-28, 25), Vector2(-20, 10), Vector2(20, 10), Vector2(28, 25),
-		])
-		draw_polygon(base, PackedColorArray([fill, fill, fill, fill]))
-		for i in base.size():
-			draw_line(base[i], base[(i + 1) % base.size()], dim, 1.0, true)
-		# Torreta dim
-		var turret := PackedVector2Array([
-			Vector2(-14, 10), Vector2(-16, 0), Vector2(-10, -8),
-			Vector2(10, -8), Vector2(16, 0), Vector2(14, 10),
-		])
-		draw_polygon(turret, PackedColorArray([fill, fill, fill, fill, fill, fill]))
-		for i in turret.size():
-			draw_line(turret[i], turret[(i + 1) % turret.size()], dim, 1.5, true)
-		# Cano dim
-		draw_rect(Rect2(-3, -30, 6, 22), fill)
-		draw_rect(Rect2(-3, -30, 6, 22), dim, false, 1.0)
+		_draw_empty()
+
+func _draw_armed() -> void:
+	var neon := Color(0.0, 1.0, 1.0, 0.9)
+	var fill := Color(0.0, 0.08, 0.12)
+
+	# Glow sutil
+	draw_circle(Vector2(0, 5), 35.0, Color(0.0, 1.0, 1.0, 0.04))
+
+	# Tampa do silo — retangulo no chao, perspectiva achatada
+	# Aberto: as duas metades se afastam
+	var silo_w := 32.0
+	var silo_h := 16.0  # achatado = chao
+	var left_half := PackedVector2Array([
+		Vector2(-silo_w, 20 - silo_h), Vector2(-3, 20 - silo_h),
+		Vector2(-3, 20), Vector2(-silo_w, 20),
+	])
+	var right_half := PackedVector2Array([
+		Vector2(3, 20 - silo_h), Vector2(silo_w, 20 - silo_h),
+		Vector2(silo_w, 20), Vector2(3, 20),
+	])
+	# Abertura interna — retangulo escuro entre as tampas
+	draw_rect(Rect2(-3, 20 - silo_h, 6, silo_h), Color(0.01, 0.01, 0.03))
+
+	# Tampas
+	draw_polygon(left_half, PackedColorArray([fill, fill, fill, fill]))
+	for i in left_half.size():
+		draw_line(left_half[i], left_half[(i + 1) % left_half.size()], neon, 1.5, true)
+
+	draw_polygon(right_half, PackedColorArray([fill, fill, fill, fill]))
+	for i in right_half.size():
+		draw_line(right_half[i], right_half[(i + 1) % right_half.size()], neon, 1.5, true)
+
+	# Detalhes nas tampas — linhas horizontais internas
+	for i in 2:
+		var ly := 20.0 - silo_h * 0.33 * (i + 1)
+		draw_line(Vector2(-silo_w + 3, ly), Vector2(-5, ly), Color(0.0, 0.8, 1.0, 0.2), 1.0, true)
+		draw_line(Vector2(5, ly), Vector2(silo_w - 3, ly), Color(0.0, 0.8, 1.0, 0.2), 1.0, true)
+
+	# Indicador de municao — barra unica cobrindo a base inteira
+	var ammo_ratio := float(ammo) / max_ammo
+	var bar_y := 22.0
+	var bar_h := 10.0
+	var bar_x := -silo_w + 2.0
+	var bar_full_w_actual := (silo_w - 2.0) * 2.0
+	var bar_filled_w_actual := bar_full_w_actual * ammo_ratio
+	# Glow atras da barra
+	draw_rect(Rect2(bar_x - 2, bar_y - 2, bar_full_w_actual + 4, bar_h + 4), Color(0.0, 1.0, 1.0, 0.06))
+	# Fundo da barra
+	draw_rect(Rect2(bar_x, bar_y, bar_full_w_actual, bar_h), Color(0.0, 0.2, 0.3, 0.25))
+	# Preenchimento
+	draw_rect(Rect2(bar_x, bar_y, bar_filled_w_actual, bar_h), Color(0.0, 1.0, 1.0, 0.7))
+	# Outline
+	draw_rect(Rect2(bar_x, bar_y, bar_full_w_actual, bar_h), Color(0.0, 1.0, 1.0, 0.6), false, 2.0)
+
+func _draw_empty() -> void:
+	var dim := Color(0.0, 0.3, 0.4, 0.3)
+	var fill := Color(0.02, 0.03, 0.05)
+
+	# Tampa fechada — retangulo unico no chao
+	var silo_w := 32.0
+	var silo_h := 16.0
+	var silo := PackedVector2Array([
+		Vector2(-silo_w, 20 - silo_h), Vector2(silo_w, 20 - silo_h),
+		Vector2(silo_w, 20), Vector2(-silo_w, 20),
+	])
+	draw_polygon(silo, PackedColorArray([fill, fill, fill, fill]))
+	for i in silo.size():
+		draw_line(silo[i], silo[(i + 1) % silo.size()], dim, 1.0, true)
+
+	# Linha central — emenda das tampas
+	draw_line(Vector2(0, 20 - silo_h), Vector2(0, 20), dim, 1.0, true)
+
+	# Detalhes dim
+	for i in 2:
+		var ly := 20.0 - silo_h * 0.33 * (i + 1)
+		draw_line(Vector2(-silo_w + 3, ly), Vector2(-2, ly), Color(0.0, 0.3, 0.4, 0.1), 1.0, true)
+		draw_line(Vector2(2, ly), Vector2(silo_w - 3, ly), Color(0.0, 0.3, 0.4, 0.1), 1.0, true)
+
+	# Barra de municao vazia
+	var bar_x := -silo_w + 2.0
+	var bar_full_w := (silo_w - 2.0) * 2.0
+	var bar_y := 22.0
+	var bar_h := 10.0
+	draw_rect(Rect2(bar_x, bar_y, bar_full_w, bar_h), Color(0.0, 0.2, 0.3, 0.15))
+	draw_rect(Rect2(bar_x, bar_y, bar_full_w, bar_h), Color(0.0, 0.3, 0.4, 0.25), false, 1.5)
+
+# ============================================================
+# INTERFACE PUBLICA
+# ============================================================
 
 func can_fire() -> bool:
 	return ammo > 0
