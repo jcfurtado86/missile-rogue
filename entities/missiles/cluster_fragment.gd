@@ -5,33 +5,68 @@ signal destroyed(enemy: Area2D)
 @export var speed := 250.0
 
 var direction := Vector2.DOWN
-var invuln_timer := 0.2  # Invulneravel por 0.2s pra nao morrer na mesma explosao do cluster
+var velocity := Vector2.ZERO
+const GRAVITY := 400.0
+var invuln_timer := 0.2
+
+const BASE_COLOR := Color(0.7, 0.0, 1.0)
+const TRAIL_LENGTH := 20
+const TRAIL_MIN_DIST := 12.0
+const MISSILE_RADIUS := 7.0
+var trail: Array[Vector2] = []
+
+var DeathParticlesScene := preload("res://entities/missiles/death_particles.tscn")
 
 func _ready() -> void:
 	add_to_group("fragment")
 	area_entered.connect(_on_area_entered)
-	queue_redraw()
+	velocity = direction * speed
 
 func _draw() -> void:
+	# Trail — polyline
+	if trail.size() >= 2:
+		var pts := PackedVector2Array()
+		var colors := PackedColorArray()
+		pts.append(Vector2.ZERO)
+		colors.append(Color(BASE_COLOR.r, BASE_COLOR.g, BASE_COLOR.b, 0.4))
+		for i in trail.size():
+			var t := 1.0 - float(i) / trail.size()
+			pts.append(trail[i] - global_position)
+			colors.append(Color(BASE_COLOR.r, BASE_COLOR.g, BASE_COLOR.b, 0.4 * t))
+		draw_polyline_colors(pts, colors, MISSILE_RADIUS * 2.0)
+		draw_polyline_colors(pts, colors, MISSILE_RADIUS * 0.5)
 	# Neon violeta fragmento
-	draw_circle(Vector2.ZERO, 12.0, Color(0.7, 0.0, 1.0, 0.15))
-	draw_circle(Vector2.ZERO, 7.0, Color(0.7, 0.0, 1.0, 0.85))
+	draw_circle(Vector2.ZERO, MISSILE_RADIUS, Color(BASE_COLOR.r, BASE_COLOR.g, BASE_COLOR.b, 0.85))
 	draw_circle(Vector2.ZERO, 3.0, Color(0.9, 0.6, 1.0))
 
 func _physics_process(delta: float) -> void:
 	if invuln_timer > 0.0:
 		invuln_timer -= delta
-	global_position += direction * speed * delta
+	# Trail — so grava se moveu distancia minima
+	if trail.is_empty() or global_position.distance_to(trail[0]) >= TRAIL_MIN_DIST:
+		trail.push_front(global_position)
+		if trail.size() > TRAIL_LENGTH:
+			trail.resize(TRAIL_LENGTH)
+	queue_redraw()
 
-	# Sai da tela
+	velocity.y += GRAVITY * delta
+	global_position += velocity * delta
+
 	if global_position.y > 1950 or global_position.x < -50 or global_position.x > 1130:
 		queue_free()
+
+func _spawn_death_particles() -> void:
+	var dp = DeathParticlesScene.instantiate()
+	dp.position = global_position
+	dp.color = BASE_COLOR
+	get_parent().add_child(dp)
 
 func _on_area_entered(area: Area2D) -> void:
 	if invuln_timer > 0.0:
 		return
 	if area.collision_layer == 1:
 		destroyed.emit(self)
+		call_deferred("_spawn_death_particles")
 		call_deferred("queue_free")
 	elif area.collision_layer == 4:
 		if area.has_method("take_hit"):

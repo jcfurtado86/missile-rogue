@@ -29,6 +29,7 @@ func _draw() -> void:
 		draw_rect(Rect2(-35, -8, 70, 26), dead_color, false, 1.5)
 
 func take_hit() -> void:
+	return  # TEMP: imortal para teste
 	if not data.is_alive():
 		return
 	data.take_hit()

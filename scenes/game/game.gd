@@ -147,8 +147,8 @@ func _spawn_enemy() -> void:
 	if dist.has("cluster") and roll > (dist["basic"] + dist["fast"]):
 		enemy = ClusterEnemyScene.instantiate()
 		enemy.target_position = target_city.global_position
-		drop_currency = ""
-		drop_amount = 0
+		drop_currency = "void"
+		drop_amount = 1
 	elif dist.has("fast") and roll > dist["basic"]:
 		enemy = FastEnemyScene.instantiate()
 		enemy.target_position = target_city.global_position

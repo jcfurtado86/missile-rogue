@@ -184,7 +184,7 @@ func _draw() -> void:
 # --- CEU ---
 
 func _draw_sky() -> void:
-	var steps := 80
+	var steps := 30
 	var band_h := horizon_y / steps
 	for i in steps:
 		var t := float(i) / steps

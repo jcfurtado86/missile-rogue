@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://c3d8thp4rt1cl"]
+
+[ext_resource type="Script" path="res://entities/missiles/death_particles.gd" id="1_dp"]
+
+[node name="DeathParticles" type="Node2D"]
+script = ExtResource("1_dp")
