@@ -13,8 +13,10 @@ func _ready() -> void:
 	queue_redraw()
 
 func _draw() -> void:
-	# Roxo menor
-	draw_circle(Vector2.ZERO, 7.0, Color(0.7, 0.2, 1.0))
+	# Neon violeta fragmento
+	draw_circle(Vector2.ZERO, 12.0, Color(0.7, 0.0, 1.0, 0.15))
+	draw_circle(Vector2.ZERO, 7.0, Color(0.7, 0.0, 1.0, 0.85))
+	draw_circle(Vector2.ZERO, 3.0, Color(0.9, 0.6, 1.0))
 
 func _physics_process(delta: float) -> void:
 	if invuln_timer > 0.0:

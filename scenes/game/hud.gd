@@ -29,6 +29,52 @@ func _ready() -> void:
 	decline_button.pressed.connect(_on_decline_pressed)
 	double_button.pressed.connect(_on_double_pressed)
 	double_decline_button.pressed.connect(_on_double_decline_pressed)
+	_apply_neon_style()
+	_reposition_for_screen()
+
+func _apply_neon_style() -> void:
+	# Labels neon
+	threat_label.add_theme_color_override("font_color", Color(1.0, 0.0, 0.6))
+	credits_label.add_theme_color_override("font_color", Color(0.0, 1.0, 1.0))
+	game_over_label.add_theme_color_override("font_color", Color(1.0, 0.0, 0.3))
+	victory_label.add_theme_color_override("font_color", Color(0.2, 1.0, 0.1))
+	boss_label.add_theme_color_override("font_color", Color(1.0, 0.0, 0.3))
+	# Threat bar — magenta
+	var threat_style := StyleBoxFlat.new()
+	threat_style.bg_color = Color(1.0, 0.0, 0.6, 0.8)
+	threat_bar.add_theme_stylebox_override("fill", threat_style)
+	var threat_bg := StyleBoxFlat.new()
+	threat_bg.bg_color = Color(0.1, 0.0, 0.05)
+	threat_bg.border_color = Color(1.0, 0.0, 0.6, 0.3)
+	threat_bg.border_width_bottom = 1
+	threat_bg.border_width_top = 1
+	threat_bg.border_width_left = 1
+	threat_bg.border_width_right = 1
+	threat_bar.add_theme_stylebox_override("background", threat_bg)
+	# Special bar — cyan
+	var special_style := StyleBoxFlat.new()
+	special_style.bg_color = Color(0.0, 1.0, 1.0, 0.8)
+	special_bar.add_theme_stylebox_override("fill", special_style)
+	var special_bg := StyleBoxFlat.new()
+	special_bg.bg_color = Color(0.0, 0.05, 0.1)
+	special_bg.border_color = Color(0.0, 1.0, 1.0, 0.3)
+	special_bg.border_width_bottom = 1
+	special_bg.border_width_top = 1
+	special_bg.border_width_left = 1
+	special_bg.border_width_right = 1
+	special_bar.add_theme_stylebox_override("background", special_bg)
+	# Boss bar — vermelho neon
+	var boss_style := StyleBoxFlat.new()
+	boss_style.bg_color = Color(1.0, 0.0, 0.2, 0.8)
+	boss_bar.add_theme_stylebox_override("fill", boss_style)
+	var boss_bg := StyleBoxFlat.new()
+	boss_bg.bg_color = Color(0.1, 0.0, 0.02)
+	boss_bg.border_color = Color(1.0, 0.0, 0.2, 0.3)
+	boss_bg.border_width_bottom = 1
+	boss_bg.border_width_top = 1
+	boss_bg.border_width_left = 1
+	boss_bg.border_width_right = 1
+	boss_bar.add_theme_stylebox_override("background", boss_bg)
 	_reposition_for_screen()
 
 func _reposition_for_screen() -> void:
@@ -68,9 +114,9 @@ func update_special(charge: float, is_ready: bool) -> void:
 	special_bar.value = charge
 	nova_button.disabled = not is_ready
 	if is_ready:
-		nova_button.modulate = Color(1.0, 0.8, 0.2)
+		nova_button.modulate = Color(1.0, 1.0, 0.0)
 	else:
-		nova_button.modulate = Color(0.5, 0.5, 0.5)
+		nova_button.modulate = Color(0.2, 0.2, 0.3)
 
 func show_boss_hp(ratio: float) -> void:
 	boss_bar.visible = true

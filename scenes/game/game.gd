@@ -197,32 +197,14 @@ func _on_fragment_destroyed(_frag: Area2D) -> void:
 	currency.add("void", 1)
 	run_earnings["void"] += 1
 
+var NovaBombWaveScene := preload("res://entities/nova_bomb_wave.tscn")
+
 func activate_nova_bomb() -> void:
 	if not special.activate():
 		return
-	call_deferred("_nova_bomb_destroy_all")
-
-func _nova_bomb_destroy_all() -> void:
-	for enemy in get_tree().get_nodes_in_group("enemy"):
-		if enemy.is_in_group("boss"):
-			enemy.data.take_damage(50)
-			if enemy.data.is_dead():
-				enemy.boss_defeated.emit()
-				enemy.destroyed.emit(enemy)
-				enemy.queue_free()
-			continue
-		# Cluster: dar 1 void direto (normalmente vem dos fragmentos)
-		if enemy is Area2D and enemy.get_script() == preload("res://entities/missiles/cluster_enemy.gd"):
-			threat.register_kill()
-			currency.add("void", 1)
-			run_earnings["void"] += 1
-		elif enemy.has_signal("destroyed"):
-			enemy.destroyed.emit(enemy)
-		enemy.queue_free()
-	for frag in get_tree().get_nodes_in_group("fragment"):
-		if frag.has_signal("destroyed"):
-			frag.destroyed.emit(frag)
-		frag.queue_free()
+	var wave = NovaBombWaveScene.instantiate()
+	wave.position = Vector2(540.0, screen_height)
+	add_child(wave)
 
 func _check_game_over() -> void:
 	if is_game_over:

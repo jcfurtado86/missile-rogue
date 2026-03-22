@@ -166,7 +166,7 @@ func _create_tier_separator(tier: int) -> Label:
 	label.text = TIER_NAMES[tier]
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.add_theme_font_size_override("font_size", 22)
-	var colors := {1: Color(1.0, 0.85, 0.3), 2: Color(0.3, 0.9, 1.0), 3: Color(0.7, 0.3, 1.0)}
+	var colors := {1: Color(1.0, 1.0, 0.0), 2: Color(0.0, 1.0, 1.0), 3: Color(0.7, 0.0, 1.0)}
 	label.add_theme_color_override("font_color", colors[tier])
 	return label
 

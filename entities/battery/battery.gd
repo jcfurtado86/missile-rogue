@@ -13,11 +13,28 @@ func _ready() -> void:
 	queue_redraw()
 
 func _draw() -> void:
-	var color = Color(0.4, 0.8, 1.0) if ammo > 0 else Color(0.2, 0.3, 0.4)
-	draw_polygon(
-		[Vector2(0, -35), Vector2(-25, 25), Vector2(25, 25)],
-		[color, color, color]
-	)
+	var points := PackedVector2Array([Vector2(0, -35), Vector2(-25, 25), Vector2(25, 25)])
+	if ammo > 0:
+		# Glow exterior
+		var glow_points := PackedVector2Array([Vector2(0, -42), Vector2(-30, 30), Vector2(30, 30)])
+		var glow_color := Color(0.0, 1.0, 1.0, 0.1)
+		draw_polygon(glow_points, [glow_color, glow_color, glow_color])
+		# Corpo neon cyan
+		var fill := Color(0.0, 0.15, 0.2)
+		draw_polygon(points, [fill, fill, fill])
+		# Outline neon
+		var neon := Color(0.0, 1.0, 1.0, 0.9)
+		draw_line(points[0], points[1], neon, 2.0, true)
+		draw_line(points[1], points[2], neon, 2.0, true)
+		draw_line(points[2], points[0], neon, 2.0, true)
+	else:
+		# Descarregada — outline escuro
+		var dim := Color(0.0, 0.3, 0.4, 0.4)
+		var fill := Color(0.02, 0.05, 0.08)
+		draw_polygon(points, [fill, fill, fill])
+		draw_line(points[0], points[1], dim, 1.5, true)
+		draw_line(points[1], points[2], dim, 1.5, true)
+		draw_line(points[2], points[0], dim, 1.5, true)
 
 func can_fire() -> bool:
 	return ammo > 0

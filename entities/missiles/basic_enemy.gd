@@ -12,8 +12,14 @@ func _ready() -> void:
 	queue_redraw()
 
 func _draw() -> void:
-	draw_circle(Vector2.ZERO, 10.0, Color(1.0, 0.3, 0.4))
-	draw_circle(Vector2(0, -14), 5.0, Color(1.0, 0.3, 0.4, 0.5))
+	# Neon hot pink com glow
+	draw_circle(Vector2.ZERO, 18.0, Color(1.0, 0.0, 0.6, 0.1))
+	draw_circle(Vector2.ZERO, 13.0, Color(1.0, 0.0, 0.6, 0.25))
+	draw_circle(Vector2.ZERO, 10.0, Color(1.0, 0.1, 0.6, 0.9))
+	draw_circle(Vector2.ZERO, 5.0, Color(1.0, 0.7, 0.9))
+	# Trail
+	draw_circle(Vector2(0, -14), 7.0, Color(1.0, 0.0, 0.6, 0.2))
+	draw_circle(Vector2(0, -14), 4.0, Color(1.0, 0.0, 0.6, 0.5))
 
 func _physics_process(delta: float) -> void:
 	var direction = global_position.direction_to(target_position)

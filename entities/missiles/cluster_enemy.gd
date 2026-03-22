@@ -16,9 +16,11 @@ func _ready() -> void:
 	queue_redraw()
 
 func _draw() -> void:
-	# Roxo intenso, maior, trail pulsante
-	draw_circle(Vector2.ZERO, 16.0, Color(0.6, 0.1, 0.9))
-	draw_circle(Vector2.ZERO, 22.0, Color(0.6, 0.1, 0.9, 0.3))
+	# Neon violeta com glow pulsante
+	draw_circle(Vector2.ZERO, 28.0, Color(0.7, 0.0, 1.0, 0.08))
+	draw_circle(Vector2.ZERO, 22.0, Color(0.7, 0.0, 1.0, 0.2))
+	draw_circle(Vector2.ZERO, 16.0, Color(0.7, 0.0, 1.0, 0.85))
+	draw_circle(Vector2.ZERO, 8.0, Color(0.9, 0.6, 1.0))
 
 func _physics_process(delta: float) -> void:
 	var direction = global_position.direction_to(target_position)

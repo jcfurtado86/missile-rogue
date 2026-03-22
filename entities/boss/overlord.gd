@@ -27,13 +27,22 @@ func _ready() -> void:
 	queue_redraw()
 
 func _draw() -> void:
-	# Corpo principal — vermelho escuro grande
-	draw_circle(Vector2.ZERO, 45.0, Color(0.8, 0.1, 0.1))
-	# Aura
-	var aura_color = Color(1.0, 0.2, 0.0, 0.3) if not data.is_rage_mode() else Color(1.0, 0.0, 0.0, 0.5)
+	var is_rage := data.is_rage_mode()
+	# Glow externo massivo
+	var glow_color := Color(1.0, 0.0, 0.2, 0.15) if not is_rage else Color(1.0, 0.0, 0.0, 0.25)
+	draw_circle(Vector2.ZERO, 80.0, glow_color)
+	# Aura neon
+	var aura_color := Color(1.0, 0.0, 0.3, 0.2) if not is_rage else Color(1.0, 0.0, 0.0, 0.4)
 	draw_circle(Vector2.ZERO, 60.0, aura_color)
-	# Olho central
-	draw_circle(Vector2.ZERO, 12.0, Color(1.0, 0.9, 0.0))
+	# Corpo — outline neon vermelho
+	draw_circle(Vector2.ZERO, 45.0, Color(0.1, 0.0, 0.02))
+	draw_arc(Vector2.ZERO, 45.0, 0, TAU, 64, Color(1.0, 0.0, 0.3, 0.9), 3.0, true)
+	# Anel interno
+	draw_arc(Vector2.ZERO, 30.0, 0, TAU, 48, Color(1.0, 0.0, 0.3, 0.3), 1.5, true)
+	# Olho neon amarelo
+	draw_circle(Vector2.ZERO, 14.0, Color(1.0, 1.0, 0.0, 0.2))
+	draw_circle(Vector2.ZERO, 12.0, Color(1.0, 0.95, 0.0, 0.9))
+	draw_circle(Vector2.ZERO, 6.0, Color(1.0, 1.0, 1.0))
 
 func _physics_process(delta: float) -> void:
 	# Movimento horizontal

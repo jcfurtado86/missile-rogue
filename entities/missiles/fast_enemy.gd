@@ -20,9 +20,16 @@ func _ready() -> void:
 	queue_redraw()
 
 func _draw() -> void:
-	draw_circle(Vector2.ZERO, 9.0, Color(0.0, 0.9, 1.0))
-	draw_circle(Vector2(0, -11), 5.0, Color(0.0, 0.9, 1.0, 0.6))
-	draw_circle(Vector2(0, -20), 3.0, Color(0.0, 0.9, 1.0, 0.3))
+	# Neon verde eletrico com trail longo
+	draw_circle(Vector2.ZERO, 16.0, Color(0.2, 1.0, 0.1, 0.1))
+	draw_circle(Vector2.ZERO, 11.0, Color(0.2, 1.0, 0.1, 0.25))
+	draw_circle(Vector2.ZERO, 9.0, Color(0.2, 1.0, 0.1, 0.9))
+	draw_circle(Vector2.ZERO, 4.0, Color(0.8, 1.0, 0.8))
+	# Trail triplo
+	draw_circle(Vector2(0, -11), 6.0, Color(0.2, 1.0, 0.1, 0.3))
+	draw_circle(Vector2(0, -11), 4.0, Color(0.2, 1.0, 0.1, 0.6))
+	draw_circle(Vector2(0, -20), 4.0, Color(0.2, 1.0, 0.1, 0.15))
+	draw_circle(Vector2(0, -20), 2.0, Color(0.2, 1.0, 0.1, 0.3))
 
 func _physics_process(delta: float) -> void:
 	# Troca de alvo
