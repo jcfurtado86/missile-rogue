@@ -2,7 +2,7 @@ extends Area2D
 
 signal destroyed(enemy: Area2D)
 
-@export var speed := 250.0
+@export var speed := 100.0
 
 var direction := Vector2.DOWN
 var velocity := Vector2.ZERO
