@@ -26,14 +26,17 @@ var mountain_triangles: Array[Dictionary] = []
 # Animacao
 var anim_time := 0.0
 
-# OVNI
-var ufo_active := false
-var ufo_x := 0.0
-var ufo_y := 0.0
-var ufo_speed := 0.0
-var ufo_direction := 1.0  # 1 = direita, -1 = esquerda
-var ufo_timer := 0.0
-var ufo_next_time := 0.0
+# Flyby (OVNI ou Nyan Cat)
+enum FlybyType { UFO, NYAN }
+var flyby_active := false
+var flyby_type: FlybyType = FlybyType.UFO
+var flyby_x := 0.0
+var flyby_y := 0.0
+var flyby_speed := 0.0
+var flyby_direction := 1.0  # 1 = direita, -1 = esquerda
+var flyby_timer := 0.0
+var flyby_next_time := 0.0
+var nyan_anim := 0.0  # animacao das patas
 
 func _ready() -> void:
 	screen_size = get_viewport().get_visible_rect().size
@@ -48,7 +51,7 @@ func _ready() -> void:
 	else:
 		_generate_mountains(run_seed)
 
-	ufo_next_time = randf_range(15.0, 40.0)
+	flyby_next_time = randf_range(15.0, 40.0)
 
 # ============================================================
 # GERACAO
@@ -180,12 +183,12 @@ func _generate_mountains(run_seed: int) -> void:
 
 func _process(delta: float) -> void:
 	anim_time += delta
-	_update_ufo(delta)
+	_update_flyby(delta)
 	queue_redraw()
 
 func _draw() -> void:
 	_draw_sky()
-	_draw_ufo()
+	_draw_flyby()
 	if scenery == Scenery.CITY:
 		_draw_city()
 	else:
@@ -310,78 +313,206 @@ func _draw_mountains() -> void:
 			draw_line(a, b, glow_color, 4.0, true)
 			draw_line(a, b, outline_color, 1.0, true)
 
-# --- OVNI ---
+# --- FLYBY (OVNI / NYAN CAT) ---
 
-func _update_ufo(delta: float) -> void:
-	if ufo_active:
-		ufo_x += ufo_speed * ufo_direction * delta
+func _update_flyby(delta: float) -> void:
+	if flyby_active:
+		flyby_x += flyby_speed * flyby_direction * delta
+		nyan_anim += delta
 		# Saiu da tela — desativar
-		if ufo_direction > 0 and ufo_x > screen_size.x + MARGIN + 50:
-			ufo_active = false
-			ufo_next_time = randf_range(20.0, 50.0)
-			ufo_timer = 0.0
-		elif ufo_direction < 0 and ufo_x < -MARGIN - 50:
-			ufo_active = false
-			ufo_next_time = randf_range(20.0, 50.0)
-			ufo_timer = 0.0
+		var exit_margin := 300.0 if flyby_type == FlybyType.NYAN else 50.0
+		if flyby_direction > 0 and flyby_x > screen_size.x + MARGIN + exit_margin:
+			flyby_active = false
+			flyby_next_time = randf_range(20.0, 50.0)
+			flyby_timer = 0.0
+		elif flyby_direction < 0 and flyby_x < -MARGIN - exit_margin:
+			flyby_active = false
+			flyby_next_time = randf_range(20.0, 50.0)
+			flyby_timer = 0.0
 	else:
-		ufo_timer += delta
-		if ufo_timer >= ufo_next_time:
-			_spawn_ufo()
+		flyby_timer += delta
+		if flyby_timer >= flyby_next_time:
+			_spawn_flyby()
 
-func _spawn_ufo() -> void:
-	ufo_active = true
-	ufo_speed = randf_range(30.0, 80.0)
-	ufo_y = randf_range(horizon_y * 0.15, horizon_y * 0.55)
+func _spawn_flyby() -> void:
+	flyby_active = true
+	flyby_y = randf_range(horizon_y * 0.15, horizon_y * 0.55)
+	nyan_anim = 0.0
+	# Sorteia tipo
+	flyby_type = FlybyType.NYAN if randf() > 0.5 else FlybyType.UFO
+	if flyby_type == FlybyType.NYAN:
+		flyby_speed = randf_range(80.0, 140.0)
+	else:
+		flyby_speed = randf_range(30.0, 80.0)
 	# Direcao aleatoria
 	if randf() > 0.5:
-		ufo_direction = 1.0
-		ufo_x = -MARGIN - 40
+		flyby_direction = 1.0
+		flyby_x = -MARGIN - 100
 	else:
-		ufo_direction = -1.0
-		ufo_x = screen_size.x + MARGIN + 40
+		flyby_direction = -1.0
+		flyby_x = screen_size.x + MARGIN + 100
+
+func _draw_flyby() -> void:
+	if not flyby_active:
+		return
+	if flyby_type == FlybyType.UFO:
+		_draw_ufo()
+	else:
+		_draw_nyan()
 
 func _draw_ufo() -> void:
-	if not ufo_active:
-		return
-	var pos := Vector2(ufo_x, ufo_y)
-	# Discreto — baixa opacidade, parece distante
+	var pos := Vector2(flyby_x, flyby_y)
 	var neon := Color(0.5, 1.0, 0.8)
-	var alpha := 0.2
-	# Corpo — elipse achatada (disco)
-	var body_rx := 12.0
-	var body_ry := 4.0
+	var alpha := 0.7
+	var fill := Color(0.02, 0.06, 0.05, alpha * 0.5)
+	# Glow externo
+	draw_circle(pos, 45.0, Color(neon.r, neon.g, neon.b, 0.04))
+	# Corpo — disco achatado
+	var body_rx := 35.0
+	var body_ry := 10.0
 	var pts := PackedVector2Array()
 	var cols := PackedColorArray()
-	var fill := Color(0.02, 0.06, 0.05, alpha * 0.5)
-	for i in 12:
-		var angle := TAU * float(i) / 12
+	for i in 16:
+		var angle := TAU * float(i) / 16
 		pts.append(pos + Vector2(cos(angle) * body_rx, sin(angle) * body_ry))
 		cols.append(fill)
 	draw_polygon(pts, cols)
-	# Outline do disco
-	for i in 12:
-		var a := pts[i]
-		var b := pts[(i + 1) % 12]
-		draw_line(a, b, Color(neon.r, neon.g, neon.b, alpha), 1.0, true)
-	# Cupula — semicirculo no topo
+	for i in 16:
+		draw_line(pts[i], pts[(i + 1) % 16], Color(neon.r, neon.g, neon.b, alpha), 2.0, true)
+	# Cupula
 	var dome_pts := PackedVector2Array()
 	var dome_cols := PackedColorArray()
-	dome_pts.append(pos + Vector2(-6, 0))
+	dome_pts.append(pos + Vector2(-16, 0))
 	dome_cols.append(fill)
-	for i in 7:
-		var angle := PI + PI * float(i) / 6
-		dome_pts.append(pos + Vector2(cos(angle) * 6, sin(angle) * 3.5 - 2))
+	for i in 9:
+		var angle := PI + PI * float(i) / 8
+		dome_pts.append(pos + Vector2(cos(angle) * 16, sin(angle) * 10 - 5))
 		dome_cols.append(fill)
-	dome_pts.append(pos + Vector2(6, 0))
+	dome_pts.append(pos + Vector2(16, 0))
 	dome_cols.append(fill)
 	draw_polygon(dome_pts, dome_cols)
 	for i in dome_pts.size() - 1:
-		draw_line(dome_pts[i], dome_pts[i + 1], Color(neon.r, neon.g, neon.b, alpha * 0.7), 1.0, true)
-	# Luz pulsante embaixo
+		draw_line(dome_pts[i], dome_pts[i + 1], Color(neon.r, neon.g, neon.b, alpha * 0.8), 1.0, true)
+	# Janelas — 3 pontos
+	for wi in 3:
+		var wx := -8.0 + wi * 8.0
+		draw_circle(pos + Vector2(wx, -6), 2.0, Color(neon.r, neon.g, neon.b, alpha * 0.7))
+	# Luzes pulsantes — 3 pontos
 	var light_pulse := (sin(anim_time * 2.5) + 1.0) * 0.5
-	var light_a := lerpf(0.05, 0.2, light_pulse)
-	draw_circle(pos + Vector2(0, 3), 3.0, Color(neon.r, neon.g, neon.b, light_a))
+	var light_a := lerpf(0.2, 0.7, light_pulse)
+	for li in 3:
+		var lx := -14.0 + li * 14.0
+		draw_circle(pos + Vector2(lx, 8), 3.5, Color(neon.r, neon.g, neon.b, light_a))
+		draw_circle(pos + Vector2(lx, 8), 7.0, Color(neon.r, neon.g, neon.b, light_a * 0.25))
+
+func _draw_nyan() -> void:
+	var pos := Vector2(flyby_x, flyby_y)
+	var alpha := 0.55
+	var dir := flyby_direction
+	var bounce := sin(nyan_anim * 8.0) * 3.0  # bounce vertical
+	pos.y += bounce
+
+	# --- Rastro arco-iris (atras do gato) com fade ---
+	var rainbow_base: Array[Color] = [
+		Color(1.0, 0.0, 0.0),   # vermelho
+		Color(1.0, 0.5, 0.0),   # laranja
+		Color(1.0, 1.0, 0.0),   # amarelo
+		Color(0.2, 1.0, 0.0),   # verde
+		Color(0.0, 0.5, 1.0),   # azul
+		Color(0.5, 0.0, 1.0),   # violeta
+	]
+	var trail_len := 200.0
+	var band_h := 4.0
+	var trail_start_x := pos.x - dir * 18  # atras do corpo
+	var num_segments := 12
+	for bi in rainbow_base.size():
+		var bc := rainbow_base[bi]
+		var band_y := pos.y - (rainbow_base.size() / 2.0 - bi) * band_h
+		# Segmentos com fade progressivo
+		for si in num_segments:
+			var t0 := float(si) / num_segments
+			var t1 := float(si + 1) / num_segments
+			var fade0 := (1.0 - t0) * alpha * 0.6
+			var fade1 := (1.0 - t1) * alpha * 0.6
+			var x0 := trail_start_x - dir * trail_len * t0
+			var x1 := trail_start_x - dir * trail_len * t1
+			var y0 := band_y + sin(nyan_anim * 6.0 + bi * 0.5 + t0 * 3.0) * 2.0
+			var y1 := band_y + sin(nyan_anim * 6.0 + bi * 0.5 + t1 * 3.0) * 2.0
+			var seg_alpha := (fade0 + fade1) * 0.5
+			if seg_alpha < 0.01:
+				continue
+			# Glow
+			draw_line(Vector2(x0, y0), Vector2(x1, y1), Color(bc.r, bc.g, bc.b, seg_alpha * 0.3), band_h + 3.0, true)
+			draw_line(Vector2(x0, y0), Vector2(x1, y1), Color(bc.r, bc.g, bc.b, seg_alpha), band_h, true)
+
+	# --- Corpo do pop-tart (retangulo rosa) ---
+	var body_w := 28.0
+	var body_h := 22.0
+	var body_x := pos.x - body_w / 2.0
+	var body_y := pos.y - body_h / 2.0
+	# Glacê rosa
+	var tart_fill := Color(1.0, 0.6, 0.7, alpha)
+	draw_rect(Rect2(body_x, body_y, body_w, body_h), tart_fill)
+	draw_rect(Rect2(body_x, body_y, body_w, body_h), Color(1.0, 0.4, 0.5, alpha), false, 1.5)
+	# Sprinkles (pontinhos coloridos no tart)
+	var sprinkle_cols: Array[Color] = [
+		Color(1.0, 0.0, 0.5, alpha), Color(1.0, 1.0, 0.0, alpha),
+		Color(0.0, 1.0, 0.5, alpha), Color(0.5, 0.0, 1.0, alpha),
+	]
+	for si in 6:
+		var sx := body_x + 4.0 + fmod(float(si) * 5.3, body_w - 8.0)
+		var sy := body_y + 4.0 + fmod(float(si) * 3.7, body_h - 8.0)
+		draw_circle(Vector2(sx, sy), 1.5, sprinkle_cols[si % sprinkle_cols.size()])
+
+	# --- Cabeca do gato (lado da direcao) ---
+	var head_x := pos.x + dir * 18.0
+	var head_y := pos.y
+	var head_col := Color(0.6, 0.6, 0.6, alpha)
+	# Cabeca quadrada
+	draw_rect(Rect2(head_x - 8, head_y - 9, 16, 16), head_col)
+	draw_rect(Rect2(head_x - 8, head_y - 9, 16, 16), Color(0.8, 0.8, 0.8, alpha), false, 1.0)
+	# Orelhas (triangulos)
+	var ear_l := PackedVector2Array([
+		Vector2(head_x - 6, head_y - 9),
+		Vector2(head_x - 3, head_y - 16),
+		Vector2(head_x + 0, head_y - 9),
+	])
+	var ear_r := PackedVector2Array([
+		Vector2(head_x + 0, head_y - 9),
+		Vector2(head_x + 3, head_y - 16),
+		Vector2(head_x + 6, head_y - 9),
+	])
+	var ear_cols := PackedColorArray([head_col, head_col, head_col])
+	draw_polygon(ear_l, ear_cols)
+	draw_polygon(ear_r, ear_cols)
+	# Olhos
+	draw_circle(Vector2(head_x - 3, head_y - 2), 2.0, Color(0.1, 0.1, 0.1, alpha))
+	draw_circle(Vector2(head_x + 3, head_y - 2), 2.0, Color(0.1, 0.1, 0.1, alpha))
+	# Boca / focinho
+	draw_circle(Vector2(head_x, head_y + 2), 1.5, Color(1.0, 0.5, 0.6, alpha))
+	# Bigodes
+	var whisker_a := alpha * 0.5
+	draw_line(Vector2(head_x - 2, head_y + 1), Vector2(head_x - 12, head_y - 2), Color(0.8, 0.8, 0.8, whisker_a), 1.0, true)
+	draw_line(Vector2(head_x - 2, head_y + 2), Vector2(head_x - 12, head_y + 3), Color(0.8, 0.8, 0.8, whisker_a), 1.0, true)
+	draw_line(Vector2(head_x + 2, head_y + 1), Vector2(head_x + 12, head_y - 2), Color(0.8, 0.8, 0.8, whisker_a), 1.0, true)
+	draw_line(Vector2(head_x + 2, head_y + 2), Vector2(head_x + 12, head_y + 3), Color(0.8, 0.8, 0.8, whisker_a), 1.0, true)
+
+	# --- Patas (animadas) ---
+	var paw_col := Color(0.6, 0.6, 0.6, alpha)
+	var leg_phase := sin(nyan_anim * 10.0)
+	# Patas traseiras
+	var back_x := pos.x - dir * 10.0
+	draw_rect(Rect2(back_x - 5, pos.y + 10 + leg_phase * 3, 4, 6), paw_col)
+	draw_rect(Rect2(back_x + 2, pos.y + 10 - leg_phase * 3, 4, 6), paw_col)
+	# Patas dianteiras
+	var front_x := pos.x + dir * 6.0
+	draw_rect(Rect2(front_x - 5, pos.y + 10 - leg_phase * 3, 4, 6), paw_col)
+	draw_rect(Rect2(front_x + 2, pos.y + 10 + leg_phase * 3, 4, 6), paw_col)
+
+	# --- Cauda ---
+	var tail_x := pos.x - dir * 22.0
+	var tail_wave := sin(nyan_anim * 6.0) * 4.0
+	draw_line(Vector2(tail_x, pos.y), Vector2(tail_x - dir * 8, pos.y - 5 + tail_wave), paw_col, 3.0, true)
 
 # --- HORIZONTE ---
 

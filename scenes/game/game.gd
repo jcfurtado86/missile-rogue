@@ -184,10 +184,16 @@ func _spawn_boss() -> void:
 
 func _on_boss_defeated() -> void:
 	boss = null
-	is_game_over = true
-	hud.hide_boss_hp()
-	hud.show_victory()
-	game_over.emit()
+	flash_alpha = 1.0
+	shake_intensity = 15.0
+	shake_timer = 1.5
+	# Delay game over pra ver a explosao
+	get_tree().create_timer(2.5).timeout.connect(func():
+		is_game_over = true
+		hud.hide_boss_hp()
+		hud.show_victory()
+		game_over.emit()
+	)
 
 func _on_enemy_destroyed(_enemy: Area2D, drop_currency: String = "credits", drop_amount: int = 1) -> void:
 	threat.register_kill()
