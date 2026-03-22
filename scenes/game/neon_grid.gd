@@ -860,9 +860,10 @@ func _draw_perspective_grid() -> void:
 	var bottom := screen_size.y
 
 	var num_lines := 6
-	for i in range(-num_lines, num_lines + 1):
+	var extra_lines := 4  # linhas extras fora da tela pra cobrir todo o chao
+	for i in range(-num_lines - extra_lines, num_lines + extra_lines + 1):
 		var bottom_x := vanish.x + (float(i) / num_lines) * screen_size.x * 1.2
-		var alpha := lerpf(0.7, 0.25, absf(float(i) / num_lines))
+		var alpha := lerpf(0.7, 0.15, clampf(absf(float(i) / num_lines), 0.0, 1.0))
 		var width := 1.5 if i == 0 else 1.0
 		draw_line(vanish, Vector2(bottom_x, bottom), Color(1.0, 0.0, 0.8, alpha * 0.15), width + 4.0, true)
 		draw_line(vanish, Vector2(bottom_x, bottom), Color(1.0, 0.0, 0.8, alpha), width, true)

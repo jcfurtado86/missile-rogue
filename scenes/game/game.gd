@@ -3,7 +3,7 @@ extends Node2D
 signal game_over
 
 # Posicoes como fracao da largura da tela (0.0 a 1.0)
-const BATTERY_RATIOS := [0.25, 0.5, 0.75]
+const BATTERY_RATIOS := [0.30, 0.50, 0.70]
 const CITY_RATIOS := [0.167, 0.367, 0.633, 0.833]
 const BATTERY_Y_OFFSET := 170.0  # distancia do fundo
 const CITY_Y_OFFSET := 100.0     # distancia do fundo
