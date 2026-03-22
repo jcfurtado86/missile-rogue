@@ -39,6 +39,15 @@ var flyby_timer := 0.0
 var flyby_next_time := 0.0
 var nyan_anim := 0.0  # animacao das patas
 
+# Batalha distante no horizonte
+var distant_missiles: Array[Dictionary] = []  # misseis caindo
+var distant_explosions: Array[Dictionary] = []  # explosoes
+var distant_defenses: Array[Dictionary] = []  # misseis de defesa subindo
+const MAX_DISTANT_MISSILES := 4
+const MAX_DISTANT_EXPLOSIONS := 6
+const MAX_DISTANT_DEFENSES := 3
+var distant_spawn_timer := 0.0
+
 func _ready() -> void:
 	screen_size = get_viewport().get_visible_rect().size
 	horizon_y = screen_size.y * 0.90
@@ -201,11 +210,13 @@ func _gen_mountain_ridge(seed_val: int, min_h: float, max_h: float, envelope_str
 func _process(delta: float) -> void:
 	anim_time += delta
 	_update_flyby(delta)
+	_update_distant_battle(delta)
 	queue_redraw()
 
 func _draw() -> void:
 	_draw_sky()
 	_draw_flyby()
+	_draw_distant_battle()
 	if scenery == Scenery.CITY:
 		_draw_city()
 	else:
@@ -356,6 +367,140 @@ func _draw_mountain_ridge(layer: Array[Dictionary], base_color: Color, outline_a
 		for i in ridge.size() - 1:
 			draw_line(ridge[i], ridge[i + 1], glow_col, 5.0, true)
 			draw_line(ridge[i], ridge[i + 1], outline_col, 1.5, true)
+
+# --- BATALHA DISTANTE ---
+
+func _update_distant_battle(delta: float) -> void:
+	# Spawn de misseis inimigos caindo
+	distant_spawn_timer -= delta
+	if distant_spawn_timer <= 0.0:
+		distant_spawn_timer = randf_range(0.3, 1.2)
+		# Batalha na metade inferior do ceu
+		var battle_top := horizon_y * 0.35
+		if distant_missiles.size() < MAX_DISTANT_MISSILES:
+			var mx := randf_range(50.0, screen_size.x - 50.0)
+			var target_x := mx + randf_range(-60.0, 60.0)
+			var start_y := randf_range(battle_top, horizon_y - 60.0)
+			distant_missiles.append({
+				"x": mx, "y": start_y, "start_y": start_y,
+				"tx": target_x, "ty": horizon_y - randf_range(5.0, 20.0),
+				"speed": randf_range(40.0, 90.0),
+			})
+		# Spawn defesa — mira num missil inimigo existente
+		if distant_defenses.size() < MAX_DISTANT_DEFENSES and randf() > 0.5 and distant_missiles.size() > 0:
+			var target_m: Dictionary = distant_missiles[randi() % distant_missiles.size()]
+			var dx := randf_range(100.0, screen_size.x - 100.0)
+			# Prediz onde o missil estara quando a defesa chegar
+			var predict_t := randf_range(0.3, 0.8)
+			var m_dir := Vector2(target_m["tx"] - target_m["x"], target_m["ty"] - target_m["y"]).normalized()
+			var intercept_x: float = target_m["x"] + m_dir.x * target_m["speed"] * predict_t
+			var intercept_y: float = target_m["y"] + m_dir.y * target_m["speed"] * predict_t
+			distant_defenses.append({
+				"x": dx, "y": horizon_y - 5.0,
+				"tx": intercept_x + randf_range(-15.0, 15.0),
+				"ty": intercept_y + randf_range(-10.0, 10.0),
+				"speed": randf_range(80.0, 150.0),
+			})
+
+	# Atualiza misseis inimigos
+	var i := 0
+	while i < distant_missiles.size():
+		var m: Dictionary = distant_missiles[i]
+		var dir := Vector2(m["tx"] - m["x"], m["ty"] - m["y"]).normalized()
+		m["x"] += dir.x * m["speed"] * delta
+		m["y"] += dir.y * m["speed"] * delta
+		if m["y"] >= m["ty"]:
+			# Explode
+			distant_explosions.append({
+				"x": m["x"], "y": m["y"], "time": 0.0,
+				"max_time": randf_range(0.4, 0.8),
+				"radius": randf_range(8.0, 20.0),
+				"color": Color(1.0, 0.3, 0.2),  # vermelho/rosa
+			})
+			distant_missiles.remove_at(i)
+		else:
+			i += 1
+
+	# Atualiza defesas
+	i = 0
+	while i < distant_defenses.size():
+		var d: Dictionary = distant_defenses[i]
+		var dir := Vector2(d["tx"] - d["x"], d["ty"] - d["y"]).normalized()
+		d["x"] += dir.x * d["speed"] * delta
+		d["y"] += dir.y * d["speed"] * delta
+		if d["y"] <= d["ty"]:
+			var exp_x: float = d["x"]
+			var exp_y: float = d["y"]
+			var exp_r := randf_range(10.0, 25.0)
+			# Explode — defesa
+			distant_explosions.append({
+				"x": exp_x, "y": exp_y, "time": 0.0,
+				"max_time": randf_range(0.3, 0.6),
+				"radius": exp_r,
+				"color": Color(0.0, 0.8, 1.0),  # cyan
+			})
+			# Destroi misseis inimigos proximos da explosao
+			var mi := 0
+			while mi < distant_missiles.size():
+				var m: Dictionary = distant_missiles[mi]
+				var dist := Vector2(m["x"] - exp_x, m["y"] - exp_y).length()
+				if dist < exp_r * 2.0:
+					# Missil interceptado — explosao vermelha menor
+					distant_explosions.append({
+						"x": m["x"], "y": m["y"], "time": 0.0,
+						"max_time": randf_range(0.2, 0.4),
+						"radius": randf_range(6.0, 12.0),
+						"color": Color(1.0, 0.5, 0.2),
+					})
+					distant_missiles.remove_at(mi)
+				else:
+					mi += 1
+			distant_defenses.remove_at(i)
+		else:
+			i += 1
+
+	# Atualiza explosoes
+	i = 0
+	while i < distant_explosions.size():
+		var e: Dictionary = distant_explosions[i]
+		e["time"] += delta
+		if e["time"] >= e["max_time"]:
+			distant_explosions.remove_at(i)
+		else:
+			i += 1
+
+func _draw_distant_battle() -> void:
+	# Misseis inimigos caindo — fade-in conforme descem (saindo das nuvens)
+	for m in distant_missiles:
+		var mx: float = m["x"]
+		var my: float = m["y"]
+		var progress := clampf((my - m["start_y"]) / (m["ty"] - m["start_y"]), 0.0, 1.0)
+		var fade := clampf(progress * 3.0, 0.0, 1.0)  # opaco rapido — 33% do trajeto
+		var dir := Vector2(m["tx"] - mx, m["ty"] - my).normalized()
+		var tail := Vector2(mx - dir.x * 20.0, my - dir.y * 20.0)
+		draw_line(Vector2(mx, my), tail, Color(1.0, 0.2, 0.4, 0.3 * fade), 1.0, true)
+		draw_circle(Vector2(mx, my), 1.5, Color(1.0, 0.3, 0.5, 0.5 * fade))
+
+	# Misseis de defesa subindo (tracos cyan)
+	for d in distant_defenses:
+		var dx: float = d["x"]
+		var dy: float = d["y"]
+		var dir := Vector2(d["tx"] - dx, d["ty"] - dy).normalized()
+		var tail := Vector2(dx - dir.x * 15.0, dy - dir.y * 15.0)
+		draw_line(Vector2(dx, dy), tail, Color(0.0, 0.8, 1.0, 0.25), 1.0, true)
+		draw_circle(Vector2(dx, dy), 1.0, Color(0.0, 1.0, 1.0, 0.5))
+
+	# Explosoes
+	for e in distant_explosions:
+		var ex: float = e["x"]
+		var ey: float = e["y"]
+		var t: float = e["time"] / e["max_time"]
+		var r: float = e["radius"] * t
+		var alpha := (1.0 - t) * 0.5
+		var col: Color = e["color"]
+		draw_circle(Vector2(ex, ey), r * 1.5, Color(col.r, col.g, col.b, alpha * 0.15))
+		draw_circle(Vector2(ex, ey), r, Color(col.r, col.g, col.b, alpha * 0.4))
+		draw_circle(Vector2(ex, ey), r * 0.4, Color(1.0, 1.0, 1.0, alpha * 0.6))
 
 # --- FLYBY (OVNI / NYAN CAT) ---
 
