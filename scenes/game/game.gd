@@ -4,7 +4,7 @@ signal game_over
 
 const SCREEN_WIDTH := 1080
 const BATTERY_POSITIONS := [270.0, 540.0, 810.0]
-const CITY_POSITIONS := [170.0, 540.0, 910.0]
+const CITY_POSITIONS := [135.0, 405.0, 675.0, 945.0]
 const BATTERY_Y_OFFSET := 170.0  # distancia do fundo
 const CITY_Y_OFFSET := 100.0     # distancia do fundo
 

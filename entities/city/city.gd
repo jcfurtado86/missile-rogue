@@ -10,52 +10,79 @@ func _ready() -> void:
 
 func _draw() -> void:
 	if data.is_alive():
-		var neon := Color(0.0, 0.6, 1.0, 0.9)
-		var fill := Color(0.0, 0.05, 0.1)
-		var win_on := Color(0.0, 1.0, 1.0, 0.45)
-		var win_off := Color(0.0, 0.3, 0.4, 0.15)
-		# Glow da base
-		draw_rect(Rect2(-42, -35, 84, 55), Color(0.0, 0.5, 1.0, 0.06))
-		# Bloco principal
-		draw_rect(Rect2(-32, -18, 64, 36), fill)
-		draw_rect(Rect2(-32, -18, 64, 36), neon, false, 2.0)
-		# Torre central (mais alta)
-		draw_rect(Rect2(-12, -38, 24, 20), fill)
-		draw_rect(Rect2(-12, -38, 24, 20), neon, false, 1.5)
+		var fill := Color(0.02, 0.03, 0.06)
+		var outline := Color(0.0, 0.8, 1.0, 0.7)
+		var outline_bright := Color(0.0, 1.0, 1.0, 0.9)
+		var win_col := Color(0.0, 0.8, 1.0, 0.3)
+		var glow_col := Color(0.0, 0.6, 1.0, 0.06)
+
+		# Glow base
+		draw_circle(Vector2(0, -30), 100.0, glow_col)
+
+		# --- Predio esquerdo (baixo, largo) ---
+		draw_rect(Rect2(-82, -45, 50, 82), fill)
+		draw_line(Vector2(-82, -45), Vector2(-82, 37), outline, 2.0, true)
+		draw_line(Vector2(-32, -45), Vector2(-32, 37), outline, 2.0, true)
+		draw_line(Vector2(-82, -45), Vector2(-32, -45), outline, 2.0, true)
+		# Janelas
+		for wi in 4:
+			var wx := -76.0 + wi * 13.0
+			draw_line(Vector2(wx, -38.0), Vector2(wx, 30.0), win_col, 1.5, true)
+
+		# --- Predio central (torre alta com setback) ---
+		# Base larga
+		draw_rect(Rect2(-27, -38, 54, 75), fill)
+		draw_line(Vector2(-27, -38), Vector2(-27, 37), outline, 2.0, true)
+		draw_line(Vector2(27, -38), Vector2(27, 37), outline, 2.0, true)
+		draw_line(Vector2(-27, -38), Vector2(27, -38), outline, 2.0, true)
+		# Setback (torre estreita)
+		draw_rect(Rect2(-16, -87, 32, 49), fill)
+		draw_line(Vector2(-16, -87), Vector2(-16, -38), outline, 2.0, true)
+		draw_line(Vector2(16, -87), Vector2(16, -38), outline, 2.0, true)
+		draw_line(Vector2(-16, -87), Vector2(16, -87), outline_bright, 2.0, true)
+		# Spire no topo
+		var spire := PackedVector2Array([Vector2(-16, -87), Vector2(0, -112), Vector2(16, -87)])
+		var spire_cols := PackedColorArray([fill, fill, fill])
+		draw_polygon(spire, spire_cols)
+		draw_line(spire[0], spire[1], outline_bright, 2.0, true)
+		draw_line(spire[1], spire[2], outline_bright, 2.0, true)
 		# Antena
-		draw_line(Vector2(0, -38), Vector2(0, -48), neon, 1.5, true)
-		draw_circle(Vector2(0, -48), 2.0, Color(1.0, 0.0, 0.3, 0.8))
-		draw_circle(Vector2(0, -48), 4.0, Color(1.0, 0.0, 0.3, 0.15))
-		# Setback esquerdo
-		draw_rect(Rect2(-32, -26, 16, 8), fill)
-		draw_rect(Rect2(-32, -26, 16, 8), Color(neon.r, neon.g, neon.b, 0.5), false, 1.0)
-		# Setback direito
-		draw_rect(Rect2(16, -24, 16, 6), fill)
-		draw_rect(Rect2(16, -24, 16, 6), Color(neon.r, neon.g, neon.b, 0.5), false, 1.0)
-		# Janelas — grade no bloco principal
-		for row in 3:
-			for col in 6:
-				var wx := -28.0 + col * 10.0
-				var wy := -14.0 + row * 10.0
-				var wc := win_on if (row + col) % 3 != 0 else win_off
-				draw_rect(Rect2(wx, wy, 6, 6), wc)
+		draw_line(Vector2(0, -112), Vector2(0, -135), outline_bright, 2.0, true)
+		draw_circle(Vector2(0, -135), 4.0, Color(1.0, 0.0, 0.3, 0.9))
+		draw_circle(Vector2(0, -135), 8.0, Color(1.0, 0.0, 0.3, 0.2))
 		# Janelas da torre
-		for row in 2:
-			for col in 2:
-				var wx := -8.0 + col * 10.0
-				var wy := -34.0 + row * 9.0
-				draw_rect(Rect2(wx, wy, 6, 5), win_on)
-		# Linha decorativa horizontal
-		draw_line(Vector2(-32, -1), Vector2(32, -1), Color(neon.r, neon.g, neon.b, 0.25), 1.0, true)
+		draw_line(Vector2(-5, -80.0), Vector2(-5, -42.0), win_col, 1.5, true)
+		draw_line(Vector2(5, -80.0), Vector2(5, -42.0), win_col, 1.5, true)
+		# Janelas da base
+		for wi in 4:
+			var wx := -18.0 + wi * 11.0
+			draw_line(Vector2(wx, -30.0), Vector2(wx, 30.0), win_col, 1.5, true)
+
+		# --- Predio direito (medio, com topo plano e setback) ---
+		draw_rect(Rect2(33, -63, 48, 100), fill)
+		draw_line(Vector2(33, -63), Vector2(33, 37), outline, 2.0, true)
+		draw_line(Vector2(81, -63), Vector2(81, 37), outline, 2.0, true)
+		draw_line(Vector2(33, -63), Vector2(81, -63), outline, 2.0, true)
+		# Setback pequeno
+		draw_rect(Rect2(39, -81, 33, 18), fill)
+		draw_line(Vector2(39, -81), Vector2(72, -81), outline, 2.0, true)
+		draw_line(Vector2(39, -81), Vector2(39, -63), outline, 2.0, true)
+		draw_line(Vector2(72, -81), Vector2(72, -63), outline, 2.0, true)
+		# Janelas
+		for wi in 4:
+			var wx := 40.0 + wi * 12.0
+			draw_line(Vector2(wx, -57.0), Vector2(wx, 30.0), win_col, 1.5, true)
+
 	else:
 		# Ruinas — estrutura quebrada
-		var dead := Color(1.0, 0.0, 0.3, 0.2)
-		var fill := Color(0.04, 0.01, 0.03)
-		# Bloco destruido irregular
+		var dead := Color(0.0, 0.6, 1.0, 0.2)
+		var fill := Color(0.02, 0.03, 0.06)
+		# Silhueta destruida irregular
 		var rubble := PackedVector2Array([
-			Vector2(-30, 18), Vector2(-32, -4), Vector2(-20, -10),
-			Vector2(-8, -2), Vector2(5, -14), Vector2(18, -6),
-			Vector2(28, -8), Vector2(30, 18),
+			Vector2(-82, 37), Vector2(-82, 0), Vector2(-60, -18),
+			Vector2(-42, 3), Vector2(-27, -12), Vector2(-12, -27),
+			Vector2(8, -9), Vector2(22, -36), Vector2(42, -18),
+			Vector2(57, -27), Vector2(81, -12), Vector2(81, 37),
 		])
 		var cols := PackedColorArray()
 		for _i in rubble.size():
@@ -64,8 +91,8 @@ func _draw() -> void:
 		for i in rubble.size() - 1:
 			draw_line(rubble[i], rubble[i + 1], dead, 1.5, true)
 		# Fumaca residual
-		draw_circle(Vector2(-5, -8), 5.0, Color(1.0, 0.0, 0.3, 0.05))
-		draw_circle(Vector2(10, -10), 3.0, Color(1.0, 0.0, 0.3, 0.03))
+		draw_circle(Vector2(-12, -18), 10.0, Color(0.0, 0.5, 1.0, 0.04))
+		draw_circle(Vector2(27, -27), 7.0, Color(0.0, 0.5, 1.0, 0.03))
 
 func take_hit() -> void:
 	if not data.is_alive():
