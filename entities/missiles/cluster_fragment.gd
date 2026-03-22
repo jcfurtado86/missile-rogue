@@ -8,6 +8,7 @@ var direction := Vector2.DOWN
 var velocity := Vector2.ZERO
 const GRAVITY := 400.0
 var invuln_timer := 0.2
+var ground_y := 1950.0
 
 const BASE_COLOR := Color(0.7, 0.0, 1.0)
 const TRAIL_LENGTH := 20
@@ -24,7 +25,7 @@ func _ready() -> void:
 	velocity = direction * speed
 
 func _draw() -> void:
-	# Trail — polyline
+	# Trail
 	if trail.size() >= 2:
 		var pts := PackedVector2Array()
 		var colors := PackedColorArray()
@@ -36,9 +37,20 @@ func _draw() -> void:
 			colors.append(Color(BASE_COLOR.r, BASE_COLOR.g, BASE_COLOR.b, 0.4 * t))
 		draw_polyline_colors(pts, colors, MISSILE_RADIUS * 2.0)
 		draw_polyline_colors(pts, colors, MISSILE_RADIUS * 0.5)
-	# Neon violeta fragmento
-	draw_circle(Vector2.ZERO, MISSILE_RADIUS, Color(BASE_COLOR.r, BASE_COLOR.g, BASE_COLOR.b, 0.85))
-	draw_circle(Vector2.ZERO, 3.0, Color(0.9, 0.6, 1.0))
+	var fill := Color(0.08, 0.0, 0.12)
+	# Estilhaco angular — losango irregular
+	var shard := PackedVector2Array([
+		Vector2(0, 8),
+		Vector2(-5, 0),
+		Vector2(-2, -7),
+		Vector2(3, -6),
+		Vector2(6, 1),
+	])
+	draw_circle(Vector2.ZERO, 10.0, Color(BASE_COLOR.r, BASE_COLOR.g, BASE_COLOR.b, 0.06))
+	draw_polygon(shard, PackedColorArray([fill, fill, fill, fill, fill]))
+	for i in shard.size():
+		draw_line(shard[i], shard[(i + 1) % shard.size()], Color(BASE_COLOR.r, BASE_COLOR.g, BASE_COLOR.b, 0.85), 1.5, true)
+	draw_circle(Vector2(0, 0), 2.0, Color(0.9, 0.6, 1.0, 0.7))
 
 func _physics_process(delta: float) -> void:
 	if invuln_timer > 0.0:
@@ -53,7 +65,7 @@ func _physics_process(delta: float) -> void:
 	velocity.y += GRAVITY * delta
 	global_position += velocity * delta
 
-	if global_position.y > 1950:
+	if global_position.y > ground_y:
 		_spawn_mushroom_cloud()
 		queue_free()
 	elif global_position.x < -50 or global_position.x > 1130:

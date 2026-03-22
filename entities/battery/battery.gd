@@ -13,28 +13,56 @@ func _ready() -> void:
 	queue_redraw()
 
 func _draw() -> void:
-	var points := PackedVector2Array([Vector2(0, -35), Vector2(-25, 25), Vector2(25, 25)])
 	if ammo > 0:
-		# Glow exterior
-		var glow_points := PackedVector2Array([Vector2(0, -42), Vector2(-30, 30), Vector2(30, 30)])
-		var glow_color := Color(0.0, 1.0, 1.0, 0.1)
-		draw_polygon(glow_points, [glow_color, glow_color, glow_color])
-		# Corpo neon cyan
-		var fill := Color(0.0, 0.15, 0.2)
-		draw_polygon(points, [fill, fill, fill])
-		# Outline neon
 		var neon := Color(0.0, 1.0, 1.0, 0.9)
-		draw_line(points[0], points[1], neon, 2.0, true)
-		draw_line(points[1], points[2], neon, 2.0, true)
-		draw_line(points[2], points[0], neon, 2.0, true)
+		var fill := Color(0.0, 0.08, 0.12)
+		# Glow da base
+		draw_circle(Vector2(0, 5), 30.0, Color(0.0, 1.0, 1.0, 0.05))
+		# Base — trapezio
+		var base := PackedVector2Array([
+			Vector2(-28, 25), Vector2(-20, 10), Vector2(20, 10), Vector2(28, 25),
+		])
+		draw_polygon(base, PackedColorArray([fill, fill, fill, fill]))
+		for i in base.size():
+			draw_line(base[i], base[(i + 1) % base.size()], neon, 1.5, true)
+		# Torreta — hexagono
+		var turret := PackedVector2Array([
+			Vector2(-14, 10), Vector2(-16, 0), Vector2(-10, -8),
+			Vector2(10, -8), Vector2(16, 0), Vector2(14, 10),
+		])
+		draw_polygon(turret, PackedColorArray([fill, fill, fill, fill, fill, fill]))
+		for i in turret.size():
+			draw_line(turret[i], turret[(i + 1) % turret.size()], neon, 2.0, true)
+		# Cano — retangulo fino pra cima
+		draw_rect(Rect2(-3, -30, 6, 22), fill)
+		draw_rect(Rect2(-3, -30, 6, 22), neon, false, 1.5)
+		# Ponta do cano
+		draw_circle(Vector2(0, -30), 2.0, Color(0.0, 1.0, 1.0, 0.7))
+		# Indicador de municao — linhas internas
+		var ammo_ratio := float(ammo) / max_ammo
+		var bar_h := 10.0 * ammo_ratio
+		draw_rect(Rect2(-5, 4 - bar_h, 10, bar_h), Color(0.0, 1.0, 1.0, 0.25))
 	else:
-		# Descarregada — outline escuro
-		var dim := Color(0.0, 0.3, 0.4, 0.4)
-		var fill := Color(0.02, 0.05, 0.08)
-		draw_polygon(points, [fill, fill, fill])
-		draw_line(points[0], points[1], dim, 1.5, true)
-		draw_line(points[1], points[2], dim, 1.5, true)
-		draw_line(points[2], points[0], dim, 1.5, true)
+		var dim := Color(0.0, 0.3, 0.4, 0.3)
+		var fill := Color(0.02, 0.03, 0.05)
+		# Base dim
+		var base := PackedVector2Array([
+			Vector2(-28, 25), Vector2(-20, 10), Vector2(20, 10), Vector2(28, 25),
+		])
+		draw_polygon(base, PackedColorArray([fill, fill, fill, fill]))
+		for i in base.size():
+			draw_line(base[i], base[(i + 1) % base.size()], dim, 1.0, true)
+		# Torreta dim
+		var turret := PackedVector2Array([
+			Vector2(-14, 10), Vector2(-16, 0), Vector2(-10, -8),
+			Vector2(10, -8), Vector2(16, 0), Vector2(14, 10),
+		])
+		draw_polygon(turret, PackedColorArray([fill, fill, fill, fill, fill, fill]))
+		for i in turret.size():
+			draw_line(turret[i], turret[(i + 1) % turret.size()], dim, 1.5, true)
+		# Cano dim
+		draw_rect(Rect2(-3, -30, 6, 22), fill)
+		draw_rect(Rect2(-3, -30, 6, 22), dim, false, 1.0)
 
 func can_fire() -> bool:
 	return ammo > 0

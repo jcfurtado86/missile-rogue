@@ -28,7 +28,7 @@ func _ready() -> void:
 	_schedule_retarget()
 
 func _draw() -> void:
-	# Trail — polyline
+	# Trail
 	if trail.size() >= 2:
 		var pts := PackedVector2Array()
 		var colors := PackedColorArray()
@@ -40,10 +40,32 @@ func _draw() -> void:
 			colors.append(Color(BASE_COLOR.r, BASE_COLOR.g, BASE_COLOR.b, 0.4 * t))
 		draw_polyline_colors(pts, colors, MISSILE_RADIUS * 2.0)
 		draw_polyline_colors(pts, colors, MISSILE_RADIUS * 0.5)
-	# Neon verde eletrico
-	draw_circle(Vector2.ZERO, 11.0, Color(BASE_COLOR.r, BASE_COLOR.g, BASE_COLOR.b, 0.2))
-	draw_circle(Vector2.ZERO, MISSILE_RADIUS, Color(BASE_COLOR.r, BASE_COLOR.g, BASE_COLOR.b, 0.9))
-	draw_circle(Vector2.ZERO, 4.0, Color(0.8, 1.0, 0.8))
+	var fill := Color(0.02, 0.1, 0.02)
+	# Flecha fina e aerodinamica apontando pra baixo
+	var body := PackedVector2Array([
+		Vector2(0, 16),     # ponta aguda
+		Vector2(-5, 2),     # esq
+		Vector2(-4, -12),   # base esq
+		Vector2(4, -12),    # base dir
+		Vector2(5, 2),      # dir
+	])
+	# Asas angulares
+	var wing_l := PackedVector2Array([Vector2(-4, -4), Vector2(-14, -10), Vector2(-4, -8)])
+	var wing_r := PackedVector2Array([Vector2(4, -4), Vector2(14, -10), Vector2(4, -8)])
+	# Glow
+	draw_circle(Vector2.ZERO, 14.0, Color(BASE_COLOR.r, BASE_COLOR.g, BASE_COLOR.b, 0.08))
+	# Corpo
+	draw_polygon(body, PackedColorArray([fill, fill, fill, fill, fill]))
+	for i in body.size():
+		draw_line(body[i], body[(i + 1) % body.size()], Color(BASE_COLOR.r, BASE_COLOR.g, BASE_COLOR.b, 0.9), 1.5, true)
+	# Asas
+	draw_polygon(wing_l, PackedColorArray([fill, fill, fill]))
+	draw_polygon(wing_r, PackedColorArray([fill, fill, fill]))
+	for i in 3:
+		draw_line(wing_l[i], wing_l[(i + 1) % 3], Color(BASE_COLOR.r, BASE_COLOR.g, BASE_COLOR.b, 0.7), 1.0, true)
+		draw_line(wing_r[i], wing_r[(i + 1) % 3], Color(BASE_COLOR.r, BASE_COLOR.g, BASE_COLOR.b, 0.7), 1.0, true)
+	# Ponta
+	draw_circle(Vector2(0, 14), 1.5, Color(0.8, 1.0, 0.8, 0.9))
 
 func _physics_process(delta: float) -> void:
 	# Trail — so grava se moveu distancia minima

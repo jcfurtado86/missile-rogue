@@ -24,7 +24,7 @@ func _ready() -> void:
 	area_entered.connect(_on_area_entered)
 
 func _draw() -> void:
-	# Trail — polyline
+	# Trail
 	if trail.size() >= 2:
 		var pts := PackedVector2Array()
 		var colors := PackedColorArray()
@@ -36,10 +36,37 @@ func _draw() -> void:
 			colors.append(Color(BASE_COLOR.r, BASE_COLOR.g, BASE_COLOR.b, 0.35 * t))
 		draw_polyline_colors(pts, colors, MISSILE_RADIUS * 2.0)
 		draw_polyline_colors(pts, colors, MISSILE_RADIUS * 0.5)
-	# Neon violeta com glow
-	draw_circle(Vector2.ZERO, 22.0, Color(BASE_COLOR.r, BASE_COLOR.g, BASE_COLOR.b, 0.15))
-	draw_circle(Vector2.ZERO, MISSILE_RADIUS, Color(BASE_COLOR.r, BASE_COLOR.g, BASE_COLOR.b, 0.85))
-	draw_circle(Vector2.ZERO, 8.0, Color(0.9, 0.6, 1.0))
+	var fill := Color(0.08, 0.0, 0.12)
+	# Bomba grande — hexagonal arredondada apontando pra baixo
+	var body := PackedVector2Array([
+		Vector2(0, 18),      # ponta
+		Vector2(-10, 8),     # esq baixo
+		Vector2(-12, -4),    # esq meio
+		Vector2(-8, -14),    # esq topo
+		Vector2(8, -14),     # dir topo
+		Vector2(12, -4),     # dir meio
+		Vector2(10, 8),      # dir baixo
+	])
+	# Estabilizadores traseiros
+	var stab_l := PackedVector2Array([Vector2(-8, -10), Vector2(-18, -18), Vector2(-6, -14)])
+	var stab_r := PackedVector2Array([Vector2(8, -10), Vector2(18, -18), Vector2(6, -14)])
+	# Glow grande
+	draw_circle(Vector2.ZERO, 24.0, Color(BASE_COLOR.r, BASE_COLOR.g, BASE_COLOR.b, 0.1))
+	# Corpo
+	draw_polygon(body, PackedColorArray([fill, fill, fill, fill, fill, fill, fill]))
+	for i in body.size():
+		draw_line(body[i], body[(i + 1) % body.size()], Color(BASE_COLOR.r, BASE_COLOR.g, BASE_COLOR.b, 0.85), 2.0, true)
+	# Estabilizadores
+	draw_polygon(stab_l, PackedColorArray([fill, fill, fill]))
+	draw_polygon(stab_r, PackedColorArray([fill, fill, fill]))
+	for i in 3:
+		draw_line(stab_l[i], stab_l[(i + 1) % 3], Color(BASE_COLOR.r, BASE_COLOR.g, BASE_COLOR.b, 0.6), 1.0, true)
+		draw_line(stab_r[i], stab_r[(i + 1) % 3], Color(BASE_COLOR.r, BASE_COLOR.g, BASE_COLOR.b, 0.6), 1.0, true)
+	# Indicador de payload — linhas internas
+	draw_line(Vector2(-6, -2), Vector2(6, -2), Color(BASE_COLOR.r, BASE_COLOR.g, BASE_COLOR.b, 0.3), 1.0, true)
+	draw_line(Vector2(-5, 4), Vector2(5, 4), Color(BASE_COLOR.r, BASE_COLOR.g, BASE_COLOR.b, 0.2), 1.0, true)
+	# Core
+	draw_circle(Vector2(0, -2), 3.0, Color(0.9, 0.6, 1.0, 0.6))
 
 func _physics_process(delta: float) -> void:
 	# Trail — so grava se moveu distancia minima
@@ -89,4 +116,5 @@ func _spawn_fragments() -> void:
 		var base_angle = PI / 2.0
 		var angle = base_angle + lerpf(-angle_spread / 2, angle_spread / 2, float(i) / max(fragment_count - 1, 1))
 		frag.direction = Vector2.from_angle(angle)
+		frag.ground_y = target_position.y
 		get_parent().add_child(frag)

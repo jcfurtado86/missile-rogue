@@ -26,6 +26,15 @@ var mountain_triangles: Array[Dictionary] = []
 # Animacao
 var anim_time := 0.0
 
+# OVNI
+var ufo_active := false
+var ufo_x := 0.0
+var ufo_y := 0.0
+var ufo_speed := 0.0
+var ufo_direction := 1.0  # 1 = direita, -1 = esquerda
+var ufo_timer := 0.0
+var ufo_next_time := 0.0
+
 func _ready() -> void:
 	screen_size = get_viewport().get_visible_rect().size
 	horizon_y = screen_size.y * 0.90
@@ -38,6 +47,8 @@ func _ready() -> void:
 		_generate_city(run_seed)
 	else:
 		_generate_mountains(run_seed)
+
+	ufo_next_time = randf_range(15.0, 40.0)
 
 # ============================================================
 # GERACAO
@@ -169,10 +180,12 @@ func _generate_mountains(run_seed: int) -> void:
 
 func _process(delta: float) -> void:
 	anim_time += delta
+	_update_ufo(delta)
 	queue_redraw()
 
 func _draw() -> void:
 	_draw_sky()
+	_draw_ufo()
 	if scenery == Scenery.CITY:
 		_draw_city()
 	else:
@@ -296,6 +309,79 @@ func _draw_mountains() -> void:
 				continue
 			draw_line(a, b, glow_color, 4.0, true)
 			draw_line(a, b, outline_color, 1.0, true)
+
+# --- OVNI ---
+
+func _update_ufo(delta: float) -> void:
+	if ufo_active:
+		ufo_x += ufo_speed * ufo_direction * delta
+		# Saiu da tela — desativar
+		if ufo_direction > 0 and ufo_x > screen_size.x + MARGIN + 50:
+			ufo_active = false
+			ufo_next_time = randf_range(20.0, 50.0)
+			ufo_timer = 0.0
+		elif ufo_direction < 0 and ufo_x < -MARGIN - 50:
+			ufo_active = false
+			ufo_next_time = randf_range(20.0, 50.0)
+			ufo_timer = 0.0
+	else:
+		ufo_timer += delta
+		if ufo_timer >= ufo_next_time:
+			_spawn_ufo()
+
+func _spawn_ufo() -> void:
+	ufo_active = true
+	ufo_speed = randf_range(30.0, 80.0)
+	ufo_y = randf_range(horizon_y * 0.15, horizon_y * 0.55)
+	# Direcao aleatoria
+	if randf() > 0.5:
+		ufo_direction = 1.0
+		ufo_x = -MARGIN - 40
+	else:
+		ufo_direction = -1.0
+		ufo_x = screen_size.x + MARGIN + 40
+
+func _draw_ufo() -> void:
+	if not ufo_active:
+		return
+	var pos := Vector2(ufo_x, ufo_y)
+	# Discreto — baixa opacidade, parece distante
+	var neon := Color(0.5, 1.0, 0.8)
+	var alpha := 0.2
+	# Corpo — elipse achatada (disco)
+	var body_rx := 12.0
+	var body_ry := 4.0
+	var pts := PackedVector2Array()
+	var cols := PackedColorArray()
+	var fill := Color(0.02, 0.06, 0.05, alpha * 0.5)
+	for i in 12:
+		var angle := TAU * float(i) / 12
+		pts.append(pos + Vector2(cos(angle) * body_rx, sin(angle) * body_ry))
+		cols.append(fill)
+	draw_polygon(pts, cols)
+	# Outline do disco
+	for i in 12:
+		var a := pts[i]
+		var b := pts[(i + 1) % 12]
+		draw_line(a, b, Color(neon.r, neon.g, neon.b, alpha), 1.0, true)
+	# Cupula — semicirculo no topo
+	var dome_pts := PackedVector2Array()
+	var dome_cols := PackedColorArray()
+	dome_pts.append(pos + Vector2(-6, 0))
+	dome_cols.append(fill)
+	for i in 7:
+		var angle := PI + PI * float(i) / 6
+		dome_pts.append(pos + Vector2(cos(angle) * 6, sin(angle) * 3.5 - 2))
+		dome_cols.append(fill)
+	dome_pts.append(pos + Vector2(6, 0))
+	dome_cols.append(fill)
+	draw_polygon(dome_pts, dome_cols)
+	for i in dome_pts.size() - 1:
+		draw_line(dome_pts[i], dome_pts[i + 1], Color(neon.r, neon.g, neon.b, alpha * 0.7), 1.0, true)
+	# Luz pulsante embaixo
+	var light_pulse := (sin(anim_time * 2.5) + 1.0) * 0.5
+	var light_a := lerpf(0.05, 0.2, light_pulse)
+	draw_circle(pos + Vector2(0, 3), 3.0, Color(neon.r, neon.g, neon.b, light_a))
 
 # --- HORIZONTE ---
 

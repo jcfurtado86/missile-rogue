@@ -178,6 +178,7 @@ func _spawn_boss() -> void:
 	boss_spawned = true
 	boss = BossScene.instantiate()
 	boss.position.x = 540.0
+	boss.ground_y = screen_height - CITY_Y_OFFSET
 	boss.boss_defeated.connect(_on_boss_defeated)
 	add_child(boss)
 

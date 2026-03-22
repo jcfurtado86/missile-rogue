@@ -24,11 +24,33 @@ func _ready() -> void:
 
 func _draw() -> void:
 	if not arrived:
-		# Neon cyan missile com glow
-		draw_circle(Vector2.ZERO, 14.0, Color(0.0, 1.0, 1.0, 0.1))
-		draw_circle(Vector2.ZERO, 10.0, Color(0.0, 1.0, 1.0, 0.2))
-		draw_circle(Vector2.ZERO, 7.0, Color(0.0, 1.0, 1.0, 0.9))
-		draw_circle(Vector2.ZERO, 3.0, Color(1.0, 1.0, 1.0))
+		var neon := Color(0.0, 1.0, 1.0)
+		var fill := Color(0.0, 0.1, 0.15)
+		# Forma de flecha/diamante apontando pra cima
+		var body := PackedVector2Array([
+			Vector2(0, -14),   # ponta
+			Vector2(6, 0),     # direita
+			Vector2(4, 10),    # base dir
+			Vector2(-4, 10),   # base esq
+			Vector2(-6, 0),    # esquerda
+		])
+		# Aletas traseiras
+		var fin_l := PackedVector2Array([Vector2(-4, 8), Vector2(-10, 14), Vector2(-3, 12)])
+		var fin_r := PackedVector2Array([Vector2(4, 8), Vector2(10, 14), Vector2(3, 12)])
+		# Glow
+		draw_circle(Vector2(0, 0), 16.0, Color(neon.r, neon.g, neon.b, 0.08))
+		# Corpo
+		draw_polygon(body, PackedColorArray([fill, fill, fill, fill, fill]))
+		for i in body.size():
+			draw_line(body[i], body[(i + 1) % body.size()], Color(neon.r, neon.g, neon.b, 0.9), 1.5, true)
+		# Aletas
+		draw_polygon(fin_l, PackedColorArray([fill, fill, fill]))
+		draw_polygon(fin_r, PackedColorArray([fill, fill, fill]))
+		for i in 3:
+			draw_line(fin_l[i], fin_l[(i + 1) % 3], Color(neon.r, neon.g, neon.b, 0.6), 1.0, true)
+			draw_line(fin_r[i], fin_r[(i + 1) % 3], Color(neon.r, neon.g, neon.b, 0.6), 1.0, true)
+		# Ponta brilhante
+		draw_circle(Vector2(0, -12), 2.5, Color(1.0, 1.0, 1.0, 0.9))
 	else:
 		# Explosao com cores piscando
 		var idx := int(explosion_time * 20.0) % EXPLOSION_COLORS.size()

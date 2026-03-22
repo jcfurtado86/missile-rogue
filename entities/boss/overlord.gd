@@ -18,6 +18,8 @@ var burst_count := 5
 var burst_count_rage := 8
 
 var BurstMissileScene := preload("res://entities/missiles/basic_enemy.tscn")
+var BossExplosionScene := preload("res://entities/boss/boss_explosion.tscn")
+var ground_y := 1820.0
 
 func _ready() -> void:
 	add_to_group("enemy")
@@ -80,9 +82,11 @@ func _fire_burst() -> void:
 		missile.position = global_position + Vector2(0, 45)
 		# Misseis do boss nao contam como kill nem dropam moeda
 		missile.speed = 300.0 if data.is_rage_mode() else 200.0
-		# Setar target bem longe na direcao do angulo pra ele ir reto
+		# Target na direcao do angulo, limitado ao chao
 		var direction = Vector2.from_angle(angle)
-		missile.target_position = global_position + direction * 2000.0
+		var far_target = global_position + direction * 2000.0
+		far_target.y = minf(far_target.y, ground_y)
+		missile.target_position = far_target
 		get_parent().add_child(missile)
 
 func _on_area_entered(area: Area2D) -> void:
