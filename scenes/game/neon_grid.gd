@@ -206,10 +206,23 @@ func _gen_mountain_ridge(seed_val: int, min_h: float, max_h: float, envelope_str
 		var ly := rng.randf_range(top_at_x + 5.0, horizon_y - 5.0)
 		lights.append(Vector2(lx, ly))
 
+	# Torres no skyline (Space Needle, antenas, domos)
+	var tower_list: Array[Dictionary] = []
+	var num_towers := rng.randi_range(3, 6)
+	for _ti in num_towers:
+		var ri := rng.randi_range(1, ridge.size() - 2)
+		var base_pt := ridge[ri]
+		if base_pt.y >= horizon_y - 15.0:
+			continue
+		var tower_h := rng.randf_range(15.0, 50.0)
+		var tower_type := rng.randi_range(0, 2)
+		tower_list.append({"pos": base_pt, "height": tower_h, "type": tower_type})
+
 	result.append({
 		"ridge": ridge,
 		"facets": facets,
 		"lights": lights,
+		"towers": tower_list,
 	})
 	return result
 
@@ -370,6 +383,42 @@ func _draw_mountain_ridge(layer: Array[Dictionary], base_color: Color, outline_a
 			draw_circle(lp, 4.0, Color(base_color.r, base_color.g, base_color.b, light_alpha * 0.15))
 			draw_circle(lp, 2.0, Color(base_color.r, base_color.g, base_color.b, light_alpha * 0.5))
 			draw_circle(lp, 1.0, Color(1.0, 0.8, 0.9, light_alpha))
+
+		# Torres no skyline
+		var tower_col := Color(base_color.r, base_color.g, base_color.b, outline_alpha * 0.7)
+		var tower_glow := Color(base_color.r, base_color.g, base_color.b, glow_alpha * 0.5)
+		var tower_list: Array = entry.get("towers", [])
+		for tw in tower_list:
+			var pos: Vector2 = tw["pos"]
+			var th: float = tw["height"]
+			var tt: int = tw["type"]
+			var top := pos + Vector2(0, -th)
+			match tt:
+				0:  # Space Needle — haste fina + disco + antena
+					draw_line(pos, top, tower_col, 1.5, true)
+					var dw := th * 0.3
+					draw_line(top + Vector2(-dw, 0), top + Vector2(dw, 0), tower_col, 1.5, true)
+					draw_line(top + Vector2(-dw, 0), top + Vector2(-dw * 0.6, 3), tower_col, 1.0, true)
+					draw_line(top + Vector2(dw, 0), top + Vector2(dw * 0.6, 3), tower_col, 1.0, true)
+					draw_line(top, top + Vector2(0, -th * 0.2), tower_col, 1.0, true)
+					draw_circle(top + Vector2(0, -th * 0.2), 1.5, tower_glow)
+				1:  # Torre com domo
+					draw_line(pos, top + Vector2(0, 4), tower_col, 2.0, true)
+					var dr := th * 0.15
+					var dome_pts: PackedVector2Array = []
+					for di in 7:
+						var angle := PI + float(di) / 6.0 * PI
+						dome_pts.append(top + Vector2(cos(angle) * dr, sin(angle) * dr + 4))
+					for di in dome_pts.size() - 1:
+						draw_line(dome_pts[di], dome_pts[di + 1], tower_col, 1.0, true)
+				2:  # Antena com travessas
+					draw_line(pos, top, tower_col, 1.0, true)
+					for bi in 3:
+						var bt := 0.3 + float(bi) * 0.2
+						var bp := pos.lerp(top, bt)
+						var bw := lerpf(th * 0.15, th * 0.06, bt)
+						draw_line(bp + Vector2(-bw, 0), bp + Vector2(bw, 0), tower_col, 1.0, true)
+					draw_circle(top, 1.5, tower_glow)
 
 		# Outline neon na ridge (silhueta superior — por cima de tudo)
 		var glow_col := Color(base_color.r, base_color.g, base_color.b, glow_alpha)
