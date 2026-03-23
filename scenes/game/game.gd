@@ -2,9 +2,6 @@ extends Node2D
 
 signal game_over
 
-# Posicoes como fracao da largura da tela (0.0 a 1.0)
-const BATTERY_RATIOS := [0.30, 0.50, 0.70]
-const CITY_RATIOS := [0.167, 0.367, 0.633, 0.833]
 const BATTERY_Y_OFFSET := 170.0  # distancia do fundo
 const CITY_Y_OFFSET := 100.0     # distancia do fundo
 
@@ -21,6 +18,7 @@ var spawner := SpawnSystem.new()
 var special := SpecialSystem.new()
 var currency: CurrencySystem
 var upgrade_system: UpgradeSystem
+var stats: PlayerStats
 var ad_system = null
 var spawn_timer := 0.0
 var run_earnings := {"credits": 0, "crystals": 0, "void": 0}
@@ -40,15 +38,8 @@ var hud: CanvasLayer
 var boss: Area2D = null
 var boss_spawned := false
 
-# Efeitos calculados dos upgrades
-var missile_speed_mult := 1.0
-var explosion_radius_mult := 1.0
-var credits_mult := 1.0
-var base_ammo := 10
-
 func _ready() -> void:
 	screen_height = get_viewport().get_visible_rect().size.y
-	_apply_upgrades()
 
 	var hud_scene := preload("res://scenes/game/hud.tscn")
 	hud = hud_scene.instantiate()
@@ -57,35 +48,26 @@ func _ready() -> void:
 	screen_width = get_viewport().get_visible_rect().size.x
 	var battery_y := screen_height - BATTERY_Y_OFFSET
 	var battery_scene := preload("res://entities/battery/battery.tscn")
-	for ratio in BATTERY_RATIOS:
+	for ratio in stats.get_battery_ratios():
 		var battery = battery_scene.instantiate()
 		battery.position = Vector2(ratio * screen_width, battery_y)
-		battery.max_ammo = base_ammo
-		battery.ammo = base_ammo
+		battery.max_magazines = stats.max_magazines
+		battery.magazine_size = stats.magazine_size
+		battery.reload_time = stats.reload_time
 		add_child(battery)
 		batteries.append(battery)
 
 	var city_y := screen_height - CITY_Y_OFFSET
 	var city_scene := preload("res://entities/city/city.tscn")
-	for ratio in CITY_RATIOS:
+	for ratio in stats.get_city_ratios():
 		var city = city_scene.instantiate()
 		city.position = Vector2(ratio * screen_width, city_y)
 		city.city_destroyed.connect(_on_city_destroyed.bind(city))
 		add_child(city)
 		cities.append(city)
 
-	if upgrade_system:
-		var head_start = upgrade_system.get_effect("head_start")
-		if head_start > 0:
-			currency.add("credits", int(head_start))
-
-func _apply_upgrades() -> void:
-	if not upgrade_system:
-		return
-	missile_speed_mult = 1.0 + upgrade_system.get_effect("hyper_drive")
-	explosion_radius_mult = 1.0 + upgrade_system.get_effect("warhead")
-	credits_mult = 1.0 + upgrade_system.get_effect("profit_matrix")
-	base_ammo = 10 + int(upgrade_system.get_effect("ammo_pack"))
+	if stats and stats.head_start_credits > 0:
+		currency.add("credits", stats.head_start_credits)
 
 func _physics_process(delta: float) -> void:
 	# Screen effects rodam sempre
@@ -124,7 +106,7 @@ func _fire_at(target: Vector2) -> void:
 			closest_battery = battery
 
 	if closest_battery:
-		closest_battery.fire(target, PlayerMissileScene, missile_speed_mult, explosion_radius_mult)
+		closest_battery.fire(target, PlayerMissileScene, stats.missile_speed_mult, stats.explosion_radius_mult)
 
 func _handle_spawning(delta: float) -> void:
 	spawn_timer -= delta
@@ -201,7 +183,8 @@ func _on_boss_defeated() -> void:
 func _on_enemy_destroyed(_enemy: Area2D, drop_currency: String = "credits", drop_amount: int = 1) -> void:
 	threat.register_kill()
 	if drop_currency != "" and drop_amount > 0:
-		var amount = int(drop_amount * credits_mult) if drop_currency == "credits" else drop_amount
+		var mult: float = stats.credits_mult if drop_currency == "credits" else (stats.crystals_mult if drop_currency == "crystals" else stats.void_mult)
+		var amount = int(drop_amount * mult)
 		currency.add(drop_currency, amount)
 		run_earnings[drop_currency] += amount
 
@@ -254,6 +237,12 @@ func _do_revive() -> void:
 			enemy.queue_free()
 	for frag in get_tree().get_nodes_in_group("fragment"):
 		frag.queue_free()
+	# Recarrega pentes de todas as baterias
+	for battery in batteries:
+		battery.magazines = stats.max_magazines
+		battery.magazine_ammo = stats.magazine_size
+		battery.reloading = false
+		battery.queue_redraw()
 	# Revive a ultima cidade destruida
 	while not destroyed_order.is_empty():
 		var city = destroyed_order.pop_back()

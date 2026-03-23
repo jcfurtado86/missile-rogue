@@ -16,9 +16,11 @@ func _ready() -> void:
 func _start_game() -> void:
 	_clear_current()
 	ad_system.reset_run()
+	var stats = PlayerStats.new(upgrade_system)
 	var game = preload("res://scenes/game/game.tscn").instantiate()
 	game.currency = currency
 	game.upgrade_system = upgrade_system
+	game.stats = stats
 	game.ad_system = ad_system
 	game.game_over.connect(_on_game_over)
 	add_child(game)

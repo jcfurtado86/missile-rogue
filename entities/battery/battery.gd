@@ -1,9 +1,11 @@
 extends Node2D
 
-@export var max_ammo := 10
+@export var max_magazines := 2
+@export var magazine_size := 3
 @export var reload_time := 3.0
 
-var ammo: int
+var magazines: int
+var magazine_ammo: int
 var reloading := false
 
 @onready var reload_timer: Timer = $ReloadTimer
@@ -18,7 +20,8 @@ var vanish_lx := 0.0  # vanish point em coords locais
 var persp_ratio := 1.0  # ratio topo/base
 
 func _ready() -> void:
-	ammo = max_ammo
+	magazines = max_magazines - 1  # 1 pente ja esta carregado na arma
+	magazine_ammo = magazine_size
 	var screen := get_viewport().get_visible_rect().size
 	var vanish_x := screen.x / 2.0
 	var horizon_y := screen.y * 0.9
@@ -56,7 +59,7 @@ func _draw_quad_outline(quad: PackedVector2Array, color: Color, width: float) ->
 		draw_line(quad[i], quad[(i + 1) % quad.size()], color, width, true)
 
 func _draw() -> void:
-	if ammo > 0:
+	if magazine_ammo > 0 or magazines > 0:
 		_draw_armed()
 	else:
 		_draw_empty()
@@ -100,8 +103,8 @@ func _draw_armed() -> void:
 		draw_line(_persp(Vector2(-SILO_W + 3, ly)), _persp(Vector2(-gap - 2, ly)), Color(0.0, 0.8, 1.0, 0.2), 1.0, true)
 		draw_line(_persp(Vector2(gap + 2, ly)), _persp(Vector2(SILO_W - 3, ly)), Color(0.0, 0.8, 1.0, 0.2), 1.0, true)
 
-	# Barra de municao
-	var ammo_ratio := float(ammo) / max_ammo
+	# Barra de municao (pente atual)
+	var ammo_ratio := float(magazine_ammo) / magazine_size
 	var bar_y := bot_y + 6.0
 	var bar_h := 10.0
 	var bar_tl := _persp(Vector2(-SILO_W + 2, bar_y))
@@ -117,17 +120,35 @@ func _draw_armed() -> void:
 	# Preenchimento — cor varia de vermelho > amarelo > verde
 	var bar_color: Color
 	if ammo_ratio < 0.5:
-		var t := ammo_ratio * 2.0  # 0..1
-		bar_color = Color(1.0, t * 0.9, 0.0, 0.8)  # vermelho -> amarelo
+		var t := ammo_ratio * 2.0
+		bar_color = Color(1.0, t * 0.9, 0.0, 0.8)
 	else:
-		var t := (ammo_ratio - 0.5) * 2.0  # 0..1
-		bar_color = Color(1.0 - t, 0.9 + t * 0.1, 0.0, 0.8)  # amarelo -> verde
+		var t := (ammo_ratio - 0.5) * 2.0
+		bar_color = Color(1.0 - t, 0.9 + t * 0.1, 0.0, 0.8)
 	var filled_tr := bar_tl.lerp(bar_tr, ammo_ratio)
 	var filled_br := bar_bl.lerp(bar_br, ammo_ratio)
 	draw_polygon(PackedVector2Array([bar_tl, filled_tr, filled_br, bar_bl]),
 		PackedColorArray([bar_color, bar_color, bar_color, bar_color]))
 	# Outline
 	_draw_quad_outline(PackedVector2Array([bar_tl, bar_tr, bar_br, bar_bl]), Color(0.0, 1.0, 1.0, 0.6), 2.0)
+
+	# Indicador de pentes restantes
+	var mag_y := bar_y + bar_h + 4.0
+	var mag_w := (SILO_W * 2.0 - 4.0) / max_magazines
+	for mi in max_magazines:
+		var mx := -SILO_W + 2.0 + mi * mag_w + 1.0
+		var mw := mag_w - 2.0
+		var mtl := _persp(Vector2(mx, mag_y))
+		var mtr := _persp(Vector2(mx + mw, mag_y))
+		var mbl := _persp(Vector2(mx, mag_y + 4.0))
+		var mbr := _persp(Vector2(mx + mw, mag_y + 4.0))
+		var mag_col: Color
+		if mi < magazines:
+			mag_col = Color(0.0, 1.0, 1.0, 0.5)
+		else:
+			mag_col = Color(0.0, 0.2, 0.3, 0.2)
+		draw_polygon(PackedVector2Array([mtl, mtr, mbr, mbl]),
+			PackedColorArray([mag_col, mag_col, mag_col, mag_col]))
 
 func _draw_empty() -> void:
 	var dim := Color(0.0, 0.3, 0.4, 0.3)
@@ -160,17 +181,30 @@ func _draw_empty() -> void:
 		PackedColorArray([Color(0.0, 0.2, 0.3, 0.15), Color(0.0, 0.2, 0.3, 0.15), Color(0.0, 0.2, 0.3, 0.15), Color(0.0, 0.2, 0.3, 0.15)]))
 	_draw_quad_outline(PackedVector2Array([bar_tl, bar_tr, bar_br, bar_bl]), Color(0.0, 0.3, 0.4, 0.25), 1.5)
 
+	# Indicador de pentes (todos vazios)
+	var mag_y := bar_y + bar_h + 4.0
+	var mag_w := (SILO_W * 2.0 - 4.0) / max_magazines
+	for mi in max_magazines:
+		var mx := -SILO_W + 2.0 + mi * mag_w + 1.0
+		var mw := mag_w - 2.0
+		var mtl := _persp(Vector2(mx, mag_y))
+		var mtr := _persp(Vector2(mx + mw, mag_y))
+		var mbl := _persp(Vector2(mx, mag_y + 4.0))
+		var mbr := _persp(Vector2(mx + mw, mag_y + 4.0))
+		draw_polygon(PackedVector2Array([mtl, mtr, mbr, mbl]),
+			PackedColorArray([Color(0.0, 0.2, 0.3, 0.2), Color(0.0, 0.2, 0.3, 0.2), Color(0.0, 0.2, 0.3, 0.2), Color(0.0, 0.2, 0.3, 0.2)]))
+
 # ============================================================
 # INTERFACE PUBLICA
 # ============================================================
 
 func can_fire() -> bool:
-	return ammo > 0
+	return magazine_ammo > 0
 
 func fire(target: Vector2, missile_scene: PackedScene, speed_mult: float = 1.0, radius_mult: float = 1.0) -> void:
-	if ammo <= 0:
+	if magazine_ammo <= 0:
 		return
-	ammo -= 1
+	magazine_ammo -= 1
 	var missile = missile_scene.instantiate()
 	missile.global_position = global_position
 	missile.target = target
@@ -179,14 +213,17 @@ func fire(target: Vector2, missile_scene: PackedScene, speed_mult: float = 1.0, 
 	get_tree().current_scene.add_child(missile)
 
 	queue_redraw()
-	if ammo <= 0 and not reloading:
+	if magazine_ammo <= 0 and not reloading:
 		_start_reload()
 
 func _start_reload() -> void:
+	if magazines <= 0:
+		return
+	magazines -= 1
 	reloading = true
 	reload_timer.start(reload_time)
 
 func _on_reload_timer_timeout() -> void:
-	ammo = max_ammo
+	magazine_ammo = magazine_size
 	reloading = false
 	queue_redraw()
