@@ -1,8 +1,16 @@
 class_name AdSystem
 extends RefCounted
 
-const REVIVE_AD_ID := "ca-app-pub-9962376365131216/9375567454"
-const DOUBLE_AD_ID := "ca-app-pub-9962376365131216/9519037686"
+# IDs de producao
+const REVIVE_AD_ID_PROD := "ca-app-pub-9962376365131216/9375567454"
+const DOUBLE_AD_ID_PROD := "ca-app-pub-9962376365131216/9519037686"
+# IDs de teste do Google
+const REVIVE_AD_ID_TEST := "ca-app-pub-3940256099942544/5224354917"
+const DOUBLE_AD_ID_TEST := "ca-app-pub-3940256099942544/5224354917"
+
+# Troca pra _PROD quando for publicar
+var REVIVE_AD_ID := REVIVE_AD_ID_PROD
+var DOUBLE_AD_ID := DOUBLE_AD_ID_PROD
 
 var revive_used := false
 var shop_ads_shown := 0

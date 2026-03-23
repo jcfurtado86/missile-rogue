@@ -291,6 +291,8 @@ func _create_circle_button(id: String, pos: Vector2, color: Color, callback: Cal
 	else:
 		freeze_circle = draw_ctrl
 		freeze_circle.set_meta("btn", btn)
+		freeze_circle.visible = false
+		btn.visible = false
 
 func _draw_nova_icon(ctrl: Control, center: Vector2, color: Color) -> void:
 	# Estrela de explosao — 8 pontas
@@ -948,21 +950,20 @@ func hide_double_offer() -> void:
 	_dismiss_popup()
 
 func show_ad_unavailable() -> void:
+	if not current_popup:
+		return
 	var red := Color(1.0, 0.3, 0.2)
 	var label := Label.new()
 	label.text = get_node("/root/Tr").t("AD_UNAVAILABLE")
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 28)
+	label.add_theme_font_size_override("font_size", 22)
 	label.add_theme_color_override("font_color", red)
-	label.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
-	label.offset_top = 200.0
-	label.offset_left = -300.0
-	label.offset_right = 300.0
-	add_child(label)
-	var tw := label.create_tween()
-	tw.tween_interval(2.0)
-	tw.tween_property(label, "modulate:a", 0.0, 0.5)
-	tw.tween_callback(label.queue_free)
+	label.offset_left = 30.0
+	label.offset_right = current_popup.offset_right - current_popup.offset_left - 30.0
+	label.offset_top = current_popup.offset_bottom - current_popup.offset_top - 50.0
+	label.offset_bottom = current_popup.offset_bottom - current_popup.offset_top - 20.0
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	current_popup.add_child(label)
 
 # ============================================================
 # POPUP CALLBACKS
@@ -972,7 +973,6 @@ func set_earnings(earnings: Dictionary) -> void:
 	cached_earnings = earnings
 
 func _on_revive_pressed() -> void:
-	_dismiss_popup()
 	var game = get_parent()
 	if game.has_method("revive"):
 		game.revive()
@@ -1044,7 +1044,6 @@ func show_game_over_final() -> void:
 	_show_popup(panel)
 
 func _on_double_pressed() -> void:
-	_dismiss_popup()
 	var game = get_parent()
 	if game.has_method("double_run_earnings"):
 		game.double_run_earnings()
