@@ -26,16 +26,15 @@ func _show_splash() -> void:
 	current_scene = splash
 
 	var logo := TextureRect.new()
-	logo.texture = load("res://assets/robot-logo.png")
-	logo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	logo.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	logo.modulate = Color(1, 1, 1, 0)
+	var tex := load("res://assets/robot-logo.png")
+	logo.texture = tex
+	logo.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
+	var scr := get_viewport().get_visible_rect().size
+	logo.position = Vector2((scr.x - tex.get_width()) / 2.0, (scr.y - tex.get_height()) / 2.0)
 	splash.add_child(logo)
 
 	var tw := create_tween()
-	tw.tween_property(logo, "modulate:a", 1.0, 0.5)
-	tw.tween_interval(1.5)
-	tw.tween_property(logo, "modulate:a", 0.0, 0.5)
+	tw.tween_interval(2.5)
 	tw.tween_callback(_open_title)
 
 func _open_title() -> void:
@@ -50,6 +49,10 @@ func _on_reset_save() -> void:
 	currency = CurrencySystem.new()
 	upgrade_system = UpgradeSystem.new()
 	ascension_system = AscensionSystem.new()
+	_save_game()
+	var dir := DirAccess.open("user://")
+	if dir and dir.file_exists("save.json"):
+		dir.remove("save.json")
 	_open_title()
 
 func _start_game() -> void:

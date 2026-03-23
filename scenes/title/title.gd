@@ -121,7 +121,89 @@ func _style_neon_button(btn: Button, col: Color) -> void:
 	btn.add_theme_color_override("font_pressed_color", Color(1.0, 1.0, 1.0))
 
 func _on_reset() -> void:
-	var dir := DirAccess.open("user://")
-	if dir and dir.file_exists("save.json"):
-		dir.remove("save.json")
-	reset_pressed.emit()
+	if has_node("ConfirmPopup"):
+		return
+	var scr := get_viewport().get_visible_rect().size
+
+	# Dimmer
+	var dimmer := ColorRect.new()
+	dimmer.name = "ConfirmPopup"
+	dimmer.color = Color(0, 0, 0, 0.7)
+	dimmer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(dimmer)
+
+	# Panel
+	var pw := 500.0
+	var ph := 280.0
+	var panel := Control.new()
+	panel.offset_left = (scr.x - pw) / 2.0
+	panel.offset_top = (scr.y - ph) / 2.0
+	panel.offset_right = (scr.x + pw) / 2.0
+	panel.offset_bottom = (scr.y + ph) / 2.0
+	dimmer.add_child(panel)
+
+	var bg := ColorRect.new()
+	bg.color = Color(0.05, 0.02, 0.02, 0.95)
+	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(bg)
+
+	var border := Control.new()
+	border.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	border.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var col := Color(1.0, 0.2, 0.2)
+	border.draw.connect(func():
+		var s := border.size
+		border.draw_rect(Rect2(0, 0, s.x, s.y), col, false, 2.0)
+	)
+	panel.add_child(border)
+
+	var title := Label.new()
+	title.text = "APAGAR DADOS?"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 32)
+	title.add_theme_color_override("font_color", col)
+	title.offset_left = 20.0
+	title.offset_top = 30.0
+	title.offset_right = pw - 20.0
+	title.offset_bottom = 75.0
+	panel.add_child(title)
+
+	var desc := Label.new()
+	desc.text = "Todo progresso sera perdido.\nEssa acao nao pode ser desfeita."
+	desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	desc.add_theme_font_size_override("font_size", 22)
+	desc.add_theme_color_override("font_color", Color(0.7, 0.4, 0.4))
+	desc.offset_left = 20.0
+	desc.offset_top = 85.0
+	desc.offset_right = pw - 20.0
+	desc.offset_bottom = 155.0
+	panel.add_child(desc)
+
+	var btn_box := HBoxContainer.new()
+	btn_box.offset_left = 40.0
+	btn_box.offset_top = 175.0
+	btn_box.offset_right = pw - 40.0
+	btn_box.offset_bottom = 250.0
+	btn_box.alignment = BoxContainer.ALIGNMENT_CENTER
+	btn_box.add_theme_constant_override("separation", 30)
+	panel.add_child(btn_box)
+
+	var cancel_btn := Button.new()
+	cancel_btn.text = "CANCELAR"
+	cancel_btn.custom_minimum_size = Vector2(180, 60)
+	cancel_btn.add_theme_font_size_override("font_size", 24)
+	_style_neon_button(cancel_btn, Color(0.5, 0.5, 0.5))
+	cancel_btn.pressed.connect(func(): dimmer.queue_free())
+	btn_box.add_child(cancel_btn)
+
+	var confirm_btn := Button.new()
+	confirm_btn.text = "APAGAR"
+	confirm_btn.custom_minimum_size = Vector2(180, 60)
+	confirm_btn.add_theme_font_size_override("font_size", 24)
+	_style_neon_button(confirm_btn, col)
+	confirm_btn.pressed.connect(func():
+		dimmer.queue_free()
+		reset_pressed.emit()
+	)
+	btn_box.add_child(confirm_btn)
