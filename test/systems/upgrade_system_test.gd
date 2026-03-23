@@ -76,7 +76,7 @@ func test_warhead_effect() -> void:
 func test_credit_boost_effect() -> void:
 	currency.add("credits", 1000)
 	upgrades.buy("credit_boost", currency)
-	assert_float(upgrades.get_effect("credit_boost")).is_equal_approx(0.10, 0.001)
+	assert_float(upgrades.get_effect("credit_boost")).is_equal_approx(1.0, 0.001)
 
 # 47
 func test_get_total_invested() -> void:

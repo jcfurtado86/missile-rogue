@@ -6,9 +6,12 @@ extends CanvasLayer
 @onready var game_over_label: Label = $GameOverLabel
 @onready var special_bar: ProgressBar = $SpecialBar
 @onready var nova_button: Button = $NovaButton
+@onready var freeze_bar: ProgressBar = $FreezeBar
+@onready var freeze_button: Button = $FreezeButton
 @onready var boss_bar: ProgressBar = $BossBar
 @onready var boss_label: Label = $BossLabel
 @onready var victory_label: Label = $VictoryLabel
+@onready var victory_button: Button = $VictoryButton
 @onready var revive_container: HBoxContainer = $ReviveContainer
 @onready var revive_button: Button = $ReviveContainer/ReviveButton
 @onready var decline_button: Button = $ReviveContainer/DeclineButton
@@ -25,6 +28,8 @@ func _ready() -> void:
 	revive_container.visible = false
 	double_container.visible = false
 	nova_button.pressed.connect(_on_nova_pressed)
+	freeze_button.pressed.connect(_on_freeze_pressed)
+	victory_button.pressed.connect(_on_victory_pressed)
 	revive_button.pressed.connect(_on_revive_pressed)
 	decline_button.pressed.connect(_on_decline_pressed)
 	double_button.pressed.connect(_on_double_pressed)
@@ -63,6 +68,18 @@ func _apply_neon_style() -> void:
 	special_bg.border_width_left = 1
 	special_bg.border_width_right = 1
 	special_bar.add_theme_stylebox_override("background", special_bg)
+	# Freeze bar — azul gelado
+	var freeze_style := StyleBoxFlat.new()
+	freeze_style.bg_color = Color(0.3, 0.6, 1.0, 0.8)
+	freeze_bar.add_theme_stylebox_override("fill", freeze_style)
+	var freeze_bg := StyleBoxFlat.new()
+	freeze_bg.bg_color = Color(0.02, 0.03, 0.1)
+	freeze_bg.border_color = Color(0.3, 0.6, 1.0, 0.3)
+	freeze_bg.border_width_bottom = 1
+	freeze_bg.border_width_top = 1
+	freeze_bg.border_width_left = 1
+	freeze_bg.border_width_right = 1
+	freeze_bar.add_theme_stylebox_override("background", freeze_bg)
 	# Boss bar — vermelho neon
 	var boss_style := StyleBoxFlat.new()
 	boss_style.bg_color = Color(1.0, 0.0, 0.2, 0.8)
@@ -78,12 +95,23 @@ func _apply_neon_style() -> void:
 	_reposition_for_screen()
 
 func _reposition_for_screen() -> void:
-	var screen_h := get_viewport().get_visible_rect().size.y
-	# Barra especial e botao nova bomb — base da tela
+	var screen := get_viewport().get_visible_rect().size
+	var screen_h := screen.y
+	var screen_w := screen.x
+	# Barra especial e botao nova bomb — base esquerda
 	special_bar.offset_top = screen_h - 100.0
 	special_bar.offset_bottom = screen_h - 70.0
 	nova_button.offset_top = screen_h - 65.0
 	nova_button.offset_bottom = screen_h - 10.0
+	# Barra freeze — base direita
+	freeze_bar.offset_left = screen_w - 220.0
+	freeze_bar.offset_right = screen_w - 20.0
+	freeze_bar.offset_top = screen_h - 100.0
+	freeze_bar.offset_bottom = screen_h - 70.0
+	freeze_button.offset_left = screen_w - 220.0
+	freeze_button.offset_right = screen_w - 20.0
+	freeze_button.offset_top = screen_h - 65.0
+	freeze_button.offset_bottom = screen_h - 10.0
 	# Game over e vitoria — centro vertical
 	var center_y := screen_h * 0.42
 	game_over_label.offset_top = center_y
@@ -118,6 +146,18 @@ func update_special(charge: float, is_ready: bool) -> void:
 	else:
 		nova_button.modulate = Color(0.2, 0.2, 0.3)
 
+func update_freeze(charge: float, is_ready: bool) -> void:
+	freeze_bar.value = charge
+	freeze_button.disabled = not is_ready
+	if is_ready:
+		freeze_button.modulate = Color(0.3, 0.6, 1.0)
+	else:
+		freeze_button.modulate = Color(0.2, 0.2, 0.3)
+
+func set_freeze_visible(val: bool) -> void:
+	freeze_bar.visible = val
+	freeze_button.visible = val
+
 func show_boss_hp(ratio: float) -> void:
 	boss_bar.visible = true
 	boss_label.visible = true
@@ -132,6 +172,7 @@ func show_game_over() -> void:
 
 func show_victory() -> void:
 	victory_label.visible = true
+	victory_button.visible = true
 
 func show_revive_offer() -> void:
 	revive_container.visible = true
@@ -143,6 +184,15 @@ func _on_nova_pressed() -> void:
 	var game = get_parent()
 	if game.has_method("activate_nova_bomb"):
 		game.activate_nova_bomb()
+
+func _on_freeze_pressed() -> void:
+	var game = get_parent()
+	if game.has_method("activate_freeze"):
+		game.activate_freeze()
+
+func _on_victory_pressed() -> void:
+	var game = get_parent()
+	game.game_over.emit()
 
 func _on_revive_pressed() -> void:
 	var game = get_parent()

@@ -3,6 +3,7 @@ extends RefCounted
 
 var upgrades: Dictionary = {}
 var total_invested: int = 0
+var boss_cleared := false
 
 func _init() -> void:
 	_register_tier1()
@@ -30,20 +31,18 @@ func _register_tier2() -> void:
 	_add("critical_mass", 2, "crystals", 50, 2.5, 3, 0.04, "percent_critical")
 	_add("crystal_boost", 2, "crystals", 30, 2.5, 4, 1.0, "flat_crystals")
 	_add("homing", 2, "crystals", 60, 2.5, 3, 0.15, "percent_homing")
-	_add("chain_reaction", 2, "crystals", 50, 2.5, 3, 0.05, "percent_chain_chance")
 	_add("triple_burst", 2, "crystals", 50, 2.5, 3, 0.08, "percent_triple_chance")
 
 func _register_tier3() -> void:
-	_add("twin_cannons", 3, "void", 20, 2.5, 2, 1.0, "flat_extra_missile")
 	_add("temporal_freeze", 3, "void", 20, 2.5, 3, 1.5, "flat_freeze_seconds")
 	_add("phoenix_protocol", 3, "void", 25, 2.5, 2, 1.0, "flat_city_revive")
-	_add("singularity", 3, "void", 20, 2.5, 3, 0.15, "percent_pull_force")
+	_add("singularity", 3, "void", 20, 2.5, 3, 0.1875, "percent_pull_force")
 	_add("auto_turret", 3, "void", 30, 2.5, 3, 1.0, "flat_auto_turret")
 	_add("mirror_array", 3, "void", 25, 2.5, 3, 0.05, "percent_reflect_chance")
 	_add("void_boost", 3, "void", 20, 2.5, 3, 1.0, "flat_void")
 
 func _register_tier4() -> void:
-	_add("ascendant_core", 4, "eter", 50, 2.0, 3, 0.10, "percent_all_currencies")
+	_add("ascendant_core", 4, "eter", 50, 2.0, 3, 1.0, "flat_all_currencies")
 	_add("eternal_knowledge", 4, "eter", 200, 1.0, 1, 1.0, "bool_keep_upgrades")
 	_add("vault", 4, "eter", 150, 1.0, 1, 1.0, "bool_keep_currencies")
 	_add("omega_protocol", 4, "eter", 100, 1.0, 1, 0.50, "percent_reward_boost")

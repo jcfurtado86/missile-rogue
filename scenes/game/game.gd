@@ -13,7 +13,7 @@ var cities: Array[Node2D] = []
 var destroyed_order: Array[Node2D] = []  # ordem de destruicao das cidades
 var is_game_over := false
 
-var threat := ThreatSystem.new()
+var threat := ThreatSystem.new()  # DEBUG: setar level = 100 pra testar boss
 var spawner := SpawnSystem.new()
 var special := SpecialSystem.new()
 var currency: CurrencySystem
@@ -28,6 +28,12 @@ var phoenix_revives_remaining := 0
 
 # Auto turret
 var auto_turret_timer := 0.0
+
+# Freeze separado
+var freeze_charge := 0.0
+var freeze_max_charge := 100.0
+var freeze_charge_speed := 2.0  # sera calculado no _ready baseado no nivel
+var freeze_ready := false
 
 
 
@@ -52,6 +58,9 @@ var boss_spawned := false
 
 func _ready() -> void:
 	screen_height = get_viewport().get_visible_rect().size.y
+	# Omega protocol: dificuldade 3x
+	if stats and stats.reward_boost_mult > 1.0:
+		threat.time_rate *= 3.0
 
 	var hud_scene := preload("res://scenes/game/hud.tscn")
 	hud = hud_scene.instantiate()
@@ -108,6 +117,11 @@ func _ready() -> void:
 	# Phoenix protocol
 	phoenix_revives_remaining = stats.city_revives
 
+	# Freeze charge speed — escala com nivel (mais niveis = mais rapido)
+	if stats.freeze_seconds > 0.0:
+		# Nv1: 50s, Nv2: 33s, Nv3: 25s
+		freeze_charge_speed = freeze_max_charge / (50.0 / (stats.freeze_seconds / 1.5))
+
 func _physics_process(delta: float) -> void:
 	# Screen effects rodam sempre
 	_update_screen_effects(delta)
@@ -122,6 +136,16 @@ func _physics_process(delta: float) -> void:
 	hud.update_threat(threat.get_level())
 	hud.update_currencies(run_earnings)
 	hud.update_special(special.get_charge(), special.is_ready())
+	# Freeze charge
+	if stats.freeze_seconds > 0.0:
+		if not freeze_ready:
+			freeze_charge = minf(freeze_charge + freeze_charge_speed * delta, freeze_max_charge)
+			if freeze_charge >= freeze_max_charge:
+				freeze_ready = true
+		hud.set_freeze_visible(true)
+		hud.update_freeze(freeze_charge, freeze_ready)
+	else:
+		hud.set_freeze_visible(false)
 	if boss and is_instance_valid(boss):
 		hud.show_boss_hp(boss.get_hp_ratio())
 
@@ -150,7 +174,7 @@ func _fire_at(target: Vector2) -> void:
 		closest_battery.consume_ammo()
 
 		# Determina quantos misseis disparar
-		var missile_count: int = 1 + stats.extra_missiles  # twin_cannons
+		var missile_count: int = 1
 
 		# Triple burst — chance de 3 misseis
 		if stats.triple_chance > 0.0 and randf() < stats.triple_chance:
@@ -178,7 +202,6 @@ func _spawn_player_missile(battery: Node2D, target: Vector2) -> void:
 	missile.explosion_radius *= stats.explosion_radius_mult
 	missile.homing_strength = stats.homing_strength
 	missile.critical_mass_chance = stats.critical_mass_chance
-	missile.chain_chance = stats.chain_chance
 	missile.pull_force = stats.pull_force
 	add_child(missile)
 
@@ -211,22 +234,28 @@ func _spawn_enemy() -> void:
 	var drop_currency := "credits"
 	var drop_amount := 1
 
+	var target_pos: Vector2 = target_city.get_chip_center()
+
 	if dist.has("cluster") and roll > (dist["basic"] + dist["fast"]):
 		enemy = ClusterEnemyScene.instantiate()
-		enemy.target_position = target_city.global_position
+		enemy.target_position = target_pos
 		drop_currency = "void"
 		drop_amount = 1
 	elif dist.has("fast") and roll > dist["basic"]:
 		enemy = FastEnemyScene.instantiate()
-		enemy.target_position = target_city.global_position
-		var positions: Array[Vector2] = []
+		enemy.target_position = target_pos
+		var all_positions: Array[Vector2] = []
+		var active_positions: Array[Vector2] = []
+		for c in cities:
+			all_positions.append(c.get_chip_center())
 		for c in alive_cities:
-			positions.append(c.global_position)
-		enemy.city_positions = positions
+			active_positions.append(c.get_chip_center())
+		enemy.city_positions = all_positions
+		enemy.active_city_positions = active_positions
 		drop_currency = "crystals"
 	else:
 		enemy = BasicEnemyScene.instantiate()
-		enemy.target_position = target_city.global_position
+		enemy.target_position = target_pos
 		enemy.speed = lerpf(150.0, 400.0, threat_level / 100.0)
 
 	# Time warp — chance de desacelerar
@@ -242,38 +271,52 @@ func _spawn_enemy() -> void:
 	# Early warning — marca onde o missil vai cair
 	if stats.has_early_warning:
 		warning_indicators.append({
-			"pos": target_city.global_position,
+			"pos": target_pos,
 			"enemy": enemy,
 		})
 
 	add_child(enemy)
 
+var bosses: Array[Area2D] = []
+
 func _spawn_boss() -> void:
 	boss_spawned = true
-	boss = BossScene.instantiate()
-	boss.position.x = 540.0
-	boss.ground_y = screen_height - CITY_Y_OFFSET
-	boss.boss_defeated.connect(_on_boss_defeated)
-	add_child(boss)
+	var is_omega: bool = stats.reward_boost_mult > 1.0
+	var boss_count := 2 if is_omega else 1
+	var heights := [200.0, 450.0] if is_omega else [300.0]
+	for i in boss_count:
+		var b = BossScene.instantiate()
+		b.position.x = 540.0
+		b.boss_y = heights[i]
+		b.ground_y = screen_height - CITY_Y_OFFSET
+		b.boss_defeated.connect(_on_boss_defeated)
+		add_child(b)
+		bosses.append(b)
+		if i == 0:
+			boss = b  # primeiro boss pra compatibilidade com HUD
 
 func _on_boss_defeated() -> void:
-	boss = null
 	flash_alpha = 1.0
 	shake_intensity = 15.0
 	shake_timer = 1.5
-	# Delay game over pra ver a explosao
-	get_tree().create_timer(2.5).timeout.connect(func():
-		is_game_over = true
-		hud.hide_boss_hp()
-		hud.show_victory()
-		game_over.emit()
-	)
+	# Remove boss morto da lista
+	bosses = bosses.filter(func(b): return is_instance_valid(b) and not b.data.is_dead())
+	# Atualiza referencia do HUD pro proximo boss vivo
+	boss = bosses[0] if not bosses.is_empty() else null
+	if bosses.is_empty():
+		if upgrade_system:
+			upgrade_system.boss_cleared = true
+		get_tree().create_timer(2.5).timeout.connect(func():
+			is_game_over = true
+			hud.hide_boss_hp()
+			hud.show_victory()
+		)
 
 func _on_enemy_destroyed(_enemy: Area2D, drop_currency: String = "credits", drop_amount: int = 1) -> void:
 	threat.register_kill()
 	if drop_currency != "" and drop_amount > 0:
 		var bonus: int = stats.credits_bonus if drop_currency == "credits" else (stats.crystals_bonus if drop_currency == "crystals" else stats.void_bonus)
-		var amount := drop_amount + bonus
+		var amount: int = drop_amount + bonus + stats.all_currencies_bonus
 		currency.add(drop_currency, amount)
 		run_earnings[drop_currency] += amount
 
@@ -284,7 +327,7 @@ func _connect_fragments() -> void:
 
 func _on_fragment_destroyed(_frag: Area2D) -> void:
 	threat.register_kill()
-	var void_amount: int = 1 + stats.void_bonus
+	var void_amount: int = 1 + stats.void_bonus + stats.all_currencies_bonus
 	currency.add("void", void_amount)
 	run_earnings["void"] += void_amount
 
@@ -296,13 +339,20 @@ func activate_nova_bomb() -> void:
 	if not special.activate():
 		return
 
-	# Temporal freeze — congela todos os inimigos
-	if stats.freeze_seconds > 0.0:
-		_freeze_enemies(stats.freeze_seconds)
-
 	var wave = NovaBombWaveScene.instantiate()
 	wave.position = Vector2(540.0, screen_height)
 	add_child(wave)
+
+func activate_freeze() -> void:
+	if is_game_over:
+		return
+	if not freeze_ready:
+		return
+	if stats.freeze_seconds <= 0.0:
+		return
+	freeze_charge = 0.0
+	freeze_ready = false
+	_freeze_enemies(stats.freeze_seconds)
 
 func _freeze_enemies(duration: float) -> void:
 	for enemy in get_tree().get_nodes_in_group("enemy"):
@@ -328,8 +378,8 @@ func _handle_auto_turret(delta: float) -> void:
 	auto_turret_timer -= delta
 	if auto_turret_timer > 0.0:
 		return
-	# Intervalo entre tiros: 3s no nivel 1, 1.5s no nivel 2, 1s no nivel 3
-	auto_turret_timer = 3.0 / stats.auto_turret_rate
+	# Intervalo entre tiros: 9s no nivel 1, 4.5s no nivel 2, 3s no nivel 3
+	auto_turret_timer = 9.0 / stats.auto_turret_rate
 
 	var enemies := get_tree().get_nodes_in_group("enemy")
 	if enemies.is_empty():

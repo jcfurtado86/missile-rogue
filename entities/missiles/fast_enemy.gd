@@ -5,8 +5,10 @@ signal destroyed(enemy: Area2D)
 @export var speed := 400.0
 
 var target_position := Vector2.ZERO
-var city_positions: Array[Vector2] = []
+var city_positions: Array[Vector2] = []       # todas (incluindo destruidas)
+var active_city_positions: Array[Vector2] = [] # so as vivas
 var mirror_chance := 0.0
+var reflected := false
 
 # Troca de alvo aleatoria
 var retarget_timer := 0.0
@@ -27,15 +29,16 @@ func _ready() -> void:
 	add_to_group("enemy")
 	area_entered.connect(_on_area_entered)
 	_schedule_retarget()
-	if mirror_chance > 0.0 and randf() < mirror_chance:
-		_reflect()
 
 func _reflect() -> void:
-	target_position = Vector2(global_position.x + randf_range(-100, 100), -50)
+	var angle := randf_range(-PI * 0.8, -PI * 0.2)
+	target_position = global_position + Vector2.from_angle(angle) * 800.0
 	city_positions.clear()
 	speed *= 1.5
 	remove_from_group("enemy")
 	add_to_group("reflected")
+	reflected = true
+	trail.clear()
 
 func _draw() -> void:
 	# Trail
@@ -86,8 +89,8 @@ func _physics_process(delta: float) -> void:
 			trail.resize(TRAIL_LENGTH)
 	queue_redraw()
 
-	# Troca de alvo
-	if global_position.y < MAX_RETARGET_Y and city_positions.size() > 1:
+	# Troca de alvo (nao troca se refletido)
+	if not reflected and global_position.y < MAX_RETARGET_Y and city_positions.size() > 1:
 		retarget_timer -= delta
 		if retarget_timer <= 0.0:
 			_pick_new_target()
@@ -97,18 +100,32 @@ func _physics_process(delta: float) -> void:
 	global_position += direction * speed * delta
 	rotation = direction.angle() - PI / 2.0
 
-	if global_position.y >= target_position.y:
+	if reflected:
+		if global_position.distance_to(target_position) < 10.0 or global_position.y < -50 or global_position.x < -50 or global_position.x > 1130:
+			queue_free()
+			return
+	elif global_position.y >= target_position.y:
 		_spawn_mushroom_cloud()
+		queue_free()
+	elif global_position.y < -50:
 		queue_free()
 
 func _schedule_retarget() -> void:
 	retarget_timer = randf_range(retarget_interval_min, retarget_interval_max)
 
 func _pick_new_target() -> void:
-	var new_target = city_positions.pick_random()
-	if city_positions.size() > 1:
+	# Perto do chao — ultima mudanca vai pra uma cidade ativa
+	var pool: Array[Vector2]
+	if global_position.y > MAX_RETARGET_Y * 0.7 and not active_city_positions.is_empty():
+		pool = active_city_positions
+	elif not city_positions.is_empty():
+		pool = city_positions
+	else:
+		return
+	var new_target = pool.pick_random()
+	if pool.size() > 1:
 		while new_target.distance_to(target_position) < 10.0:
-			new_target = city_positions.pick_random()
+			new_target = pool.pick_random()
 	target_position = new_target
 
 func _spawn_mushroom_cloud() -> void:
@@ -129,6 +146,9 @@ func _on_area_entered(area: Area2D) -> void:
 		call_deferred("_spawn_death_particles")
 		call_deferred("queue_free")
 	elif area.collision_layer == 4:
+		if is_in_group("enemy") and mirror_chance > 0.0 and randf() < mirror_chance:
+			_reflect()
+			return
 		if area.has_method("take_hit"):
 			area.call_deferred("take_hit")
 		call_deferred("_spawn_mushroom_cloud")

@@ -41,7 +41,7 @@ func _init(p_type: Type = Type.BASIC) -> void:
 			speed = 0.0
 			currency_type = ""
 			drop_amount = 0
-			hp = 500
+			hp = 1  # DEBUG: 1 hp pra teste (original: 500)
 			fragment_count = 0
 
 func move_toward_target(position: Vector2, target: Vector2, delta: float) -> Vector2:
@@ -59,5 +59,5 @@ func is_rage_mode() -> bool:
 
 func get_max_hp() -> int:
 	if type == Type.BOSS:
-		return 500
+		return 1  # DEBUG: (original: 500)
 	return 1

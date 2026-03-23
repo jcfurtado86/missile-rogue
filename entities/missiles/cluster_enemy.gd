@@ -7,6 +7,7 @@ signal destroyed(enemy: Area2D)
 var target_position := Vector2.ZERO
 var fragment_count: int
 var mirror_chance := 0.0
+var reflected := false
 
 var ClusterFragmentScene := preload("res://entities/missiles/cluster_fragment.tscn")
 
@@ -23,14 +24,15 @@ func _ready() -> void:
 	add_to_group("enemy")
 	fragment_count = randi_range(3, 5)
 	area_entered.connect(_on_area_entered)
-	if mirror_chance > 0.0 and randf() < mirror_chance:
-		_reflect()
 
 func _reflect() -> void:
-	target_position = Vector2(global_position.x + randf_range(-100, 100), -50)
+	var angle := randf_range(-PI * 0.8, -PI * 0.2)
+	target_position = global_position + Vector2.from_angle(angle) * 800.0
 	speed *= 1.5
 	remove_from_group("enemy")
 	add_to_group("reflected")
+	reflected = true
+	trail.clear()
 
 func _draw() -> void:
 	# Trail
@@ -90,8 +92,14 @@ func _physics_process(delta: float) -> void:
 	global_position += direction * speed * delta
 	rotation = direction.angle() - PI / 2.0
 
-	if global_position.y >= target_position.y:
+	if reflected:
+		if global_position.distance_to(target_position) < 10.0 or global_position.y < -50 or global_position.x < -50 or global_position.x > 1130:
+			queue_free()
+			return
+	elif global_position.y >= target_position.y:
 		_spawn_mushroom_cloud()
+		queue_free()
+	elif global_position.y < -50:
 		queue_free()
 
 func _spawn_mushroom_cloud() -> void:
@@ -113,6 +121,9 @@ func _on_area_entered(area: Area2D) -> void:
 		destroyed.emit(self)
 		call_deferred("queue_free")
 	elif area.collision_layer == 4:
+		if is_in_group("enemy") and mirror_chance > 0.0 and randf() < mirror_chance:
+			_reflect()
+			return
 		if area.has_method("take_hit"):
 			area.call_deferred("take_hit")
 		call_deferred("_spawn_mushroom_cloud")

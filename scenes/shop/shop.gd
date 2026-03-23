@@ -137,6 +137,9 @@ func _build_shop() -> void:
 		for key in upgrade_system.upgrades:
 			var u = upgrade_system.upgrades[key]
 			if u["tier"] == 4:
+				# Omega protocol so aparece depois de derrotar o boss
+				if key == "omega_protocol" and not upgrade_system.boss_cleared:
+					continue
 				var item = _create_item(key, u)
 				item_container.add_child(item)
 		_update_header()

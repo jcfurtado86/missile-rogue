@@ -22,9 +22,7 @@ var reload_time: float
 var missile_speed_mult: float
 var explosion_radius_mult: float
 var homing_strength: float
-var extra_missiles: int
 var triple_chance: float
-var chain_chance: float
 var critical_mass_chance: float
 
 # --- Economia ---
@@ -49,7 +47,7 @@ var auto_turret_rate: float
 var mirror_chance: float
 
 # --- T4 permanentes ---
-var all_currencies_mult: float
+var all_currencies_bonus: int
 var keep_upgrades: bool
 var keep_currencies: bool
 var reward_boost_mult: float
@@ -69,9 +67,7 @@ func _init(us: UpgradeSystem) -> void:
 	missile_speed_mult = 1.0 + us.get_effect("hyper_drive")
 	explosion_radius_mult = 1.0 + us.get_effect("warhead")
 	homing_strength = us.get_effect("homing")
-	extra_missiles = int(us.get_effect("twin_cannons"))
 	triple_chance = us.get_effect("triple_burst")
-	chain_chance = us.get_effect("chain_reaction")
 	critical_mass_chance = us.get_effect("critical_mass")
 
 	# Economia
@@ -104,7 +100,7 @@ func _init(us: UpgradeSystem) -> void:
 	mirror_chance = us.get_effect("mirror_array")
 
 	# T4
-	all_currencies_mult = 1.0 + us.get_effect("ascendant_core")
+	all_currencies_bonus = int(us.get_effect("ascendant_core"))
 	keep_upgrades = us.get_effect("eternal_knowledge") > 0
 	keep_currencies = us.get_effect("vault") > 0
 	reward_boost_mult = 1.0 + us.get_effect("omega_protocol")

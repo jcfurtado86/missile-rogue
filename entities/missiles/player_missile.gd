@@ -11,9 +11,7 @@ var explosion_time := 0.0
 # Upgrade effects
 var homing_strength := 0.0
 var critical_mass_chance := 0.0
-var chain_chance := 0.0
 var pull_force := 0.0
-var is_chain := false  # true se gerado por chain_reaction (nao gera outro)
 
 const EXPLOSION_COLORS: Array[Color] = [
 	Color(0.0, 1.0, 1.0),   # cyan
@@ -119,10 +117,20 @@ func _apply_pull(delta: float) -> void:
 	for enemy in get_tree().get_nodes_in_group("enemy"):
 		if not is_instance_valid(enemy):
 			continue
+		# Misseis do boss sao imunes ao pull dentro do glow
+		if enemy.has_meta("boss_origin") or ("boss_origin" in enemy and enemy.boss_origin != Vector2.ZERO):
+			var boss_nodes := get_tree().get_nodes_in_group("boss")
+			if not boss_nodes.is_empty():
+				var boss = boss_nodes[0]
+				if enemy.global_position.distance_to(boss.global_position) < 160.0:
+					continue
 		var dist := global_position.distance_to(enemy.global_position)
 		if dist < pull_radius and dist > 5.0:
 			var pull_dir: Vector2 = global_position - enemy.global_position
-			enemy.global_position += pull_dir.normalized() * pull_strength * (1.0 - dist / pull_radius)
+			var pull_vec := pull_dir.normalized() * pull_strength * (1.0 - dist / pull_radius)
+			if enemy.is_in_group("boss"):
+				pull_vec.y = 0.0
+			enemy.global_position += pull_vec
 	for frag in get_tree().get_nodes_in_group("fragment"):
 		if not is_instance_valid(frag):
 			continue
@@ -143,24 +151,7 @@ func _explode() -> void:
 	var shape = collision.shape as CircleShape2D
 	shape.radius = explosion_radius
 
-	# Chain reaction — chance de gerar outra explosao proxima
-	if not is_chain and chain_chance > 0.0 and randf() < chain_chance:
-		_spawn_chain_explosion()
-
 	get_tree().create_timer(explosion_duration).timeout.connect(_on_explosion_end)
-
-func _spawn_chain_explosion() -> void:
-	var chain_missile = preload("res://entities/missiles/player_missile.tscn").instantiate()
-	var offset := Vector2(randf_range(-40, 40), randf_range(-40, 40))
-	chain_missile.global_position = global_position + offset
-	chain_missile.target = global_position + offset
-	chain_missile.speed = speed
-	chain_missile.explosion_radius = explosion_radius * 0.8
-	chain_missile.explosion_duration = explosion_duration
-	chain_missile.is_chain = true
-	chain_missile.pull_force = pull_force
-	chain_missile.critical_mass_chance = critical_mass_chance
-	get_tree().current_scene.call_deferred("add_child", chain_missile)
 
 func _on_explosion_end() -> void:
 	queue_free()

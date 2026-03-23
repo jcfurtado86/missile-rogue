@@ -6,6 +6,9 @@ signal destroyed(enemy: Area2D)
 
 var target_position := Vector2.ZERO
 var mirror_chance := 0.0
+var reflected := false
+var boss_origin: Vector2 = Vector2.ZERO  # se != ZERO, invulneravel dentro do glow
+const BOSS_GLOW_RADIUS := 160.0
 
 const BASE_COLOR := Color(1.0, 0.0, 0.6)
 const TRAIL_LENGTH := 25
@@ -19,16 +22,16 @@ var MushroomCloudScene := preload("res://entities/missiles/mushroom_cloud.tscn")
 func _ready() -> void:
 	add_to_group("enemy")
 	area_entered.connect(_on_area_entered)
-	if mirror_chance > 0.0 and randf() < mirror_chance:
-		_reflect()
 
 func _reflect() -> void:
-	# Inverte direcao — volta pro topo da tela
-	target_position = Vector2(global_position.x + randf_range(-100, 100), -50)
+	# Reflete pra uma direcao aleatoria pra cima
+	var angle := randf_range(-PI * 0.8, -PI * 0.2)
+	target_position = global_position + Vector2.from_angle(angle) * 800.0
 	speed *= 1.5
-	# Muda grupo pra nao contar como inimigo
 	remove_from_group("enemy")
 	add_to_group("reflected")
+	reflected = true
+	trail.clear()
 
 func _draw() -> void:
 	# Trail
@@ -82,8 +85,14 @@ func _physics_process(delta: float) -> void:
 	global_position += direction * speed * delta
 	rotation = direction.angle() - PI / 2.0
 
-	if global_position.y >= target_position.y:
+	if reflected:
+		if global_position.distance_to(target_position) < 10.0 or global_position.y < -50 or global_position.x < -50 or global_position.x > 1130:
+			queue_free()
+			return
+	elif global_position.y >= target_position.y:
 		_spawn_mushroom_cloud()
+		queue_free()
+	elif global_position.y < -50:
 		queue_free()
 
 func _spawn_mushroom_cloud() -> void:
@@ -100,10 +109,17 @@ func _spawn_death_particles() -> void:
 
 func _on_area_entered(area: Area2D) -> void:
 	if area.collision_layer == 1:
+		# Misseis do boss sao invulneraveis dentro do glow
+		if boss_origin != Vector2.ZERO and global_position.distance_to(boss_origin) < BOSS_GLOW_RADIUS:
+			return
 		destroyed.emit(self)
 		call_deferred("_spawn_death_particles")
 		call_deferred("queue_free")
 	elif area.collision_layer == 4:
+		# Mirror array — chance de refletir sem causar dano
+		if is_in_group("enemy") and mirror_chance > 0.0 and randf() < mirror_chance:
+			_reflect()
+			return
 		if area.has_method("take_hit"):
 			area.call_deferred("take_hit")
 		call_deferred("_spawn_mushroom_cloud")

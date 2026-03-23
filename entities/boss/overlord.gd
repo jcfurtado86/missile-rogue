@@ -8,7 +8,7 @@ var data := EnemyData.new(EnemyData.Type.BOSS)
 var move_speed := 120.0
 var move_direction := 1.0
 const MARGIN := 100.0
-const BOSS_Y := 300.0
+var boss_y := 300.0
 
 # Rajadas em leque
 var anim_time := 0.0
@@ -26,7 +26,7 @@ func _ready() -> void:
 	add_to_group("enemy")
 	add_to_group("boss")
 	area_entered.connect(_on_area_entered)
-	position.y = BOSS_Y
+	position.y = boss_y
 	queue_redraw()
 
 func _draw() -> void:
@@ -188,6 +188,7 @@ func _fire_burst() -> void:
 		var far_target = global_position + direction * 2000.0
 		far_target.y = minf(far_target.y, ground_y)
 		missile.target_position = far_target
+		missile.boss_origin = global_position
 		get_parent().add_child(missile)
 
 func _on_area_entered(area: Area2D) -> void:

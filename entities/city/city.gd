@@ -36,6 +36,9 @@ func _ready() -> void:
 	data = CityData.new()
 	_compute_grid_cell()
 	_generate()
+	# Reposiciona collision shape para coincidir com o chip visual
+	var center := (chip_tl + chip_tr + chip_br + chip_bl) / 4.0
+	$CollisionShape2D.position = center
 	queue_redraw()
 
 func _process(delta: float) -> void:
@@ -107,6 +110,10 @@ func _compute_grid_cell() -> void:
 	chip_tr = Vector2(tr_x - position.x, top_y_global - position.y)
 	chip_br = Vector2(br_x - position.x, bot_y_global - position.y)
 	chip_bl = Vector2(bl_x - position.x, bot_y_global - position.y)
+
+# Centro global do chip (ponto com glow)
+func get_chip_center() -> Vector2:
+	return global_position + (chip_tl + chip_tr + chip_br + chip_bl) / 4.0
 
 # Retorna o quad do chip (TL, TR, BR, BL)
 func _chip_quad() -> PackedVector2Array:
@@ -537,7 +544,7 @@ func take_hit() -> void:
 		return
 	if shield_active:
 		shield_active = false
-		shield_timer = shield_cooldown
+		shield_timer = 0.01  # DEBUG: escudo imortal (recarrega instantaneo)
 		queue_redraw()
 		return
 	data.take_hit()
