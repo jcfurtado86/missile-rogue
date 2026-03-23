@@ -14,6 +14,13 @@ var stream_intercept: AudioStreamWAV
 var stream_nova_bomb: AudioStreamWAV
 var stream_ui_click: AudioStreamWAV
 var stream_purchase: AudioStreamWAV
+var stream_boss_spawn: AudioStreamWAV
+var stream_boss_defeated: AudioStreamWAV
+
+# Referencia da musica para controle de pitch
+var music_player: AudioStreamPlayer = null
+var music_target_pitch := 1.0
+var music_current_pitch := 1.0
 
 func _ready() -> void:
 	for i in POOL_SIZE:
@@ -30,6 +37,8 @@ func _ready() -> void:
 	stream_nova_bomb = _gen_nova_bomb()
 	stream_ui_click = _gen_ui_click()
 	stream_purchase = _gen_purchase()
+	stream_boss_spawn = _gen_boss_spawn()
+	stream_boss_defeated = _gen_boss_defeated()
 	_start_music()
 
 func _start_music() -> void:
@@ -38,11 +47,22 @@ func _start_music() -> void:
 		var ogg_stream := AudioStreamOggVorbis.load_from_file("res://assets/audio/neon.ogg")
 		if ogg_stream:
 			ogg_stream.loop = true
-			var music := AudioStreamPlayer.new()
-			music.stream = ogg_stream
-			music.bus = "Master"
-			add_child(music)
-			music.play()
+			music_player = AudioStreamPlayer.new()
+			music_player.stream = ogg_stream
+			music_player.bus = "Master"
+			add_child(music_player)
+			music_player.play()
+
+func _process(delta: float) -> void:
+	if music_player and abs(music_current_pitch - music_target_pitch) > 0.01:
+		music_current_pitch = lerpf(music_current_pitch, music_target_pitch, delta * 2.0)
+		music_player.pitch_scale = music_current_pitch
+
+func set_music_pitch(pitch: float) -> void:
+	music_target_pitch = pitch
+
+func reset_music_pitch() -> void:
+	music_target_pitch = 1.0
 
 func _play(stream: AudioStreamWAV, volume_db := 0.0, pitch := 1.0) -> void:
 	var p := players[next_player]
@@ -82,6 +102,12 @@ func _on_node_added(node: Node) -> void:
 
 func intercept(pitch_variation := 0.15) -> void:
 	_play(stream_intercept, -7.0, randf_range(1.0 - pitch_variation, 1.0 + pitch_variation))
+
+func boss_spawn() -> void:
+	_play(stream_boss_spawn, -2.0, 1.0)
+
+func boss_defeated() -> void:
+	_play(stream_boss_defeated, 0.0, 1.0)
 
 # --- Geracao procedural ---
 
@@ -316,6 +342,82 @@ func _gen_purchase() -> AudioStreamWAV:
 		var shimmer := sin(TAU * 3000.0 * t) * 0.1 * env
 		var sample := (tone1 + tone2 + shimmer) * env
 		var s16 := clampi(int(sample * 30000.0), -32768, 32767)
+		data[i * 2] = s16 & 0xFF
+		data[i * 2 + 1] = (s16 >> 8) & 0xFF
+	var wav := AudioStreamWAV.new()
+	wav.format = AudioStreamWAV.FORMAT_16_BITS
+	wav.mix_rate = sample_rate
+	wav.data = data
+	return wav
+
+func _gen_boss_spawn() -> AudioStreamWAV:
+	# Boss spawn: sirene ominosa + rumble grave crescente
+	var sample_rate := 22050
+	var duration := 1.5
+	var num_samples := int(sample_rate * duration)
+	var data := PackedByteArray()
+	data.resize(num_samples * 2)
+	for i in num_samples:
+		var t := float(i) / sample_rate
+		# Envelope: cresce ate 0.8s, depois sustain
+		var env := clampf(t / 0.8, 0.0, 1.0) * clampf(1.0 - (t - 1.2) / 0.3, 0.0, 1.0)
+		# Sirene oscilatoria (frequencia modula entre 200-400Hz)
+		var siren_freq := 300.0 + sin(TAU * 1.5 * t) * 100.0
+		var siren := sin(TAU * siren_freq * t) * 0.3
+		# Sub-bass crescente (30Hz -> 50Hz)
+		var sub := sin(TAU * lerpf(30.0, 50.0, t / duration) * t) * 0.5
+		# Rumble de maquinaria (FM grave)
+		var rumble := sin(TAU * 45.0 * t + sin(TAU * 8.0 * t) * 6.0) * 0.3
+		# Ruido metalico
+		var noise := (randf() * 2.0 - 1.0) * 0.15 * clampf(t / 0.5, 0.0, 1.0)
+		# Tom de alerta (pulsos a cada 0.3s)
+		var alert_pulse := clampf(1.0 - fmod(t, 0.3) / 0.15, 0.0, 1.0)
+		var alert := sin(TAU * 500.0 * t) * alert_pulse * 0.2
+		var sample := (siren + sub + rumble + noise + alert) * env
+		var s16 := clampi(int(sample * 22000.0), -32768, 32767)
+		data[i * 2] = s16 & 0xFF
+		data[i * 2 + 1] = (s16 >> 8) & 0xFF
+	var wav := AudioStreamWAV.new()
+	wav.format = AudioStreamWAV.FORMAT_16_BITS
+	wav.mix_rate = sample_rate
+	wav.data = data
+	return wav
+
+func _gen_boss_defeated() -> AudioStreamWAV:
+	# Boss derrotado: explosao MASSIVA multi-camada, longa, triunfante
+	var sample_rate := 22050
+	var duration := 2.5
+	var num_samples := int(sample_rate * duration)
+	var data := PackedByteArray()
+	data.resize(num_samples * 2)
+	for i in num_samples:
+		var t := float(i) / sample_rate
+		# Envelope longo com decay gradual
+		var env := clampf(1.0 - t / duration, 0.0, 1.0)
+		env = pow(env, 0.5)
+		# Impacto triplo escalonado (0s, 0.1s, 0.25s)
+		var impact1 := clampf(1.0 - t / 0.05, 0.0, 1.0) * 0.9
+		var impact2 := clampf(1.0 - abs(t - 0.1) / 0.05, 0.0, 1.0) * 0.7
+		var impact3 := clampf(1.0 - abs(t - 0.25) / 0.06, 0.0, 1.0) * 0.6
+		# Sub-bass devastador (50Hz -> 12Hz)
+		var sub := sin(TAU * lerpf(50.0, 12.0, t / duration) * t) * 0.7
+		# Onda de choque massiva (1000Hz -> 20Hz em 0.3s)
+		var shock_t := clampf(t / 0.3, 0.0, 1.0)
+		var shockwave := sin(TAU * lerpf(1000.0, 20.0, shock_t * shock_t) * t) * 0.5 * clampf(1.0 - t / 0.4, 0.0, 1.0)
+		# Ruido denso de explosao
+		var noise := (randf() * 2.0 - 1.0) * 0.5
+		# Destrocos e metal (FM caos)
+		var debris := sin(TAU * 180.0 * t + sin(TAU * 35.0 * t) * 12.0) * 0.25 * clampf(1.0 - t / 1.0, 0.0, 1.0)
+		# Rumble prolongado
+		var rumble := sin(TAU * lerpf(25.0, 10.0, t / duration) * t) * 0.4 * clampf(t / 0.15, 0.0, 1.0)
+		# Overtone triunfante (acorde maior ascendente depois de 0.5s)
+		var triumph_env := clampf((t - 0.5) / 0.3, 0.0, 1.0) * clampf(1.0 - (t - 1.5) / 1.0, 0.0, 1.0)
+		var triumph := (sin(TAU * 523.0 * t) * 0.15 + sin(TAU * 659.0 * t) * 0.1 + sin(TAU * 784.0 * t) * 0.08) * triumph_env
+		# Segunda explosao tardia (eco)
+		var echo_env := clampf(1.0 - abs(t - 0.8) / 0.15, 0.0, 1.0)
+		var echo := (randf() * 2.0 - 1.0) * 0.3 * echo_env + sin(TAU * 60.0 * t) * 0.3 * echo_env
+		var sample := (sub + shockwave + noise + debris + rumble + triumph + echo + impact1 + impact2 + impact3) * env
+		var s16 := clampi(int(sample * 20000.0), -32768, 32767)
 		data[i * 2] = s16 & 0xFF
 		data[i * 2 + 1] = (s16 >> 8) & 0xFF
 	var wav := AudioStreamWAV.new()

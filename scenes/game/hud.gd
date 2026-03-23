@@ -27,7 +27,6 @@ const GEM_SHORT := {
 
 signal quit_to_menu
 
-var debug_threat := false
 var pause_button: Button
 
 # Popup system
@@ -39,8 +38,8 @@ var popup_tween: Tween
 var cached_earnings: Dictionary = {}
 
 func _ready() -> void:
-	threat_label.visible = debug_threat
-	threat_bar.visible = debug_threat
+	threat_label.visible = false
+	threat_bar.visible = false
 	credits_label.visible = false
 	boss_bar.visible = false
 	boss_label.visible = false
@@ -192,9 +191,7 @@ func _reposition_for_screen() -> void:
 # ============================================================
 
 func update_threat(level: float) -> void:
-	if debug_threat:
-		threat_label.text = get_node("/root/Tr").t("THREAT_FMT") % int(level)
-		threat_bar.value = level
+	threat_bar.value = level
 
 func update_currencies(earnings: Dictionary) -> void:
 	hud_currencies.clear()
@@ -631,21 +628,39 @@ func show_victory() -> void:
 	var _earn := popup_earnings_draw
 	popup_earnings_draw.draw.connect(func(): _draw_earnings(_earn))
 	panel.add_child(popup_earnings_draw)
-	# Button
+	# Buttons
 	var btn_container := HBoxContainer.new()
 	btn_container.offset_left = 60.0
 	btn_container.offset_top = 310.0
 	btn_container.offset_right = 520.0
 	btn_container.offset_bottom = 390.0
 	btn_container.alignment = BoxContainer.ALIGNMENT_CENTER
+	btn_container.add_theme_constant_override("separation", 30)
 	panel.add_child(btn_container)
-	var cont_btn := Button.new()
-	cont_btn.text = get_node("/root/Tr").t("CONTINUE")
-	cont_btn.custom_minimum_size = Vector2(280, 65)
-	cont_btn.add_theme_font_size_override("font_size", 26)
-	_style_popup_button(cont_btn, green)
-	cont_btn.pressed.connect(func(): _dismiss_popup(); get_parent().game_over.emit())
-	btn_container.add_child(cont_btn)
+	var game = get_parent()
+	if game.ad_system and game.ad_system.can_show_shop_ad():
+		var double_btn := Button.new()
+		double_btn.text = get_node("/root/Tr").t("DOUBLE_EARNINGS_AD")
+		double_btn.custom_minimum_size = Vector2(280, 65)
+		double_btn.add_theme_font_size_override("font_size", 22)
+		_style_popup_button(double_btn, Color(1.0, 0.8, 0.0))
+		double_btn.pressed.connect(_on_double_pressed)
+		btn_container.add_child(double_btn)
+		var decline_btn := Button.new()
+		decline_btn.text = get_node("/root/Tr").t("NO")
+		decline_btn.custom_minimum_size = Vector2(140, 65)
+		decline_btn.add_theme_font_size_override("font_size", 22)
+		_style_popup_button(decline_btn, Color(0.5, 0.5, 0.5))
+		decline_btn.pressed.connect(_on_double_decline_pressed)
+		btn_container.add_child(decline_btn)
+	else:
+		var cont_btn := Button.new()
+		cont_btn.text = get_node("/root/Tr").t("CONTINUE")
+		cont_btn.custom_minimum_size = Vector2(280, 65)
+		cont_btn.add_theme_font_size_override("font_size", 26)
+		_style_popup_button(cont_btn, green)
+		cont_btn.pressed.connect(func(): _dismiss_popup(); get_parent().game_over.emit())
+		btn_container.add_child(cont_btn)
 	_show_popup(panel)
 
 # ============================================================

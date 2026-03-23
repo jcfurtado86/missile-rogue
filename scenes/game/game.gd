@@ -13,7 +13,7 @@ var cities: Array[Node2D] = []
 var destroyed_order: Array[Node2D] = []  # ordem de destruicao das cidades
 var is_game_over := false
 
-var threat := ThreatSystem.new()  # DEBUG: setar level = 100 pra testar boss
+var threat := ThreatSystem.new()
 var spawner := SpawnSystem.new()
 var special := SpecialSystem.new()
 var currency: CurrencySystem
@@ -55,6 +55,7 @@ var hud: CanvasLayer
 var warning_layer: Node2D
 var boss: Area2D = null
 var boss_spawned := false
+var boss_rage_triggered := false
 
 func _ready() -> void:
 	screen_height = get_viewport().get_visible_rect().size.y
@@ -140,6 +141,10 @@ func _physics_process(delta: float) -> void:
 		hud.set_freeze_visible(false)
 	if boss and is_instance_valid(boss):
 		hud.show_boss_hp(boss.get_hp_ratio())
+		# Detecta rage mode pra acelerar musica
+		if not boss_rage_triggered and boss.data.is_rage_mode():
+			boss_rage_triggered = true
+			get_node("/root/SoundManager").set_music_pitch(1.4)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if is_game_over:
@@ -274,6 +279,8 @@ var bosses: Array[Area2D] = []
 
 func _spawn_boss() -> void:
 	boss_spawned = true
+	get_node("/root/SoundManager").boss_spawn()
+	get_node("/root/SoundManager").set_music_pitch(1.2)
 	var is_omega: bool = stats.reward_boost_mult > 1.0
 	var boss_count := 2 if is_omega else 1
 	var heights := [200.0, 450.0] if is_omega else [300.0]
@@ -292,6 +299,7 @@ func _spawn_boss() -> void:
 			boss = b  # primeiro boss pra compatibilidade com HUD
 
 func _on_boss_defeated() -> void:
+	get_node("/root/SoundManager").boss_defeated()
 	flash_alpha = 1.0
 	shake_intensity = 15.0
 	shake_timer = 1.5
@@ -300,8 +308,13 @@ func _on_boss_defeated() -> void:
 	# Atualiza referencia do HUD pro proximo boss vivo
 	boss = bosses[0] if not bosses.is_empty() else null
 	if bosses.is_empty():
+		get_node("/root/SoundManager").reset_music_pitch()
 		if upgrade_system:
 			upgrade_system.boss_cleared = true
+		# Desliga hitbox das cidades na vitoria
+		for city in cities:
+			city.set_deferred("monitorable", false)
+			city.set_deferred("monitoring", false)
 		get_tree().create_timer(2.5).timeout.connect(func():
 			is_game_over = true
 			hud.hide_boss_hp()
@@ -416,6 +429,7 @@ func _check_game_over() -> void:
 		if city.is_alive():
 			return
 	is_game_over = true
+	get_node("/root/SoundManager").reset_music_pitch()
 	hud.set_earnings(run_earnings)
 	if ad_system and ad_system.can_revive():
 		hud.show_revive_offer()
@@ -450,6 +464,12 @@ func _do_revive() -> void:
 			if stats.shield_cooldown > 0.0:
 				city.setup_shield(stats.shield_cooldown)
 			break
+	# Restaura pitch da musica se boss presente
+	if boss and is_instance_valid(boss):
+		if boss.data.is_rage_mode():
+			get_node("/root/SoundManager").set_music_pitch(1.4)
+		else:
+			get_node("/root/SoundManager").set_music_pitch(1.2)
 	hud.hide_revive_offer()
 
 func double_run_earnings() -> void:
