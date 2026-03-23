@@ -4,7 +4,7 @@ extends RefCounted
 var base_interval: float = 2.0
 var min_interval: float = 0.3
 
-var boss_threat := 1.0  # DEBUG: 1 pra teste (normal: 100, omega: 300)
+var boss_threat := 100.0  # 100 normal, 300 com omega
 
 func get_spawn_distribution(threat: float) -> Dictionary:
 	if threat >= boss_threat:

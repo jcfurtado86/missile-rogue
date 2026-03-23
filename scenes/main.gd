@@ -11,11 +11,6 @@ var ad_system := AdSystem.new()
 
 func _ready() -> void:
 	_load_game()
-	# DEBUG: dinheiro infinito
-	currency.add("credits", 99999)
-	currency.add("crystals", 99999)
-	currency.add("void", 99999)
-	currency.add("eter", 99999)
 	_show_splash()
 
 func _show_splash() -> void:

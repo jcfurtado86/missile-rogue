@@ -317,6 +317,7 @@ func _on_boss_defeated() -> void:
 			city.set_deferred("monitoring", false)
 		get_tree().create_timer(2.5).timeout.connect(func():
 			is_game_over = true
+			hud.set_earnings(run_earnings)
 			hud.hide_boss_hp()
 			hud.show_victory()
 		)
