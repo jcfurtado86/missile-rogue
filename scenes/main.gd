@@ -15,7 +15,7 @@ func _ready() -> void:
 
 func _show_splash() -> void:
 	var splash := ColorRect.new()
-	splash.color = Color(0.02, 0.01, 0.08, 1.0)
+	splash.color = Color(0, 0, 0, 1)
 	splash.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(splash)
 	current_scene = splash
