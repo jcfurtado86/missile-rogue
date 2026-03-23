@@ -12,16 +12,16 @@ func _init() -> void:
 	_register_tier4()
 
 func _register_tier1() -> void:
-	_add("ammo_pack", 1, "credits", 30, 2.0, 8, 1.0, "flat_magazines")
-	_add("extra_city", 1, "credits", 80, 3.0, 2, 1.0, "flat_extra_city", "ammo_pack")
-	_add("magazine", 1, "credits", 40, 2.2, 4, 1.0, "flat_magazine_size", "ammo_pack")
-	_add("ammo_regen", 1, "credits", 60, 2.4, 5, 0.1, "flat_ammo_regen", "magazine")
-	_add("hyper_drive", 1, "credits", 50, 2.4, 5, 0.40, "percent_speed", "warhead")
-	_add("warhead", 1, "credits", 50, 2.4, 5, 0.40, "percent_radius", "ammo_pack")
-	_add("head_start", 1, "credits", 40, 2.0, 5, 20.0, "flat_credits_start", "credit_boost")
-	_add("credit_boost", 1, "credits", 50, 2.4, 5, 1.0, "flat_credits", "ammo_pack")
-	_add("time_warp", 1, "credits", 60, 2.5, 3, 0.08, "percent_slow_chance", "credit_boost")
-	_add("early_warning", 1, "credits", 100, 1.0, 1, 1.0, "bool_warning", "extra_city")
+	_add("ammo_pack", 1, "credits", 15, 2.0, 8, 1.0, "flat_magazines")
+	_add("extra_city", 1, "credits", 40, 3.0, 2, 1.0, "flat_extra_city", "ammo_pack")
+	_add("magazine", 1, "credits", 20, 2.2, 4, 1.0, "flat_magazine_size", "ammo_pack")
+	_add("ammo_regen", 1, "credits", 30, 2.4, 5, 0.1, "flat_ammo_regen", "magazine")
+	_add("hyper_drive", 1, "credits", 25, 2.4, 5, 0.40, "percent_speed", "warhead")
+	_add("warhead", 1, "credits", 25, 2.4, 5, 0.40, "percent_radius", "ammo_pack")
+	_add("head_start", 1, "credits", 20, 2.0, 5, 20.0, "flat_credits_start", "credit_boost")
+	_add("credit_boost", 1, "credits", 25, 2.4, 5, 1.0, "flat_credits", "ammo_pack")
+	_add("time_warp", 1, "credits", 30, 2.5, 3, 0.08, "percent_slow_chance", "credit_boost")
+	_add("early_warning", 1, "credits", 50, 1.0, 1, 1.0, "bool_warning", "extra_city")
 
 func _register_tier2() -> void:
 	_add("extra_battery", 2, "crystals", 40, 3.0, 2, 1.0, "flat_extra_battery", "magazine")
