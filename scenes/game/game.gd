@@ -493,7 +493,7 @@ func double_run_earnings() -> void:
 		ad_system.use_shop_ad()
 		hud.hide_double_offer()
 		game_over.emit()
-	)
+	, ad_system.DOUBLE_AD_ID)
 
 func decline_double() -> void:
 	hud.hide_double_offer()
