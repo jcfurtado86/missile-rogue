@@ -88,12 +88,15 @@ func _load_ad(ad_id: String, show_when_ready: bool) -> void:
 func _show_loaded_ad(ad_id: String, callback: Callable, on_fail: Callable) -> void:
 	var ad: RewardedAd = _ads[ad_id]
 	_ads[ad_id] = null
+	var state := {"earned": false}
 
 	var content_cb := FullScreenContentCallback.new()
 	content_cb.on_ad_dismissed_full_screen_content = func() -> void:
-		print("[AdSystem] Ad dismissed")
+		print("[AdSystem] Ad dismissed, earned=%s" % str(state.earned))
 		ad.destroy()
 		_preload_ad(ad_id)
+		if state.earned:
+			callback.call()
 	content_cb.on_ad_failed_to_show_full_screen_content = func(err: AdError) -> void:
 		print("[AdSystem] Failed to show: " + err.message)
 		ad.destroy()
@@ -105,5 +108,5 @@ func _show_loaded_ad(ad_id: String, callback: Callable, on_fail: Callable) -> vo
 	var reward_listener := OnUserEarnedRewardListener.new()
 	reward_listener.on_user_earned_reward = func(_item: RewardedItem) -> void:
 		print("[AdSystem] Reward earned")
-		callback.call()
+		state.earned = true
 	ad.show(reward_listener)
