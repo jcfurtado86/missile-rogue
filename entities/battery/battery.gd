@@ -24,12 +24,12 @@ var persp_ratio := 1.0  # ratio topo/base
 func _process(delta: float) -> void:
 	if reloading:
 		queue_redraw()
-	# Ammo regen passivo
-	if ammo_regen_rate > 0.0 and magazines < max_magazines - 1:
+	# Ammo regen passivo — regenera tiros no pente atual
+	if ammo_regen_rate > 0.0 and magazine_ammo < magazine_size and not reloading:
 		regen_accumulator += ammo_regen_rate * delta
 		if regen_accumulator >= 1.0:
 			regen_accumulator -= 1.0
-			magazines += 1
+			magazine_ammo += 1
 			queue_redraw()
 
 func _ready() -> void:

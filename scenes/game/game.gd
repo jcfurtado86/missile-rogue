@@ -29,6 +29,8 @@ var phoenix_revives_remaining := 0
 # Auto turret
 var auto_turret_timer := 0.0
 
+
+
 # Early warning
 var warning_indicators: Array[Dictionary] = []
 
@@ -44,6 +46,7 @@ var ClusterEnemyScene := preload("res://entities/missiles/cluster_enemy.tscn")
 var BossScene := preload("res://entities/boss/overlord.tscn")
 
 var hud: CanvasLayer
+var warning_layer: Node2D
 var boss: Area2D = null
 var boss_spawned := false
 
@@ -53,6 +56,18 @@ func _ready() -> void:
 	var hud_scene := preload("res://scenes/game/hud.tscn")
 	hud = hud_scene.instantiate()
 	add_child(hud)
+
+	# Musica
+	var music := AudioStreamPlayer.new()
+	var ogg_file := FileAccess.open("res://assets/neon.ogg", FileAccess.READ)
+	if ogg_file:
+		var ogg_stream := AudioStreamOggVorbis.load_from_file("res://assets/neon.ogg")
+		if ogg_stream:
+			ogg_stream.loop = true
+			music.stream = ogg_stream
+			music.autoplay = true
+			music.bus = "Master"
+			add_child(music)
 
 	screen_width = get_viewport().get_visible_rect().size.x
 	var battery_y := screen_height - BATTERY_Y_OFFSET
@@ -77,6 +92,12 @@ func _ready() -> void:
 			city.setup_shield(stats.shield_cooldown)
 		add_child(city)
 		cities.append(city)
+
+	# Warning layer — por cima de tudo
+	warning_layer = WarningLayer.new()
+	warning_layer.z_index = 100
+	warning_layer.game = self
+	add_child(warning_layer)
 
 	if stats and stats.head_start_credits > 0:
 		currency.add("credits", stats.head_start_credits)
@@ -139,8 +160,8 @@ func _fire_at(target: Vector2) -> void:
 			if i == 0:
 				_spawn_player_missile(closest_battery, target)
 			else:
-				# Misseis extras com leve offset
-				var offset := Vector2(randf_range(-30, 30), randf_range(-30, 30))
+				# Misseis extras com offset espalhado
+				var offset := Vector2(randf_range(-120, 120), randf_range(-120, 120))
 				_spawn_player_missile(closest_battery, target + offset)
 
 func _spawn_player_missile(battery: Node2D, target: Vector2) -> void:
@@ -245,10 +266,8 @@ func _on_boss_defeated() -> void:
 func _on_enemy_destroyed(_enemy: Area2D, drop_currency: String = "credits", drop_amount: int = 1) -> void:
 	threat.register_kill()
 	if drop_currency != "" and drop_amount > 0:
-		var mult: float = stats.credits_mult if drop_currency == "credits" else (stats.crystals_mult if drop_currency == "crystals" else stats.void_mult)
-		# ascendant_core + omega_protocol
-		mult *= stats.all_currencies_mult * stats.reward_boost_mult
-		var amount = int(drop_amount * mult)
+		var bonus: int = stats.credits_bonus if drop_currency == "credits" else (stats.crystals_bonus if drop_currency == "crystals" else stats.void_bonus)
+		var amount := drop_amount + bonus
 		currency.add(drop_currency, amount)
 		run_earnings[drop_currency] += amount
 
@@ -259,15 +278,15 @@ func _connect_fragments() -> void:
 
 func _on_fragment_destroyed(_frag: Area2D) -> void:
 	threat.register_kill()
-	var void_amount := int(1 * stats.void_mult * stats.all_currencies_mult * stats.reward_boost_mult)
-	if void_amount < 1:
-		void_amount = 1
+	var void_amount: int = 1 + stats.void_bonus
 	currency.add("void", void_amount)
 	run_earnings["void"] += void_amount
 
 var NovaBombWaveScene := preload("res://entities/nova_bomb_wave.tscn")
 
 func activate_nova_bomb() -> void:
+	if is_game_over:
+		return
 	if not special.activate():
 		return
 
@@ -421,30 +440,34 @@ func _draw() -> void:
 	if flash_alpha > 0.0:
 		draw_rect(Rect2(-screen_width, -screen_height, screen_width * 3, screen_height * 3), Color(1.0, 0.3, 0.2, flash_alpha))
 
-	# Early warning indicators
-	if stats and stats.has_early_warning:
-		_draw_warnings()
 
-func _draw_warnings() -> void:
-	var to_remove: Array[int] = []
-	for i in warning_indicators.size():
-		var indicator = warning_indicators[i]
-		var enemy = indicator["enemy"]
-		if not is_instance_valid(enemy) or not enemy.is_inside_tree():
-			to_remove.append(i)
-			continue
-		var target_pos: Vector2 = indicator["pos"]
-		# Crosshair no ponto de impacto
-		var local_pos := target_pos - global_position
-		var col := Color(1.0, 0.0, 0.3, 0.4)
-		draw_line(local_pos + Vector2(-12, 0), local_pos + Vector2(12, 0), col, 1.5, true)
-		draw_line(local_pos + Vector2(0, -12), local_pos + Vector2(0, 12), col, 1.5, true)
-		draw_arc(local_pos, 10.0, 0, TAU, 16, col, 1.0, true)
-	# Remove indicadores de inimigos destruidos (de tras pra frente)
-	for i in range(to_remove.size() - 1, -1, -1):
-		warning_indicators.remove_at(to_remove[i])
-	if not warning_indicators.is_empty():
+class WarningLayer extends Node2D:
+	var game: Node2D
+
+	func _process(_delta: float) -> void:
+		if not game or game.warning_indicators.is_empty():
+			return
 		queue_redraw()
+
+	func _draw() -> void:
+		if not game:
+			return
+		var to_remove: Array[int] = []
+		for i in game.warning_indicators.size():
+			var indicator = game.warning_indicators[i]
+			var enemy = indicator["enemy"]
+			if not is_instance_valid(enemy) or not enemy.is_inside_tree():
+				to_remove.append(i)
+				continue
+			var target_pos: Vector2 = indicator["pos"]
+			var local_pos := target_pos - game.global_position
+			var col := Color(1.0, 0.0, 0.3, 0.6)
+			draw_line(local_pos + Vector2(-50, 0), local_pos + Vector2(50, 0), col, 3.0, true)
+			draw_line(local_pos + Vector2(0, -50), local_pos + Vector2(0, 50), col, 3.0, true)
+			draw_arc(local_pos, 40.0, 0, TAU, 32, col, 2.5, true)
+			draw_arc(local_pos, 20.0, 0, TAU, 24, Color(1.0, 0.0, 0.3, 0.3), 1.5, true)
+		for i in range(to_remove.size() - 1, -1, -1):
+			game.warning_indicators.remove_at(to_remove[i])
 
 # --- Screen effects ---
 

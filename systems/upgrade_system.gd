@@ -18,7 +18,7 @@ func _register_tier1() -> void:
 	_add("hyper_drive", 1, "credits", 50, 2.4, 5, 0.40, "percent_speed")
 	_add("warhead", 1, "credits", 50, 2.4, 5, 0.40, "percent_radius")
 	_add("head_start", 1, "credits", 40, 2.0, 5, 20.0, "flat_credits_start")
-	_add("credit_boost", 1, "credits", 50, 2.4, 5, 0.10, "percent_credits")
+	_add("credit_boost", 1, "credits", 50, 2.4, 5, 1.0, "flat_credits")
 	_add("time_warp", 1, "credits", 60, 2.5, 3, 0.08, "percent_slow_chance")
 	_add("early_warning", 1, "credits", 100, 1.0, 1, 1.0, "bool_warning")
 
@@ -28,7 +28,7 @@ func _register_tier2() -> void:
 	_add("warp_reload", 2, "crystals", 30, 2.5, 4, 0.12, "percent_reload")
 	_add("overcharge", 2, "crystals", 40, 2.5, 5, 0.15, "percent_charge_speed")
 	_add("critical_mass", 2, "crystals", 50, 2.5, 3, 0.04, "percent_critical")
-	_add("crystal_boost", 2, "crystals", 30, 2.5, 4, 0.15, "percent_crystals")
+	_add("crystal_boost", 2, "crystals", 30, 2.5, 4, 1.0, "flat_crystals")
 	_add("homing", 2, "crystals", 60, 2.5, 3, 0.15, "percent_homing")
 	_add("chain_reaction", 2, "crystals", 50, 2.5, 3, 0.05, "percent_chain_chance")
 	_add("triple_burst", 2, "crystals", 50, 2.5, 3, 0.08, "percent_triple_chance")
@@ -40,7 +40,7 @@ func _register_tier3() -> void:
 	_add("singularity", 3, "void", 20, 2.5, 3, 0.15, "percent_pull_force")
 	_add("auto_turret", 3, "void", 30, 2.5, 3, 1.0, "flat_auto_turret")
 	_add("mirror_array", 3, "void", 25, 2.5, 3, 0.05, "percent_reflect_chance")
-	_add("void_boost", 3, "void", 20, 2.5, 3, 0.20, "percent_void")
+	_add("void_boost", 3, "void", 20, 2.5, 3, 1.0, "flat_void")
 
 func _register_tier4() -> void:
 	_add("ascendant_core", 4, "eter", 50, 2.0, 3, 0.10, "percent_all_currencies")

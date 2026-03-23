@@ -29,9 +29,9 @@ var critical_mass_chance: float
 
 # --- Economia ---
 var head_start_credits: int
-var credits_mult: float
-var crystals_mult: float
-var void_mult: float
+var credits_bonus: int
+var crystals_bonus: int
+var void_bonus: int
 
 # --- Especial ---
 var charge_speed_mult: float
@@ -76,9 +76,9 @@ func _init(us: UpgradeSystem) -> void:
 
 	# Economia
 	head_start_credits = int(us.get_effect("head_start"))
-	credits_mult = 1.0 + us.get_effect("credit_boost")
-	crystals_mult = 1.0 + us.get_effect("crystal_boost")
-	void_mult = 1.0 + us.get_effect("void_boost")
+	credits_bonus = int(us.get_effect("credit_boost"))
+	crystals_bonus = int(us.get_effect("crystal_boost"))
+	void_bonus = int(us.get_effect("void_boost"))
 
 	# Especial
 	charge_speed_mult = 1.0 + us.get_effect("overcharge")
