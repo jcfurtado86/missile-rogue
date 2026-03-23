@@ -3,6 +3,8 @@ extends RefCounted
 
 const SAVE_KEY := "m1ss1l3-r0gu3-s4lt-k3y-2024"
 var locale_loaded := "pt"
+var music_volume := 1.0
+var sfx_volume := 1.0
 
 func to_dict(upgrade_system: UpgradeSystem, ascension: AscensionSystem, currency: CurrencySystem) -> Dictionary:
 	var upgrade_levels := {}
@@ -21,6 +23,8 @@ func to_dict(upgrade_system: UpgradeSystem, ascension: AscensionSystem, currency
 		"unlocked_currencies": currency.unlocked.duplicate(),
 		"boss_cleared": upgrade_system.boss_cleared,
 		"locale": locale_loaded,
+		"music_volume": music_volume,
+		"sfx_volume": sfx_volume,
 	}
 
 func from_dict(data: Dictionary, upgrade_system: UpgradeSystem, ascension: AscensionSystem, currency: CurrencySystem) -> void:
@@ -40,6 +44,8 @@ func from_dict(data: Dictionary, upgrade_system: UpgradeSystem, ascension: Ascen
 	var saved_locale: String = data.get("locale", "pt")
 	if saved_locale != "":
 		locale_loaded = saved_locale
+	music_volume = data.get("music_volume", 1.0)
+	sfx_volume = data.get("sfx_volume", 1.0)
 	var levels = data.get("upgrades", {})
 	for name in levels:
 		if upgrade_system.upgrades.has(name):

@@ -22,10 +22,22 @@ var music_player: AudioStreamPlayer = null
 var music_target_pitch := 1.0
 var music_current_pitch := 1.0
 
+var music_volume_db := 0.0
+var sfx_volume_db := 0.0
+
 func _ready() -> void:
+	# Cria buses de audio separados
+	if AudioServer.get_bus_index("Music") == -1:
+		AudioServer.add_bus()
+		AudioServer.set_bus_name(AudioServer.bus_count - 1, "Music")
+		AudioServer.set_bus_send(AudioServer.get_bus_index("Music"), "Master")
+	if AudioServer.get_bus_index("SFX") == -1:
+		AudioServer.add_bus()
+		AudioServer.set_bus_name(AudioServer.bus_count - 1, "SFX")
+		AudioServer.set_bus_send(AudioServer.get_bus_index("SFX"), "Master")
 	for i in POOL_SIZE:
 		var p := AudioStreamPlayer.new()
-		p.bus = "Master"
+		p.bus = "SFX"
 		add_child(p)
 		players.append(p)
 	get_tree().node_added.connect(_on_node_added)
@@ -49,7 +61,7 @@ func _start_music() -> void:
 			ogg_stream.loop = true
 			music_player = AudioStreamPlayer.new()
 			music_player.stream = ogg_stream
-			music_player.bus = "Master"
+			music_player.bus = "Music"
 			add_child(music_player)
 			music_player.play()
 
@@ -63,6 +75,20 @@ func set_music_pitch(pitch: float) -> void:
 
 func reset_music_pitch() -> void:
 	music_target_pitch = 1.0
+
+func set_music_volume(linear: float) -> void:
+	music_volume_db = linear_to_db(clampf(linear, 0.001, 1.0))
+	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("Music"), music_volume_db)
+
+func set_sfx_volume(linear: float) -> void:
+	sfx_volume_db = linear_to_db(clampf(linear, 0.001, 1.0))
+	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("SFX"), sfx_volume_db)
+
+func get_music_volume_linear() -> float:
+	return db_to_linear(AudioServer.get_bus_volume_db(AudioServer.get_bus_index("Music")))
+
+func get_sfx_volume_linear() -> float:
+	return db_to_linear(AudioServer.get_bus_volume_db(AudioServer.get_bus_index("SFX")))
 
 func _play(stream: AudioStreamWAV, volume_db := 0.0, pitch := 1.0) -> void:
 	var p := players[next_player]

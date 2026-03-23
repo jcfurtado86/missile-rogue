@@ -122,6 +122,9 @@ func _on_start_run() -> void:
 
 func _save_game() -> void:
 	save_system.locale_loaded = get_node("/root/Tr").locale
+	var sm = get_node("/root/SoundManager")
+	save_system.music_volume = sm.get_music_volume_linear()
+	save_system.sfx_volume = sm.get_sfx_volume_linear()
 	var data = save_system.to_dict(upgrade_system, ascension_system, currency)
 	save_system.save_to_file(SAVE_PATH, data)
 
@@ -130,6 +133,9 @@ func _load_game() -> void:
 	save_system.from_dict(data, upgrade_system, ascension_system, currency)
 	var tr_node = get_node("/root/Tr")
 	tr_node.set_locale(save_system.locale_loaded)
+	var sm = get_node("/root/SoundManager")
+	sm.set_music_volume(save_system.music_volume)
+	sm.set_sfx_volume(save_system.sfx_volume)
 
 func _clear_current() -> void:
 	if current_scene:

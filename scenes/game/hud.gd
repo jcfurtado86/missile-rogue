@@ -110,18 +110,18 @@ func _setup_pause_button() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	pause_button = Button.new()
 	pause_button.text = "ll"
-	pause_button.add_theme_font_size_override("font_size", 28)
+	pause_button.add_theme_font_size_override("font_size", 34)
 	pause_button.offset_left = 15.0
 	pause_button.offset_top = 15.0
-	pause_button.offset_right = 75.0
-	pause_button.offset_bottom = 65.0
+	pause_button.offset_right = 95.0
+	pause_button.offset_bottom = 80.0
 	_style_popup_button(pause_button, Color(1.0, 0.0, 0.6))
 	pause_button.pressed.connect(_on_pause_pressed)
 	add_child(pause_button)
 
 func _on_pause_pressed() -> void:
 	get_tree().paused = true
-	var panel := _create_popup_panel(Color(0.5, 0.5, 0.5), 500.0, 350.0)
+	var panel := _create_popup_panel(Color(0.5, 0.5, 0.5), 500.0, 520.0)
 	panel.process_mode = Node.PROCESS_MODE_ALWAYS
 
 	var title := Label.new()
@@ -130,16 +130,57 @@ func _on_pause_pressed() -> void:
 	title.add_theme_font_size_override("font_size", 40)
 	title.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8))
 	title.offset_left = 20.0
-	title.offset_top = 40.0
+	title.offset_top = 30.0
 	title.offset_right = 480.0
-	title.offset_bottom = 100.0
+	title.offset_bottom = 80.0
 	panel.add_child(title)
 
+	# Sliders de volume
+	var sm = get_node("/root/SoundManager")
+	var slider_box := VBoxContainer.new()
+	slider_box.offset_left = 60.0
+	slider_box.offset_top = 100.0
+	slider_box.offset_right = 440.0
+	slider_box.offset_bottom = 280.0
+	slider_box.add_theme_constant_override("separation", 8)
+	panel.add_child(slider_box)
+
+	var music_label := Label.new()
+	music_label.text = get_node("/root/Tr").t("MUSIC")
+	music_label.add_theme_font_size_override("font_size", 20)
+	music_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
+	slider_box.add_child(music_label)
+
+	var music_slider := HSlider.new()
+	music_slider.min_value = 0.0
+	music_slider.max_value = 1.0
+	music_slider.step = 0.01
+	music_slider.value = sm.get_music_volume_linear()
+	music_slider.custom_minimum_size = Vector2(0, 40)
+	music_slider.value_changed.connect(func(val): sm.set_music_volume(val))
+	slider_box.add_child(music_slider)
+
+	var sfx_label := Label.new()
+	sfx_label.text = get_node("/root/Tr").t("SFX")
+	sfx_label.add_theme_font_size_override("font_size", 20)
+	sfx_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
+	slider_box.add_child(sfx_label)
+
+	var sfx_slider := HSlider.new()
+	sfx_slider.min_value = 0.0
+	sfx_slider.max_value = 1.0
+	sfx_slider.step = 0.01
+	sfx_slider.value = sm.get_sfx_volume_linear()
+	sfx_slider.custom_minimum_size = Vector2(0, 40)
+	sfx_slider.value_changed.connect(func(val): sm.set_sfx_volume(val))
+	slider_box.add_child(sfx_slider)
+
+	# Botoes
 	var btn_box := VBoxContainer.new()
 	btn_box.offset_left = 80.0
-	btn_box.offset_top = 120.0
+	btn_box.offset_top = 300.0
 	btn_box.offset_right = 420.0
-	btn_box.offset_bottom = 320.0
+	btn_box.offset_bottom = 490.0
 	btn_box.alignment = BoxContainer.ALIGNMENT_CENTER
 	btn_box.add_theme_constant_override("separation", 20)
 	panel.add_child(btn_box)
@@ -171,20 +212,116 @@ func _on_pause_pressed() -> void:
 
 func _reposition_for_screen() -> void:
 	var screen := get_viewport().get_visible_rect().size
-	var screen_h := screen.y
 	var screen_w := screen.x
-	special_bar.offset_top = screen_h - 100.0
-	special_bar.offset_bottom = screen_h - 70.0
-	nova_button.offset_top = screen_h - 65.0
-	nova_button.offset_bottom = screen_h - 10.0
-	freeze_bar.offset_left = screen_w - 220.0
-	freeze_bar.offset_right = screen_w - 20.0
-	freeze_bar.offset_top = screen_h - 100.0
-	freeze_bar.offset_bottom = screen_h - 70.0
-	freeze_button.offset_left = screen_w - 220.0
-	freeze_button.offset_right = screen_w - 20.0
-	freeze_button.offset_top = screen_h - 65.0
-	freeze_button.offset_bottom = screen_h - 10.0
+	var center_y := screen.y * 0.55
+	# Esconde barras e botoes originais do .tscn — usamos custom draw
+	special_bar.visible = false
+	nova_button.visible = false
+	freeze_bar.visible = false
+	freeze_button.visible = false
+	# Botoes circulares colados nas bordas laterais
+	var radius := 90.0
+	var margin := radius + 5.0
+	_create_circle_button("nova", Vector2(margin, center_y),
+		Color(0.0, 1.0, 1.0), _on_nova_pressed)
+	_create_circle_button("freeze", Vector2(screen_w - margin, center_y),
+		Color(0.3, 0.6, 1.0), _on_freeze_pressed)
+
+var nova_circle: Control
+var freeze_circle: Control
+var nova_charge := 0.0
+var nova_ready := false
+var freeze_charge_val := 0.0
+var freeze_ready_val := false
+
+func _create_circle_button(id: String, pos: Vector2, color: Color, callback: Callable) -> void:
+	var radius := 55.0
+	var btn := Button.new()
+	btn.set_meta("no_click_sfx", true)
+	btn.offset_left = pos.x - radius
+	btn.offset_top = pos.y - radius
+	btn.offset_right = pos.x + radius
+	btn.offset_bottom = pos.y + radius
+	btn.flat = true
+	btn.mouse_filter = Control.MOUSE_FILTER_STOP
+	btn.disabled = true
+	btn.focus_mode = Control.FOCUS_NONE
+	var empty_style := StyleBoxEmpty.new()
+	btn.add_theme_stylebox_override("normal", empty_style)
+	btn.add_theme_stylebox_override("hover", empty_style)
+	btn.add_theme_stylebox_override("pressed", empty_style)
+	btn.add_theme_stylebox_override("disabled", empty_style)
+	btn.add_theme_stylebox_override("focus", empty_style)
+	btn.pressed.connect(callback)
+	add_child(btn)
+	var draw_ctrl := Control.new()
+	draw_ctrl.offset_left = pos.x - radius - 5.0
+	draw_ctrl.offset_top = pos.y - radius - 5.0
+	draw_ctrl.offset_right = pos.x + radius + 5.0
+	draw_ctrl.offset_bottom = pos.y + radius + 5.0
+	draw_ctrl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var center := Vector2(radius + 5.0, radius + 5.0)
+	var _color := color
+	var _id := id
+	var _self := self
+	draw_ctrl.draw.connect(func():
+		var charge := _self.nova_charge if _id == "nova" else _self.freeze_charge_val
+		var is_ready := _self.nova_ready if _id == "nova" else _self.freeze_ready_val
+		var alpha := 0.6 if is_ready else 0.25
+		# Fundo circular
+		draw_ctrl.draw_circle(center, radius, Color(_color.r, _color.g, _color.b, alpha * 0.3))
+		# Borda
+		draw_ctrl.draw_arc(center, radius, 0, TAU, 64, Color(_color.r, _color.g, _color.b, alpha * 0.5), 2.0, true)
+		# Arco de carga
+		if charge > 0.0:
+			var arc_angle := TAU * (charge / 100.0)
+			var arc_color := Color(1.0, 1.0, 0.0, 0.9) if is_ready else Color(_color.r, _color.g, _color.b, 0.7)
+			draw_ctrl.draw_arc(center, radius - 4.0, -PI / 2.0, -PI / 2.0 + arc_angle, 64, arc_color, 5.0, true)
+		# Icone
+		var icon_color := Color(1.0, 1.0, 1.0, 0.9) if is_ready else Color(0.6, 0.6, 0.6, 0.5)
+		if _id == "nova":
+			_self._draw_nova_icon(draw_ctrl, center, icon_color)
+		else:
+			_self._draw_freeze_icon(draw_ctrl, center, icon_color)
+	)
+	add_child(draw_ctrl)
+	if id == "nova":
+		nova_circle = draw_ctrl
+		nova_circle.set_meta("btn", btn)
+	else:
+		freeze_circle = draw_ctrl
+		freeze_circle.set_meta("btn", btn)
+
+func _draw_nova_icon(ctrl: Control, center: Vector2, color: Color) -> void:
+	# Estrela de explosao — 8 pontas
+	var spikes := 8
+	var outer := 28.0
+	var inner := 12.0
+	for i in spikes:
+		var angle := TAU * i / spikes - PI / 2.0
+		var next_angle := TAU * (i + 0.5) / spikes - PI / 2.0
+		var p1 := center + Vector2.from_angle(angle) * outer
+		var p2 := center + Vector2.from_angle(next_angle) * inner
+		ctrl.draw_line(center, p1, color, 3.0, true)
+		ctrl.draw_line(p1, p2, color, 2.0, true)
+	ctrl.draw_circle(center, 6.0, color)
+
+func _draw_freeze_icon(ctrl: Control, center: Vector2, color: Color) -> void:
+	# Floco de neve — 6 bracos com ramificacoes
+	var arms := 6
+	var arm_len := 26.0
+	var branch_len := 12.0
+	for i in arms:
+		var angle := TAU * i / arms - PI / 2.0
+		var tip := center + Vector2.from_angle(angle) * arm_len
+		ctrl.draw_line(center, tip, color, 3.0, true)
+		# Ramificacoes
+		var mid := center + Vector2.from_angle(angle) * arm_len * 0.55
+		var b1 := mid + Vector2.from_angle(angle + 0.7) * branch_len
+		var b2 := mid + Vector2.from_angle(angle - 0.7) * branch_len
+		ctrl.draw_line(mid, b1, color, 2.0, true)
+		ctrl.draw_line(mid, b2, color, 2.0, true)
+	ctrl.draw_circle(center, 4.0, color)
 
 # ============================================================
 # CURRENCIES HUD
@@ -247,24 +384,23 @@ func _draw_gem_large(c: Control, center: Vector2, col: Color, s := 1.5) -> void:
 # ============================================================
 
 func update_special(charge: float, is_ready: bool) -> void:
-	special_bar.value = charge
-	nova_button.disabled = not is_ready
-	if is_ready:
-		nova_button.modulate = Color(1.0, 1.0, 0.0)
-	else:
-		nova_button.modulate = Color(0.2, 0.2, 0.3)
+	nova_charge = charge
+	nova_ready = is_ready
+	if nova_circle:
+		nova_circle.get_meta("btn").disabled = not is_ready
+		nova_circle.queue_redraw()
 
 func update_freeze(charge: float, is_ready: bool) -> void:
-	freeze_bar.value = charge
-	freeze_button.disabled = not is_ready
-	if is_ready:
-		freeze_button.modulate = Color(0.3, 0.6, 1.0)
-	else:
-		freeze_button.modulate = Color(0.2, 0.2, 0.3)
+	freeze_charge_val = charge
+	freeze_ready_val = is_ready
+	if freeze_circle:
+		freeze_circle.get_meta("btn").disabled = not is_ready
+		freeze_circle.queue_redraw()
 
 func set_freeze_visible(val: bool) -> void:
-	freeze_bar.visible = val
-	freeze_button.visible = val
+	if freeze_circle:
+		freeze_circle.visible = val
+		freeze_circle.get_meta("btn").visible = val
 
 func show_boss_hp(ratio: float) -> void:
 	boss_bar.visible = true
