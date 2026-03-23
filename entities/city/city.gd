@@ -336,21 +336,141 @@ func _draw_alive() -> void:
 				break
 			accum += seg_len
 
-	# Shield visual
+	# Shield visual — domo 3D cobrindo o chip
 	if shield_active:
-		var center := (chip_tl + chip_tr + chip_br + chip_bl) / 4.0
-		var shield_r := maxf(chip_tr.distance_to(chip_tl), chip_bl.distance_to(chip_tl)) * 0.7
-		var shield_pulse := (sin(anim_time * 3.0) + 1.0) * 0.5
-		var shield_alpha := lerpf(0.08, 0.15, shield_pulse)
-		draw_circle(center, shield_r, Color(0.0, 1.0, 1.0, shield_alpha))
-		draw_arc(center, shield_r, 0, TAU, 48, Color(0.0, 1.0, 1.0, lerpf(0.3, 0.6, shield_pulse)), 2.0, true)
+		_draw_shield_dome(true)
 	elif shield_cooldown > 0.0 and shield_timer > 0.0:
-		# Shield recharging indicator
-		var center := (chip_tl + chip_tr + chip_br + chip_bl) / 4.0
-		var shield_r := maxf(chip_tr.distance_to(chip_tl), chip_bl.distance_to(chip_tl)) * 0.7
-		var progress := 1.0 - (shield_timer / shield_cooldown)
-		draw_arc(center, shield_r, -PI / 2.0, -PI / 2.0 + TAU * progress, 48, Color(0.0, 1.0, 1.0, 0.15), 1.5, true)
+		_draw_shield_dome(false)
 
+
+func _draw_shield_dome(active: bool) -> void:
+	var center := (chip_tl + chip_tr + chip_br + chip_bl) / 4.0
+	# Raios baseados no chip, com margem pra ficar maior
+	var margin := 1.8
+	var rx := maxf(chip_tr.x - chip_tl.x, chip_br.x - chip_bl.x) / 2.0 * margin
+	# Raio vertical em perspectiva (comprimido)
+	var chip_h := (chip_bl.y + chip_br.y) / 2.0 - (chip_tl.y + chip_tr.y) / 2.0
+	var ry_base := chip_h / 2.0 * margin  # elipse da base
+	var dome_height := rx * 0.4  # altura do domo (bem achatado)
+	# Centro X com leve skew pela perspectiva
+	var cx := center.x
+	var base_y := center.y + ry_base * 0.3  # base um pouco abaixo do centro do chip
+	var segments := 32
+
+	if active:
+		var pulse := (sin(anim_time * 2.5) + 1.0) * 0.5
+		var scan_raw := fmod(anim_time * 0.5, 2.0)
+		var scan := scan_raw if scan_raw <= 1.0 else 2.0 - scan_raw
+
+		# Fatias horizontais (efeito de volume)
+		var slices := 12
+		for s in slices:
+			var angle := PI * float(s) / slices  # 0..PI
+			var slice_y := base_y - sin(angle) * dome_height
+			var slice_rx := cos(angle) * rx  # negativo no topo, ok
+			slice_rx = absf(slice_rx)
+			if slice_rx < 2.0:
+				continue
+			var alpha := lerpf(0.12, 0.25, pulse) * sin(angle)
+			draw_line(Vector2(cx - slice_rx, slice_y), Vector2(cx + slice_rx, slice_y),
+				Color(0.0, 0.9, 1.0, alpha), 1.0, true)
+
+		# Scan line horizontal animada
+		var scan_angle := scan * PI
+		var scan_y := base_y - sin(scan_angle) * dome_height
+		var scan_rx := absf(cos(scan_angle)) * rx
+		if scan_rx > 4.0:
+			draw_line(Vector2(cx - scan_rx, scan_y), Vector2(cx + scan_rx, scan_y),
+				Color(0.0, 1.0, 1.0, 0.45), 2.0, true)
+
+		# Contorno — semicirculo (arco de PI, da direita pra esquerda passando pelo topo)
+		var outline_col := Color(0.0, 1.0, 1.0, lerpf(0.7, 1.0, pulse))
+		var arc_pts := PackedVector2Array()
+		for i in segments + 1:
+			var angle := PI * float(i) / segments  # 0..PI
+			var px := cx + cos(angle) * rx
+			var py := base_y - sin(angle) * dome_height
+			arc_pts.append(Vector2(px, py))
+		for i in arc_pts.size() - 1:
+			draw_line(arc_pts[i], arc_pts[i + 1], outline_col, 2.0, true)
+
+		# Base — elipse perspectivada (metade visivel, parte da frente)
+		var base_col := Color(0.0, 1.0, 1.0, lerpf(0.5, 0.8, pulse))
+		var base_pts := PackedVector2Array()
+		for i in segments + 1:
+			var angle := PI + PI * float(i) / segments  # PI..TAU (metade de baixo)
+			var bx := cx + cos(angle) * rx
+			var by := base_y + sin(angle) * ry_base
+			base_pts.append(Vector2(bx, by))
+		for i in base_pts.size() - 1:
+			draw_line(base_pts[i], base_pts[i + 1], Color(0.0, 1.0, 1.0, 0.15), 1.0, true)
+		# Metade da frente (visivel, mais forte)
+		var front_pts := PackedVector2Array()
+		for i in segments + 1:
+			var angle := PI * float(i) / segments  # 0..PI
+			var bx := cx + cos(angle) * rx
+			var by := base_y + sin(angle) * ry_base
+			front_pts.append(Vector2(bx, by))
+		for i in front_pts.size() - 1:
+			draw_line(front_pts[i], front_pts[i + 1], base_col, 2.5, true)
+
+		# Meridianos — arcos verticais
+		var meridians := 3
+		for m in meridians:
+			var u := float(m + 1) / (meridians + 1)
+			var mx := cx - rx + u * rx * 2.0
+			var dx_ratio := (mx - cx) / rx
+			var merid_h := dome_height * sqrt(maxf(1.0 - dx_ratio * dx_ratio, 0.0))
+			if merid_h < 3.0:
+				continue
+			var merid_pts := PackedVector2Array()
+			@warning_ignore("integer_division")
+			var half := segments / 2
+			for i in half + 1:
+				var t := float(i) / float(half)
+				var angle := PI * t
+				var py := base_y - sin(angle) * merid_h
+				merid_pts.append(Vector2(mx, py))
+			for i in merid_pts.size() - 1:
+				draw_line(merid_pts[i], merid_pts[i + 1], Color(0.0, 1.0, 1.0, 0.15), 1.0, true)
+
+		# Hexagono no topo
+		var hex_r := rx * 0.15
+		var hex_y := base_y - dome_height
+		var hex_col := Color(0.0, 1.0, 1.0, lerpf(0.25, 0.5, pulse))
+		for i in 6:
+			var a1 := TAU * i / 6.0
+			var a2 := TAU * (i + 1) / 6.0
+			draw_line(
+				Vector2(cx + cos(a1) * hex_r, hex_y + sin(a1) * hex_r * 0.5),
+				Vector2(cx + cos(a2) * hex_r, hex_y + sin(a2) * hex_r * 0.5),
+				hex_col, 1.0, true)
+	else:
+		# Recarregando — arco dim com progresso
+		var progress := 1.0 - (shield_timer / shield_cooldown)
+		var dim := Color(0.0, 0.6, 0.8, 0.15)
+		var lit := Color(0.0, 1.0, 1.0, 0.4)
+		var fill_segs := int(segments * progress)
+
+		var arc_pts := PackedVector2Array()
+		for i in segments + 1:
+			var angle := PI * float(i) / segments
+			var px := cx + cos(angle) * rx
+			var py := base_y - sin(angle) * dome_height
+			arc_pts.append(Vector2(px, py))
+		for i in arc_pts.size() - 1:
+			var col := lit if i < fill_segs else dim
+			draw_line(arc_pts[i], arc_pts[i + 1], col, 1.5, true)
+
+		# Base dim
+		var base_pts := PackedVector2Array()
+		for i in segments + 1:
+			var angle := TAU * float(i) / segments
+			var bx := cx + cos(angle) * rx
+			var by := base_y + sin(angle) * ry_base
+			base_pts.append(Vector2(bx, by))
+		for i in base_pts.size() - 1:
+			draw_line(base_pts[i], base_pts[i + 1], dim, 1.0, true)
 
 func _draw_dead() -> void:
 	var dead := Color(0.0, 0.6, 1.0, 0.2)

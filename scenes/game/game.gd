@@ -18,7 +18,7 @@ var spawner := SpawnSystem.new()
 var special := SpecialSystem.new()
 var currency: CurrencySystem
 var upgrade_system: UpgradeSystem
-var stats: PlayerStats
+var stats = null
 var ad_system = null
 var spawn_timer := 0.0
 var run_earnings := {"credits": 0, "crystals": 0, "void": 0}
@@ -150,19 +150,25 @@ func _fire_at(target: Vector2) -> void:
 		closest_battery.consume_ammo()
 
 		# Determina quantos misseis disparar
-		var missile_count := 1 + stats.extra_missiles  # twin_cannons
+		var missile_count: int = 1 + stats.extra_missiles  # twin_cannons
 
 		# Triple burst — chance de 3 misseis
 		if stats.triple_chance > 0.0 and randf() < stats.triple_chance:
 			missile_count = 3
 
-		for i in missile_count:
-			if i == 0:
-				_spawn_player_missile(closest_battery, target)
-			else:
-				# Misseis extras com offset espalhado
-				var offset := Vector2(randf_range(-120, 120), randf_range(-120, 120))
-				_spawn_player_missile(closest_battery, target + offset)
+		if missile_count <= 1:
+			_spawn_player_missile(closest_battery, target)
+		else:
+			# Leque simetrico centrado no alvo
+			var spread_angle := deg_to_rad(30.0)  # angulo total do leque
+			var dir: Vector2 = (target - closest_battery.global_position)
+			var dist := dir.length()
+			var base_angle := dir.angle()
+			for i in missile_count:
+				var t := float(i) / (missile_count - 1) - 0.5  # -0.5 .. 0.5
+				var angle := base_angle + t * spread_angle
+				var fan_target := closest_battery.global_position + Vector2.from_angle(angle) * dist
+				_spawn_player_missile(closest_battery, fan_target)
 
 func _spawn_player_missile(battery: Node2D, target: Vector2) -> void:
 	var missile = PlayerMissileScene.instantiate()

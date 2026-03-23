@@ -13,8 +13,8 @@ func _init() -> void:
 func _register_tier1() -> void:
 	_add("extra_city", 1, "credits", 80, 3.0, 2, 1.0, "flat_extra_city")
 	_add("ammo_pack", 1, "credits", 30, 2.0, 8, 1.0, "flat_magazines")
-	_add("magazine", 1, "credits", 40, 2.2, 7, 1.0, "flat_magazine_size")
-	_add("ammo_regen", 1, "credits", 60, 2.4, 5, 0.2, "flat_ammo_regen")
+	_add("magazine", 1, "credits", 40, 2.2, 4, 1.0, "flat_magazine_size")
+	_add("ammo_regen", 1, "credits", 60, 2.4, 5, 0.1, "flat_ammo_regen")
 	_add("hyper_drive", 1, "credits", 50, 2.4, 5, 0.40, "percent_speed")
 	_add("warhead", 1, "credits", 50, 2.4, 5, 0.40, "percent_radius")
 	_add("head_start", 1, "credits", 40, 2.0, 5, 20.0, "flat_credits_start")
