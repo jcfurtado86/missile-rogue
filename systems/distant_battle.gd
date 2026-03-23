@@ -26,17 +26,14 @@ func update(delta: float, screen_size: Vector2, horizon_y: float) -> void:
 				"speed": randf_range(40.0, 90.0),
 			})
 		if defenses.size() < MAX_DEFENSES and randf() > 0.5 and missiles.size() > 0:
-			var target_m: Dictionary = missiles[randi() % missiles.size()]
+			var mi_idx := randi() % missiles.size()
+			var target_m: Dictionary = missiles[mi_idx]
 			var dx := randf_range(100.0, screen_size.x - 100.0)
-			var predict_t := randf_range(0.3, 0.8)
-			var m_dir := Vector2(target_m["tx"] - target_m["x"], target_m["ty"] - target_m["y"]).normalized()
-			var intercept_x: float = target_m["x"] + m_dir.x * target_m["speed"] * predict_t
-			var intercept_y: float = target_m["y"] + m_dir.y * target_m["speed"] * predict_t
 			defenses.append({
 				"x": dx, "y": horizon_y - 5.0,
-				"tx": intercept_x + randf_range(-15.0, 15.0),
-				"ty": intercept_y + randf_range(-10.0, 10.0),
-				"speed": randf_range(80.0, 150.0),
+				"tx": target_m["x"], "ty": target_m["y"],
+				"target_ref": target_m,
+				"speed": randf_range(100.0, 180.0),
 			})
 
 	var i := 0
@@ -65,10 +62,16 @@ func update(delta: float, screen_size: Vector2, horizon_y: float) -> void:
 	i = 0
 	while i < defenses.size():
 		var d: Dictionary = defenses[i]
+		var target_ref = d["target_ref"]
+		# Atualiza alvo em tempo real se o missil ainda existe no array
+		if target_ref != null and target_ref in missiles:
+			d["tx"] = target_ref["x"]
+			d["ty"] = target_ref["y"]
 		var dir := Vector2(d["tx"] - d["x"], d["ty"] - d["y"]).normalized()
 		d["x"] += dir.x * d["speed"] * delta
 		d["y"] += dir.y * d["speed"] * delta
-		if d["y"] <= d["ty"]:
+		var dist_to_target := Vector2(d["tx"] - d["x"], d["ty"] - d["y"]).length()
+		if dist_to_target < 15.0 or d["y"] <= d["ty"]:
 			var exp_x: float = d["x"]
 			var exp_y: float = d["y"]
 			var exp_r := randf_range(15.0, 37.5)

@@ -16,7 +16,21 @@ func _ready() -> void:
 	currency.add("crystals", 99999)
 	currency.add("void", 99999)
 	currency.add("eter", 99999)
-	_start_game()
+	_open_title()
+
+func _open_title() -> void:
+	_clear_current()
+	var title = preload("res://scenes/title/title.tscn").instantiate()
+	title.play_pressed.connect(_start_game)
+	title.reset_pressed.connect(_on_reset_save)
+	add_child(title)
+	current_scene = title
+
+func _on_reset_save() -> void:
+	currency = CurrencySystem.new()
+	upgrade_system = UpgradeSystem.new()
+	ascension_system = AscensionSystem.new()
+	_open_title()
 
 func _start_game() -> void:
 	_clear_current()

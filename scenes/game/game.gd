@@ -69,18 +69,6 @@ func _ready() -> void:
 	add_child(hud)
 	hud.threat_bar.max_value = threat.max_level
 
-	# Musica
-	var music := AudioStreamPlayer.new()
-	var ogg_file := FileAccess.open("res://assets/audio/neon.ogg", FileAccess.READ)
-	if ogg_file:
-		var ogg_stream := AudioStreamOggVorbis.load_from_file("res://assets/audio/neon.ogg")
-		if ogg_stream:
-			ogg_stream.loop = true
-			music.stream = ogg_stream
-			music.autoplay = true
-			music.bus = "Master"
-			add_child(music)
-
 	screen_width = get_viewport().get_visible_rect().size.x
 	var battery_y := screen_height - BATTERY_Y_OFFSET
 	var battery_scene := preload("res://entities/battery/battery.tscn")
@@ -427,14 +415,11 @@ func _check_game_over() -> void:
 		if city.is_alive():
 			return
 	is_game_over = true
+	hud.set_earnings(run_earnings)
 	if ad_system and ad_system.can_revive():
 		hud.show_revive_offer()
-	elif ad_system and ad_system.can_show_shop_ad():
-		hud.show_game_over()
-		hud.show_double_offer(run_earnings)
 	else:
 		hud.show_game_over()
-		game_over.emit()
 
 func revive() -> void:
 	if not ad_system:

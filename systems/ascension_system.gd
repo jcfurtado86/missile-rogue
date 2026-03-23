@@ -19,6 +19,7 @@ func perform_ascension(upgrade_system: UpgradeSystem, currency: CurrencySystem) 
 		upgrade_system.reset_tiers(1, 3)
 	if not keep_currencies:
 		currency.reset_run_currencies()
+	upgrade_system.total_invested = 0
 	ascension_count += 1
 
 func get_ascension_count() -> int:

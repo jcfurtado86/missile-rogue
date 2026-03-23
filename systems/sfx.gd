@@ -30,6 +30,19 @@ func _ready() -> void:
 	stream_nova_bomb = _gen_nova_bomb()
 	stream_ui_click = _gen_ui_click()
 	stream_purchase = _gen_purchase()
+	_start_music()
+
+func _start_music() -> void:
+	var ogg_file := FileAccess.open("res://assets/audio/neon.ogg", FileAccess.READ)
+	if ogg_file:
+		var ogg_stream := AudioStreamOggVorbis.load_from_file("res://assets/audio/neon.ogg")
+		if ogg_stream:
+			ogg_stream.loop = true
+			var music := AudioStreamPlayer.new()
+			music.stream = ogg_stream
+			music.bus = "Master"
+			add_child(music)
+			music.play()
 
 func _play(stream: AudioStreamWAV, volume_db := 0.0, pitch := 1.0) -> void:
 	var p := players[next_player]

@@ -3,12 +3,12 @@
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
 uid="uid://djvjkbwk7dp0r"
-path="res://.godot/imported/neon.ogg-975aa271ee07f5560d9f978546f609f2.oggvorbisstr"
+path="res://.godot/imported/neon.ogg-7d2a19405e93efc02d4af6d5c8a08bcc.oggvorbisstr"
 
 [deps]
 
-source_file="res://assets/neon.ogg"
-dest_files=["res://.godot/imported/neon.ogg-975aa271ee07f5560d9f978546f609f2.oggvorbisstr"]
+source_file="res://assets/audio/neon.ogg"
+dest_files=["res://.godot/imported/neon.ogg-7d2a19405e93efc02d4af6d5c8a08bcc.oggvorbisstr"]
 
 [params]
 
