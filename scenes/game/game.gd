@@ -453,7 +453,7 @@ func _do_revive() -> void:
 		frag.queue_free()
 	# Recarrega pentes de todas as baterias
 	for battery in batteries:
-		battery.magazines = stats.max_magazines
+		battery.magazines = stats.max_magazines - 1
 		battery.magazine_ammo = stats.magazine_size
 		battery.reloading = false
 		battery.queue_redraw()
