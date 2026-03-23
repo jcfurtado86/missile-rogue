@@ -3,6 +3,15 @@ extends CanvasLayer
 @onready var threat_label: Label = $ThreatLabel
 @onready var threat_bar: ProgressBar = $ThreatBar
 @onready var credits_label: Label = $CreditsLabel
+var currency_draw: Control
+var hud_currencies: Array = []
+
+const GEM_COLORS := {
+	"credits": Color(1.0, 0.0, 0.6),
+	"crystals": Color(0.2, 1.0, 0.1),
+	"void": Color(0.7, 0.0, 1.0),
+	"eter": Color(1.0, 0.5, 0.0),
+}
 @onready var game_over_label: Label = $GameOverLabel
 @onready var special_bar: ProgressBar = $SpecialBar
 @onready var nova_button: Button = $NovaButton
@@ -20,6 +29,8 @@ extends CanvasLayer
 @onready var double_button: Button = $DoubleContainer/DoubleButtons/DoubleButton
 @onready var double_decline_button: Button = $DoubleContainer/DoubleButtons/DoubleDeclineButton
 
+var debug_threat := false
+
 func _ready() -> void:
 	game_over_label.visible = false
 	victory_label.visible = false
@@ -27,6 +38,17 @@ func _ready() -> void:
 	boss_label.visible = false
 	revive_container.visible = false
 	double_container.visible = false
+	threat_label.visible = debug_threat
+	threat_bar.visible = debug_threat
+	credits_label.visible = false
+	currency_draw = Control.new()
+	currency_draw.offset_left = 20.0
+	currency_draw.offset_top = 20.0
+	currency_draw.offset_right = 1060.0
+	currency_draw.offset_bottom = 60.0
+	currency_draw.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	currency_draw.draw.connect(_draw_currencies)
+	add_child(currency_draw)
 	nova_button.pressed.connect(_on_nova_pressed)
 	freeze_button.pressed.connect(_on_freeze_pressed)
 	victory_button.pressed.connect(_on_victory_pressed)
@@ -125,18 +147,45 @@ func _reposition_for_screen() -> void:
 	double_container.offset_bottom = center_y + 260.0
 
 func update_threat(level: float) -> void:
-	threat_label.text = "AMEACA: %d" % int(level)
-	threat_bar.value = level
+	if debug_threat:
+		threat_label.text = "AMEACA: %d" % int(level)
+		threat_bar.value = level
 
 func update_currencies(earnings: Dictionary) -> void:
-	var parts: Array[String] = []
-	if earnings.get("void", 0) > 0:
-		parts.append("%d VO" % earnings["void"])
-	if earnings.get("crystals", 0) > 0:
-		parts.append("%d CS" % earnings["crystals"])
-	if earnings.get("credits", 0) > 0:
-		parts.append("%d CR" % earnings["credits"])
-	credits_label.text = "  ".join(parts)
+	hud_currencies.clear()
+	for cur_type in ["void", "crystals", "credits"]:
+		var amount = earnings.get(cur_type, 0)
+		if amount > 0:
+			hud_currencies.append({"type": cur_type, "amount": amount})
+	currency_draw.queue_redraw()
+
+func _draw_currencies() -> void:
+	var font := ThemeDB.fallback_font
+	var draw_w := currency_draw.size.x
+	var entries := hud_currencies.duplicate()
+	entries.reverse()
+	var x := draw_w
+	for entry in entries:
+		var text := "%d" % entry["amount"]
+		var text_w := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, 28).x
+		x -= text_w
+		currency_draw.draw_string(font, Vector2(x, 30), text, HORIZONTAL_ALIGNMENT_LEFT, -1, 28, Color.WHITE)
+		x -= 24
+		_draw_gem(currency_draw, Vector2(x + 8, 20), GEM_COLORS[entry["type"]])
+		x -= 20
+
+func _draw_gem(c: Control, center: Vector2, col: Color) -> void:
+	var pts := PackedVector2Array([
+		center + Vector2(0, -10),
+		center + Vector2(8, 0),
+		center + Vector2(0, 10),
+		center + Vector2(-8, 0),
+	])
+	c.draw_colored_polygon(pts, col)
+	c.draw_polyline(pts, Color(col.r * 0.6, col.g * 0.6, col.b * 0.6, 0.8), 1.5, true)
+	c.draw_line(pts[3], pts[0], Color(col.r * 0.6, col.g * 0.6, col.b * 0.6, 0.8), 1.5, true)
+	c.draw_line(center + Vector2(-8, 0), center + Vector2(0, -3), Color(1, 1, 1, 0.3), 1.0, true)
+	c.draw_line(center + Vector2(0, -3), center + Vector2(0, -10), Color(1, 1, 1, 0.3), 1.0, true)
 
 func update_special(charge: float, is_ready: bool) -> void:
 	special_bar.value = charge

@@ -25,6 +25,7 @@ func test_eter_calculation_large() -> void:
 	currency.add("credits", 100000)
 	for i in 8:
 		upgrades.buy("ammo_pack", currency)
+	upgrades.buy("warhead", currency)
 	for i in 5:
 		upgrades.buy("hyper_drive", currency)
 	var eter = ascension.calculate_eter(upgrades)

@@ -62,19 +62,23 @@ func test_ammo_pack_effect() -> void:
 
 # 44
 func test_hyper_drive_effect() -> void:
-	currency.add("credits", 1000)
+	currency.add("credits", 10000)
+	upgrades.buy("ammo_pack", currency)
+	upgrades.buy("warhead", currency)
 	upgrades.buy("hyper_drive", currency)
 	assert_float(upgrades.get_effect("hyper_drive")).is_equal_approx(0.40, 0.001)
 
 # 45
 func test_warhead_effect() -> void:
-	currency.add("credits", 1000)
+	currency.add("credits", 10000)
+	upgrades.buy("ammo_pack", currency)
 	upgrades.buy("warhead", currency)
 	assert_float(upgrades.get_effect("warhead")).is_equal_approx(0.40, 0.001)
 
 # 46
 func test_credit_boost_effect() -> void:
-	currency.add("credits", 1000)
+	currency.add("credits", 10000)
+	upgrades.buy("ammo_pack", currency)
 	upgrades.buy("credit_boost", currency)
 	assert_float(upgrades.get_effect("credit_boost")).is_equal_approx(1.0, 0.001)
 

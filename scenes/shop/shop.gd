@@ -21,8 +21,17 @@ var node_screen_positions: Dictionary = {}
 # Eter mode (lista simples)
 var scroll_container: ScrollContainer
 var item_container: VBoxContainer
+var header_draw: Control
+var shop_currencies: Array = []
 
-const NODE_RADIUS := 32.0
+const GEM_COLORS := {
+	"credits": Color(1.0, 0.0, 0.6),
+	"crystals": Color(0.2, 1.0, 0.1),
+	"void": Color(0.7, 0.0, 1.0),
+	"eter": Color(1.0, 0.5, 0.0),
+}
+
+const NODE_RADIUS := 40.0
 
 const CURRENCY_LABELS := {
 	"credits": "CR",
@@ -101,38 +110,45 @@ const UPGRADE_DESCRIPTIONS := {
 	"omega_protocol": "3x dificuldade, 2 bosses",
 }
 
-# Ordem dos nos na profundidade 1 (filhos diretos de ammo_pack)
-const DEPTH_1_ORDER: Array[String] = [
-	"head_start", "extra_city", "time_warp", "early_warning",
-	"credit_boost", "warhead", "hyper_drive", "magazine",
-	"ammo_regen", "extra_battery",
-]
-
-# Profundidade 1 → profundidade 2 (um filho cada)
-const DEPTH_2_MAP := {
-	"time_warp": "triple_burst",
-	"extra_city": "city_shield",
-	"credit_boost": "crystal_boost",
-	"warhead": "critical_mass",
-	"hyper_drive": "homing",
-	"magazine": "warp_reload",
-	"ammo_regen": "overcharge",
-	"extra_battery": "auto_turret",
-}
-
-# Profundidade 2 → profundidade 3
-const DEPTH_3_MAP := {
+# Estrutura da arvore — define filhos de cada no
+const TREE_CHILDREN := {
+	"ammo_pack": ["extra_city", "magazine", "warhead", "credit_boost"],
+	# DEFESA: extra_city → early_warning → city_shield → mirror_array
+	"extra_city": ["early_warning"],
+	"early_warning": ["city_shield"],
 	"city_shield": ["mirror_array"],
-	"crystal_boost": ["void_boost"],
-	"critical_mass": ["temporal_freeze"],
+	# MUNICAO: magazine → ammo_regen → warp_reload → overcharge
+	#                    → extra_battery → auto_turret
+	"magazine": ["ammo_regen", "extra_battery"],
+	"ammo_regen": ["warp_reload"],
+	"warp_reload": ["overcharge"],
+	"extra_battery": ["auto_turret"],
+	# OFENSIVA: warhead → hyper_drive → homing → singularity
+	#                                 → critical_mass → temporal_freeze
+	"warhead": ["hyper_drive"],
+	"hyper_drive": ["homing", "critical_mass"],
 	"homing": ["singularity"],
+	"critical_mass": ["temporal_freeze"],
+	# ECONOMIA: credit_boost → head_start
+	#                        → time_warp → triple_burst
+	#                        → crystal_boost → void_boost
+	"credit_boost": ["head_start", "time_warp", "crystal_boost"],
+	"time_warp": ["triple_burst"],
+	"crystal_boost": ["void_boost"],
 }
 
 func _ready() -> void:
 	credits_label = $MarginContainer/VBoxContainer/Header/CreditsLabel
+	credits_label.visible = false
 	graph_viewport = $MarginContainer/VBoxContainer/GraphViewport
 	scroll_container = $MarginContainer/VBoxContainer/ScrollContainer
 	item_container = $MarginContainer/VBoxContainer/ScrollContainer/ItemList
+
+	header_draw = Control.new()
+	header_draw.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header_draw.custom_minimum_size = Vector2(0, 40)
+	header_draw.draw.connect(_draw_header_currencies)
+	$MarginContainer/VBoxContainer/Header.add_child(header_draw)
 
 	$MarginContainer/VBoxContainer/BottomButtons/PlayButton.pressed.connect(_on_play_pressed)
 	$MarginContainer/VBoxContainer/BottomButtons/AscendButton.pressed.connect(_on_ascend_pressed)
@@ -163,7 +179,7 @@ func _process(delta: float) -> void:
 		graph_canvas.queue_redraw()
 
 # ============================================================
-# GRAPH SETUP
+# GRAPH SETUP & LAYOUT
 # ============================================================
 
 func _setup_graph() -> void:
@@ -179,45 +195,41 @@ func _setup_graph() -> void:
 
 func _calc_positions(vp: Vector2) -> void:
 	node_screen_positions.clear()
-	var margin_x := NODE_RADIUS + 10.0
-	var usable_w := vp.x - 2.0 * margin_x
-	var count := DEPTH_1_ORDER.size()
-	var step := usable_w / float(count - 1)
+	var max_depth := _get_max_depth("ammo_pack", 0)
+	var row_gap := vp.y / float(max_depth + 2)
+	var y_offset := row_gap * 0.8
+	var margin_x := NODE_RADIUS + 8.0
+	_layout_node("ammo_pack", margin_x, vp.x - margin_x, 0, row_gap, y_offset)
 
-	# Centraliza verticalmente: 4 linhas com espaçamento compacto
-	var row_gap := vp.y * 0.16
-	var total_h := row_gap * 3.0
-	var y_start := (vp.y - total_h) / 2.0
-	var y0 := y_start
-	var y1 := y_start + row_gap
-	var y2 := y_start + row_gap * 2.0
-	var y3 := y_start + row_gap * 3.0
+func _get_max_depth(key: String, depth: int) -> int:
+	if not TREE_CHILDREN.has(key):
+		return depth
+	var max_d := depth
+	for child in TREE_CHILDREN[key]:
+		max_d = maxi(max_d, _get_max_depth(child, depth + 1))
+	return max_d
 
-	# Raiz
-	node_screen_positions["ammo_pack"] = Vector2(vp.x / 2.0, y0)
+func _count_leaves(key: String) -> int:
+	if not TREE_CHILDREN.has(key):
+		return 1
+	var total := 0
+	for child in TREE_CHILDREN[key]:
+		total += _count_leaves(child)
+	return total
 
-	# Profundidade 1
-	for i in count:
-		var x := margin_x + step * float(i)
-		node_screen_positions[DEPTH_1_ORDER[i]] = Vector2(x, y1)
-
-	# Profundidade 2 (abaixo do pai)
-	for parent_key in DEPTH_2_MAP:
-		var child_key: String = DEPTH_2_MAP[parent_key]
-		var parent_pos: Vector2 = node_screen_positions[parent_key]
-		node_screen_positions[child_key] = Vector2(parent_pos.x, y2)
-
-	# Profundidade 3 (abaixo do pai, com offset se ramifica)
-	var branch_offset := step * 0.45
-	for parent_key in DEPTH_3_MAP:
-		var children: Array = DEPTH_3_MAP[parent_key]
-		var parent_pos: Vector2 = node_screen_positions[parent_key]
-		if children.size() == 1:
-			node_screen_positions[children[0]] = Vector2(parent_pos.x, y3)
-		else:
-			for j in children.size():
-				var off_x := (float(j) - float(children.size() - 1) / 2.0) * branch_offset
-				node_screen_positions[children[j]] = Vector2(parent_pos.x + off_x, y3)
+func _layout_node(key: String, x_start: float, x_end: float, depth: int, y_gap: float, y_offset: float) -> void:
+	var x_center := (x_start + x_end) / 2.0
+	node_screen_positions[key] = Vector2(x_center, y_offset + depth * y_gap)
+	if not TREE_CHILDREN.has(key):
+		return
+	var children: Array = TREE_CHILDREN[key]
+	var total_leaves := _count_leaves(key)
+	var current_x := x_start
+	for child in children:
+		var child_leaves := _count_leaves(child)
+		var child_width := (x_end - x_start) * float(child_leaves) / float(total_leaves)
+		_layout_node(child, current_x, current_x + child_width, depth + 1, y_gap, y_offset)
+		current_x += child_width
 
 # ============================================================
 # INPUT (TAP)
@@ -283,7 +295,7 @@ func _draw_graph() -> void:
 	if not upgrade_system or not currency:
 		return
 
-	# Edges — linhas de prerequisito (so visveis)
+	# Edges
 	for key in node_screen_positions:
 		if not upgrade_system.upgrades.has(key):
 			continue
@@ -299,7 +311,7 @@ func _draw_graph() -> void:
 		var edge_col := Color(tc.r * 0.5, tc.g * 0.5, tc.b * 0.5, 0.5)
 		_draw_tree_line(from_pos, to_pos, edge_col)
 
-	# Nodes (so visiveis)
+	# Nodes
 	for key in node_screen_positions:
 		if not upgrade_system.upgrades.has(key):
 			continue
@@ -308,7 +320,7 @@ func _draw_graph() -> void:
 		_draw_node(key)
 
 	# Popup
-	if selected_key != "" and upgrade_system.upgrades.has(selected_key):
+	if selected_key != "" and upgrade_system.upgrades.has(selected_key) and _is_visible(selected_key):
 		_draw_popup(selected_key)
 
 func _draw_tree_line(from_pos: Vector2, to_pos: Vector2, col: Color) -> void:
@@ -339,43 +351,36 @@ func _draw_node(key: String) -> void:
 	else:
 		fill_col = Color(tier_col.r * 0.5, tier_col.g * 0.5, tier_col.b * 0.5, 0.7)
 
-	# Glow de selecao
 	if is_selected:
 		graph_canvas.draw_circle(center, r + 8, Color(1.0, 1.0, 1.0, 0.25))
 
-	# Sombra
 	graph_canvas.draw_circle(center + Vector2(2, 2), r, Color(0.0, 0.0, 0.0, 0.3))
-	# Circulo principal
 	graph_canvas.draw_circle(center, r, fill_col)
-	# Borda
 	graph_canvas.draw_arc(center, r, 0, TAU, 32, Color(fill_col.r * 0.6, fill_col.g * 0.6, fill_col.b * 0.6, 0.8), 2.5, true)
 
-	# Icone
 	var icon_col := Color(0.95, 0.92, 0.85)
 	if not is_bought:
 		icon_col = Color(0.85, 0.82, 0.75, 0.8)
 	_draw_icon(key, center, icon_col)
 
-	# Badge de nivel
 	if is_bought and not is_maxed:
 		var badge_pos := center + Vector2(r * 0.6, r * 0.6)
-		graph_canvas.draw_circle(badge_pos, 12.0, Color(0.1, 0.1, 0.15, 0.9))
+		graph_canvas.draw_circle(badge_pos, 13.0, Color(0.1, 0.1, 0.15, 0.9))
 		var font := ThemeDB.fallback_font
-		graph_canvas.draw_string(font, badge_pos + Vector2(-5, 6), "%d" % level, HORIZONTAL_ALIGNMENT_CENTER, 14, 14, Color.WHITE)
+		graph_canvas.draw_string(font, badge_pos + Vector2(-5, 6), "%d" % level, HORIZONTAL_ALIGNMENT_CENTER, 16, 16, Color.WHITE)
 
-	# Indicador MAX
 	if is_maxed:
 		var font := ThemeDB.fallback_font
-		graph_canvas.draw_string(font, center + Vector2(-18, r + 16), "MAX", HORIZONTAL_ALIGNMENT_CENTER, 36, 16, Color(1.0, 0.85, 0.0))
+		graph_canvas.draw_string(font, center + Vector2(-20, r + 18), "MAX", HORIZONTAL_ALIGNMENT_CENTER, 40, 18, Color(1.0, 0.85, 0.0))
 
 # ============================================================
-# ICONES PROCEDURAIS (escala 1.3x)
+# ICONES PROCEDURAIS (escala 1.5x)
 # ============================================================
 
 func _draw_icon(key: String, center: Vector2, col: Color) -> void:
 	var c := graph_canvas
 	var w := 3.0
-	var s := 1.3
+	var s := 1.5
 
 	match key:
 		"extra_city":
@@ -518,21 +523,17 @@ func _draw_popup(key: String) -> void:
 	var tier: int = u["tier"]
 	var level: int = u["level"]
 	var max_level: int = u["max_level"]
-	var can_buy: bool = upgrade_system.can_unlock(key)
 	var is_maxed := level >= max_level
-	var is_locked := not can_buy
 	var tier_col: Color = TIER_COLORS[tier]
 
 	var node_center: Vector2 = node_screen_positions[key]
-	var popup_w := 320.0
-	var popup_h := 130.0
+	var popup_w := 380.0
+	var popup_h := 170.0
 	var popup_pos := Vector2(node_center.x - popup_w / 2.0, node_center.y + NODE_RADIUS + 14)
 
-	# Se o popup passa da borda inferior, mostra acima
 	if popup_pos.y + popup_h > graph_canvas.size.y - 10:
 		popup_pos.y = node_center.y - NODE_RADIUS - popup_h - 14
 
-	# Clampa nas bordas laterais
 	popup_pos.x = clampf(popup_pos.x, 4.0, graph_canvas.size.x - popup_w - 4.0)
 
 	var popup_rect := Rect2(popup_pos, Vector2(popup_w, popup_h))
@@ -540,30 +541,30 @@ func _draw_popup(key: String) -> void:
 	graph_canvas.draw_rect(popup_rect, Color(tier_col.r, tier_col.g, tier_col.b, 0.6), false, 2.0)
 
 	var font := ThemeDB.fallback_font
-	var tx: float = popup_pos.x + 14
-	var ty: float = popup_pos.y + 26
+	var tx: float = popup_pos.x + 16
+	var ty: float = popup_pos.y + 32
 
 	var name_text: String = UPGRADE_NAMES.get(key, key)
-	graph_canvas.draw_string(font, Vector2(tx, ty), name_text, HORIZONTAL_ALIGNMENT_LEFT, popup_w - 28, 22, tier_col)
+	graph_canvas.draw_string(font, Vector2(tx, ty), name_text, HORIZONTAL_ALIGNMENT_LEFT, popup_w - 32, 28, tier_col)
 
 	var desc: String = UPGRADE_DESCRIPTIONS.get(key, "")
-	graph_canvas.draw_string(font, Vector2(tx, ty + 26), desc, HORIZONTAL_ALIGNMENT_LEFT, popup_w - 28, 16, Color(0.7, 0.7, 0.7))
+	graph_canvas.draw_string(font, Vector2(tx, ty + 34), desc, HORIZONTAL_ALIGNMENT_LEFT, popup_w - 32, 22, Color(0.7, 0.7, 0.7))
 
 	var level_str := "Lv %d/%d" % [level, max_level] if not is_maxed else "MAX"
-	graph_canvas.draw_string(font, Vector2(tx, ty + 52), level_str, HORIZONTAL_ALIGNMENT_LEFT, popup_w - 28, 16, Color(0.9, 0.9, 0.9))
+	graph_canvas.draw_string(font, Vector2(tx, ty + 66), level_str, HORIZONTAL_ALIGNMENT_LEFT, popup_w - 32, 22, Color(0.9, 0.9, 0.9))
 
 	if is_maxed:
-		graph_canvas.draw_string(font, Vector2(tx, ty + 78), "COMPLETO", HORIZONTAL_ALIGNMENT_LEFT, popup_w - 28, 16, Color(1.0, 0.85, 0.0))
-	elif is_locked:
-		var req_name: String = UPGRADE_NAMES.get(u["requires"], u["requires"])
-		graph_canvas.draw_string(font, Vector2(tx, ty + 78), "Requer: " + req_name, HORIZONTAL_ALIGNMENT_LEFT, popup_w - 28, 15, Color(1.0, 0.3, 0.3))
+		graph_canvas.draw_string(font, Vector2(tx, ty + 98), "COMPLETO", HORIZONTAL_ALIGNMENT_LEFT, popup_w - 32, 22, Color(1.0, 0.85, 0.0))
 	else:
 		var cost: int = upgrade_system.get_cost(key)
 		var cur_type: String = u["currency"]
-		var cur_label: String = CURRENCY_LABELS.get(cur_type, cur_type)
 		var can_afford: bool = currency.get_amount(cur_type) >= cost
 		var cost_col := Color(0.3, 1.0, 0.5) if can_afford else Color(1.0, 0.3, 0.3)
-		graph_canvas.draw_string(font, Vector2(tx, ty + 78), "Custo: %d %s  —  toque para comprar" % [cost, cur_label], HORIZONTAL_ALIGNMENT_LEFT, popup_w - 28, 15, cost_col)
+		var cost_text := "Custo: %d" % cost
+		graph_canvas.draw_string(font, Vector2(tx, ty + 98), cost_text, HORIZONTAL_ALIGNMENT_LEFT, popup_w - 32, 20, cost_col)
+		var cost_text_w := font.get_string_size(cost_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 20).x
+		_draw_gem_on(graph_canvas, Vector2(tx + cost_text_w + 14, ty + 88), GEM_COLORS[cur_type])
+		graph_canvas.draw_string(font, Vector2(tx + cost_text_w + 30, ty + 98), "— toque para comprar", HORIZONTAL_ALIGNMENT_LEFT, popup_w - 32, 20, cost_col)
 
 # ============================================================
 # ETER MODE (lista simples)
@@ -622,14 +623,43 @@ func _on_eter_buy(key: String) -> void:
 # ============================================================
 
 func _update_header() -> void:
-	if not credits_label or not currency:
+	if not currency:
 		return
-	var parts: Array[String] = []
+	shop_currencies.clear()
 	for cur_type in ["eter", "void", "crystals", "credits"]:
 		var amount = currency.get_amount(cur_type)
 		if amount > 0 and currency.is_unlocked(cur_type):
-			parts.append("%d %s" % [amount, CURRENCY_LABELS[cur_type]])
-	credits_label.text = "  ".join(parts)
+			shop_currencies.append({"type": cur_type, "amount": amount})
+	if header_draw:
+		header_draw.queue_redraw()
+
+func _draw_header_currencies() -> void:
+	var font := ThemeDB.fallback_font
+	var draw_w := header_draw.size.x
+	var entries := shop_currencies.duplicate()
+	entries.reverse()
+	var x := draw_w
+	for entry in entries:
+		var text := "%d" % entry["amount"]
+		var text_w := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, 28).x
+		x -= text_w
+		header_draw.draw_string(font, Vector2(x, 30), text, HORIZONTAL_ALIGNMENT_LEFT, -1, 28, Color.WHITE)
+		x -= 24
+		_draw_gem_on(header_draw, Vector2(x + 8, 20), GEM_COLORS[entry["type"]])
+		x -= 20
+
+func _draw_gem_on(c: Control, center: Vector2, col: Color) -> void:
+	var pts := PackedVector2Array([
+		center + Vector2(0, -10),
+		center + Vector2(8, 0),
+		center + Vector2(0, 10),
+		center + Vector2(-8, 0),
+	])
+	c.draw_colored_polygon(pts, col)
+	c.draw_polyline(pts, Color(col.r * 0.6, col.g * 0.6, col.b * 0.6, 0.8), 1.5, true)
+	c.draw_line(pts[3], pts[0], Color(col.r * 0.6, col.g * 0.6, col.b * 0.6, 0.8), 1.5, true)
+	c.draw_line(center + Vector2(-8, 0), center + Vector2(0, -3), Color(1, 1, 1, 0.3), 1.0, true)
+	c.draw_line(center + Vector2(0, -3), center + Vector2(0, -10), Color(1, 1, 1, 0.3), 1.0, true)
 
 func _on_ascend_pressed() -> void:
 	ascend_requested.emit()
