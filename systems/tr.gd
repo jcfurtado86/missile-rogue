@@ -55,6 +55,7 @@ const STRINGS := {
 	},
 	"DOUBLE_BTN": { "pt": "DOBRAR (AD)", "en": "DOUBLE (AD)", "es": "DOBLAR (AD)", "fr": "DOUBLER (PUB)", "zh": "翻倍(广告)" },
 	"DOUBLE_EARNINGS_AD": { "pt": "DOBRAR GANHOS (AD)", "en": "DOUBLE EARNINGS (AD)", "es": "DOBLAR GANANCIAS (AD)", "fr": "DOUBLER GAINS (PUB)", "zh": "双倍收入(广告)" },
+	"AD_UNAVAILABLE": { "pt": "ANÚNCIO INDISPONÍVEL", "en": "AD UNAVAILABLE", "es": "ANUNCIO NO DISPONIBLE", "fr": "PUB INDISPONIBLE", "zh": "广告不可用" },
 	"THREAT_FMT": { "pt": "AMEAÇA: %d", "en": "THREAT: %d", "es": "AMENAZA: %d", "fr": "MENACE: %d", "zh": "威胁：%d" },
 
 	# ===== ARSENAL =====

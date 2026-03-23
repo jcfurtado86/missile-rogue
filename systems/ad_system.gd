@@ -8,8 +8,9 @@ var revive_used := false
 var shop_ads_shown := 0
 const MAX_SHOP_ADS := 2
 
-var _rewarded_ad: RewardedAd
+var _ads: Dictionary = {}  # ad_id -> RewardedAd
 var _pending_callback: Callable
+var _pending_fail_callback: Callable
 var _is_mobile := false
 var _initialized := false
 
@@ -20,6 +21,8 @@ func _init() -> void:
 		listener.on_initialization_complete = func(_status) -> void:
 			_initialized = true
 			print("[AdSystem] MobileAds initialized")
+			_preload_ad(REVIVE_AD_ID)
+			_preload_ad(DOUBLE_AD_ID)
 		MobileAds.initialize(listener)
 
 func can_revive() -> bool:
@@ -37,50 +40,62 @@ func use_shop_ad() -> void:
 func reset_run() -> void:
 	revive_used = false
 	shop_ads_shown = 0
+	if _is_mobile and _initialized:
+		_preload_ad(REVIVE_AD_ID)
+		_preload_ad(DOUBLE_AD_ID)
 
-func show_rewarded_ad(callback: Callable, ad_id: String = REVIVE_AD_ID) -> void:
+func show_rewarded_ad(callback: Callable, ad_id: String = REVIVE_AD_ID, on_fail: Callable = Callable()) -> void:
 	if not _is_mobile:
-		# Desktop mock — executa callback imediatamente
 		callback.call()
 		return
-	_pending_callback = callback
-	_load_and_show(ad_id)
+	if _ads.has(ad_id) and _ads[ad_id] != null:
+		_show_loaded_ad(ad_id, callback, on_fail)
+	else:
+		print("[AdSystem] Ad not preloaded, loading now...")
+		_pending_callback = callback
+		_pending_fail_callback = on_fail
+		_load_ad(ad_id, true)
 
-func _load_and_show(ad_id: String) -> void:
-	if _rewarded_ad:
-		_rewarded_ad.destroy()
-		_rewarded_ad = null
+func _preload_ad(ad_id: String) -> void:
+	_load_ad(ad_id, false)
 
+func _load_ad(ad_id: String, show_when_ready: bool) -> void:
 	var load_cb := RewardedAdLoadCallback.new()
 	load_cb.on_ad_failed_to_load = func(error: LoadAdError) -> void:
-		print("[AdSystem] Failed to load: " + error.message)
-		_pending_callback = Callable()
-	load_cb.on_ad_loaded = func(ad: RewardedAd) -> void:
-		print("[AdSystem] Ad loaded")
-		_rewarded_ad = ad
-
-		var content_cb := FullScreenContentCallback.new()
-		content_cb.on_ad_dismissed_full_screen_content = func() -> void:
-			print("[AdSystem] Ad dismissed")
-			_destroy_ad()
-		content_cb.on_ad_failed_to_show_full_screen_content = func(err: AdError) -> void:
-			print("[AdSystem] Failed to show: " + err.message)
+		print("[AdSystem] Failed to load %s: %s" % [ad_id, error.message])
+		if show_when_ready:
+			if _pending_fail_callback.is_valid():
+				_pending_fail_callback.call()
 			_pending_callback = Callable()
-			_destroy_ad()
-		ad.full_screen_content_callback = content_cb
-
-		# Mostra o ad
-		var reward_listener := OnUserEarnedRewardListener.new()
-		reward_listener.on_user_earned_reward = func(_item: RewardedItem) -> void:
-			print("[AdSystem] Reward earned")
-			if _pending_callback.is_valid():
-				_pending_callback.call()
-				_pending_callback = Callable()
-		ad.show(reward_listener)
-
+			_pending_fail_callback = Callable()
+	load_cb.on_ad_loaded = func(ad: RewardedAd) -> void:
+		print("[AdSystem] Ad loaded: %s" % ad_id)
+		_ads[ad_id] = ad
+		if show_when_ready and _pending_callback.is_valid():
+			_show_loaded_ad(ad_id, _pending_callback, _pending_fail_callback)
+			_pending_callback = Callable()
+			_pending_fail_callback = Callable()
 	RewardedAdLoader.new().load(ad_id, AdRequest.new(), load_cb)
 
-func _destroy_ad() -> void:
-	if _rewarded_ad:
-		_rewarded_ad.destroy()
-		_rewarded_ad = null
+func _show_loaded_ad(ad_id: String, callback: Callable, on_fail: Callable) -> void:
+	var ad: RewardedAd = _ads[ad_id]
+	_ads[ad_id] = null
+
+	var content_cb := FullScreenContentCallback.new()
+	content_cb.on_ad_dismissed_full_screen_content = func() -> void:
+		print("[AdSystem] Ad dismissed")
+		ad.destroy()
+		_preload_ad(ad_id)
+	content_cb.on_ad_failed_to_show_full_screen_content = func(err: AdError) -> void:
+		print("[AdSystem] Failed to show: " + err.message)
+		ad.destroy()
+		_preload_ad(ad_id)
+		if on_fail.is_valid():
+			on_fail.call()
+	ad.full_screen_content_callback = content_cb
+
+	var reward_listener := OnUserEarnedRewardListener.new()
+	reward_listener.on_user_earned_reward = func(_item: RewardedItem) -> void:
+		print("[AdSystem] Reward earned")
+		callback.call()
+	ad.show(reward_listener)

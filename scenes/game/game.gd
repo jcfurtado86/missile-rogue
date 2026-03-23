@@ -450,7 +450,7 @@ func _check_game_over() -> void:
 func revive() -> void:
 	if not ad_system:
 		return
-	ad_system.show_rewarded_ad(_do_revive)
+	ad_system.show_rewarded_ad(_do_revive, ad_system.REVIVE_AD_ID, _on_ad_failed)
 
 func _do_revive() -> void:
 	ad_system.use_revive()
@@ -493,7 +493,10 @@ func double_run_earnings() -> void:
 		ad_system.use_shop_ad()
 		hud.hide_double_offer()
 		game_over.emit()
-	, ad_system.DOUBLE_AD_ID)
+	, ad_system.DOUBLE_AD_ID, _on_ad_failed)
+
+func _on_ad_failed() -> void:
+	hud.show_ad_unavailable()
 
 func decline_double() -> void:
 	hud.hide_double_offer()

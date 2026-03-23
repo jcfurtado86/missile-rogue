@@ -947,6 +947,23 @@ func show_double_offer(earnings: Dictionary) -> void:
 func hide_double_offer() -> void:
 	_dismiss_popup()
 
+func show_ad_unavailable() -> void:
+	var red := Color(1.0, 0.3, 0.2)
+	var label := Label.new()
+	label.text = get_node("/root/Tr").t("AD_UNAVAILABLE")
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", 28)
+	label.add_theme_color_override("font_color", red)
+	label.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+	label.offset_top = 200.0
+	label.offset_left = -300.0
+	label.offset_right = 300.0
+	add_child(label)
+	var tw := label.create_tween()
+	tw.tween_interval(2.0)
+	tw.tween_property(label, "modulate:a", 0.0, 0.5)
+	tw.tween_callback(label.queue_free)
+
 # ============================================================
 # POPUP CALLBACKS
 # ============================================================
