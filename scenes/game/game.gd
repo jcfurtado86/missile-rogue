@@ -82,6 +82,7 @@ func _ready() -> void:
 		battery.reload_time = stats.reload_time
 		battery.ammo_regen_rate = stats.ammo_regen
 		add_child(battery)
+		print("BATTERY DEBUG: magazine_size=%d magazine_ammo=%d max_magazines=%d magazines=%d" % [battery.magazine_size, battery.magazine_ammo, battery.max_magazines, battery.magazines])
 		batteries.append(battery)
 
 	var city_y := screen_height - CITY_Y_OFFSET
@@ -146,13 +147,22 @@ func _physics_process(delta: float) -> void:
 			boss_rage_triggered = true
 			get_node("/root/SoundManager").set_music_pitch(1.4)
 
+var _fired_this_frame := false
+
 func _unhandled_input(event: InputEvent) -> void:
 	if is_game_over:
 		return
+	if _fired_this_frame:
+		return
 	if event is InputEventScreenTouch and event.pressed:
 		_fire_at(event.position)
+		_fired_this_frame = true
 	elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		_fire_at(event.position)
+		_fired_this_frame = true
+
+func _process(_delta: float) -> void:
+	_fired_this_frame = false
 
 func _fire_at(target: Vector2) -> void:
 	var closest_battery: Node2D = null
