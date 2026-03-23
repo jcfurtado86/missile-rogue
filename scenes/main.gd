@@ -92,13 +92,18 @@ func _open_ascension() -> void:
 	current_scene = ascension
 
 func _on_ascension_confirmed() -> void:
-	# Calcula eter ganho e adiciona, mas NAO reseta ainda
-	# O reset acontece depois da eter shop, pra que eternal_knowledge/vault
-	# comprados agora ja facam efeito
 	var eter_gained = ascension_system.calculate_eter(upgrade_system)
 	ascension_system.total_eter += eter_gained
 	currency.add("eter", eter_gained)
 	ascension_system.ascension_count += 1
+	# Aplica resets imediatamente na confirmacao
+	var keep_upgrades := upgrade_system.get_effect("eternal_knowledge") > 0
+	var keep_currencies := upgrade_system.get_effect("vault") > 0
+	if not keep_upgrades:
+		upgrade_system.reset_tiers(1, 3)
+	if not keep_currencies:
+		currency.reset_run_currencies()
+	upgrade_system.total_invested = 0
 	_save_game()
 	_open_eter_shop()
 
@@ -113,13 +118,6 @@ func _open_eter_shop() -> void:
 	current_scene = shop
 
 func _on_eter_shop_done() -> void:
-	# Agora que o jogador ja comprou upgrades T4, aplica o reset
-	var keep_upgrades := upgrade_system.get_effect("eternal_knowledge") > 0
-	var keep_currencies := upgrade_system.get_effect("vault") > 0
-	if not keep_upgrades:
-		upgrade_system.reset_tiers(1, 3)
-	if not keep_currencies:
-		currency.reset_run_currencies()
 	_save_game()
 	_start_game()
 
