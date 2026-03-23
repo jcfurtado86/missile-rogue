@@ -4,8 +4,8 @@ extends Node
 var locale := "pt"
 signal locale_changed
 
-const LOCALES := ["pt", "en", "es", "fr", "zh"]
-const LOCALE_LABELS := ["PT", "EN", "ES", "FR", "中"]
+const LOCALES := ["en", "pt", "es", "fr", "zh"]
+const LOCALE_LABELS := ["EN", "PT", "ES", "FR", "中"]
 
 const STRINGS := {
 	# ===== TÍTULO =====
