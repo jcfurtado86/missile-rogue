@@ -19,6 +19,10 @@ const SILO_CY := 12.0  # centro vertical do silo
 var vanish_lx := 0.0  # vanish point em coords locais
 var persp_ratio := 1.0  # ratio topo/base
 
+func _process(_delta: float) -> void:
+	if reloading:
+		queue_redraw()
+
 func _ready() -> void:
 	magazines = max_magazines - 1  # 1 pente ja esta carregado na arma
 	magazine_ammo = magazine_size
@@ -59,7 +63,7 @@ func _draw_quad_outline(quad: PackedVector2Array, color: Color, width: float) ->
 		draw_line(quad[i], quad[(i + 1) % quad.size()], color, width, true)
 
 func _draw() -> void:
-	if magazine_ammo > 0 or magazines > 0:
+	if magazine_ammo > 0 or magazines > 0 or reloading:
 		_draw_armed()
 	else:
 		_draw_empty()
@@ -104,7 +108,6 @@ func _draw_armed() -> void:
 		draw_line(_persp(Vector2(gap + 2, ly)), _persp(Vector2(SILO_W - 3, ly)), Color(0.0, 0.8, 1.0, 0.2), 1.0, true)
 
 	# Barra de municao (pente atual)
-	var ammo_ratio := float(magazine_ammo) / magazine_size
 	var bar_y := bot_y + 6.0
 	var bar_h := 10.0
 	var bar_tl := _persp(Vector2(-SILO_W + 2, bar_y))
@@ -117,18 +120,30 @@ func _draw_armed() -> void:
 	# Fundo
 	draw_polygon(PackedVector2Array([bar_tl, bar_tr, bar_br, bar_bl]),
 		PackedColorArray([Color(0.0, 0.2, 0.3, 0.25), Color(0.0, 0.2, 0.3, 0.25), Color(0.0, 0.2, 0.3, 0.25), Color(0.0, 0.2, 0.3, 0.25)]))
-	# Preenchimento — cor varia de vermelho > amarelo > verde
-	var bar_color: Color
-	if ammo_ratio < 0.5:
-		var t := ammo_ratio * 2.0
-		bar_color = Color(1.0, t * 0.9, 0.0, 0.8)
+
+	if reloading:
+		# Progresso de recarga — barra laranja enchendo
+		var reload_progress := 1.0 - (reload_timer.time_left / reload_time)
+		var reload_col := Color(1.0, 0.6, 0.0, 0.6)
+		var reload_tr := bar_tl.lerp(bar_tr, reload_progress)
+		var reload_br := bar_bl.lerp(bar_br, reload_progress)
+		draw_polygon(PackedVector2Array([bar_tl, reload_tr, reload_br, bar_bl]),
+			PackedColorArray([reload_col, reload_col, reload_col, reload_col]))
 	else:
-		var t := (ammo_ratio - 0.5) * 2.0
-		bar_color = Color(1.0 - t, 0.9 + t * 0.1, 0.0, 0.8)
-	var filled_tr := bar_tl.lerp(bar_tr, ammo_ratio)
-	var filled_br := bar_bl.lerp(bar_br, ammo_ratio)
-	draw_polygon(PackedVector2Array([bar_tl, filled_tr, filled_br, bar_bl]),
-		PackedColorArray([bar_color, bar_color, bar_color, bar_color]))
+		# Preenchimento — cor varia de vermelho > amarelo > verde
+		var ammo_ratio := float(magazine_ammo) / magazine_size
+		var bar_color: Color
+		if ammo_ratio < 0.5:
+			var t := ammo_ratio * 2.0
+			bar_color = Color(1.0, t * 0.9, 0.0, 0.8)
+		else:
+			var t := (ammo_ratio - 0.5) * 2.0
+			bar_color = Color(1.0 - t, 0.9 + t * 0.1, 0.0, 0.8)
+		var filled_tr := bar_tl.lerp(bar_tr, ammo_ratio)
+		var filled_br := bar_bl.lerp(bar_br, ammo_ratio)
+		draw_polygon(PackedVector2Array([bar_tl, filled_tr, filled_br, bar_bl]),
+			PackedColorArray([bar_color, bar_color, bar_color, bar_color]))
+
 	# Outline
 	_draw_quad_outline(PackedVector2Array([bar_tl, bar_tr, bar_br, bar_bl]), Color(0.0, 1.0, 1.0, 0.6), 2.0)
 

@@ -28,7 +28,7 @@ func _start_game() -> void:
 
 func _on_game_over() -> void:
 	_save_game()
-	get_tree().create_timer(2.0).timeout.connect(_open_shop)
+	_open_shop()
 
 func _open_shop() -> void:
 	_clear_current()

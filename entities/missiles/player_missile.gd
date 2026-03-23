@@ -1,7 +1,7 @@
 extends Area2D
 
-@export var speed := 1200.0
-@export var explosion_radius := 60.0
+@export var speed := 400.0
+@export var explosion_radius := 30.0
 @export var explosion_duration := 0.4
 
 var target := Vector2.ZERO
