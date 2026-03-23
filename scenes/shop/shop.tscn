@@ -1,6 +1,21 @@
-[gd_scene load_steps=2 format=3 uid="uid://0iaxbrmdxwk8"]
+[gd_scene load_steps=4 format=3 uid="uid://0iaxbrmdxwk8"]
 
 [ext_resource type="Script" path="res://scenes/shop/shop.gd" id="1_shop"]
+[ext_resource type="Shader" path="res://scenes/shop/neon_grid_bg.gdshader" id="2_shader"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_bg"]
+shader = ExtResource("2_shader")
+shader_parameter/scroll_speed = 0.15
+shader_parameter/grid_color = Vector3(1, 0, 0.6)
+shader_parameter/sky_top = Vector3(0.02, 0.01, 0.08)
+shader_parameter/sky_bottom = Vector3(0.08, 0.01, 0.15)
+shader_parameter/horizon_color = Vector3(0.4, 0, 0.35)
+shader_parameter/horizon_pos = 0.55
+shader_parameter/horizon_glow = 0.06
+shader_parameter/grid_lines_h = 14
+shader_parameter/grid_lines_v = 16
+shader_parameter/line_fade = 1.5
+shader_parameter/pulse_intensity = 0.15
 
 [node name="Shop" type="Control"]
 layout_mode = 3
@@ -16,6 +31,7 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+material = SubResource("ShaderMaterial_bg")
 color = Color(0.01, 0.01, 0.04, 1)
 
 [node name="MarginContainer" type="MarginContainer" parent="."]

@@ -175,6 +175,7 @@ func _fire_at(target: Vector2) -> void:
 	if closest_battery:
 		# Gasta municao 1x
 		closest_battery.consume_ammo()
+		get_node("/root/SoundManager").fire()
 
 		# Determina quantos misseis disparar
 		var missile_count: int = 1
@@ -319,6 +320,7 @@ func _on_boss_defeated() -> void:
 		)
 
 func _on_enemy_destroyed(_enemy: Area2D, drop_currency: String = "credits", drop_amount: int = 1) -> void:
+	get_node("/root/SoundManager").intercept()
 	threat.register_kill()
 	if drop_currency != "" and drop_amount > 0:
 		var bonus: int = stats.credits_bonus if drop_currency == "credits" else (stats.crystals_bonus if drop_currency == "crystals" else stats.void_bonus)
@@ -483,6 +485,7 @@ func decline_double() -> void:
 
 func _on_city_destroyed(city: Node2D) -> void:
 	destroyed_order.append(city)
+	get_node("/root/SoundManager").city_destroyed()
 	flash_alpha = 0.7
 	shake_intensity = 8.0
 	shake_timer = 0.3

@@ -100,7 +100,7 @@ func _init(us: UpgradeSystem) -> void:
 	mirror_chance = us.get_effect("mirror_array")
 
 	# T4
-	all_currencies_mult = 1 + int(us.get_effect("ascendant_core"))  # nv0=x1, nv1=x2, nv2=x3
+	all_currencies_mult = int(pow(2, us.upgrades["ascendant_core"]["level"]))  # nv0=x1, nv1=x2, nv2=x4
 	keep_upgrades = us.get_effect("eternal_knowledge") > 0
 	keep_currencies = us.get_effect("vault") > 0
 	reward_boost_mult = 1.0 + us.get_effect("omega_protocol")

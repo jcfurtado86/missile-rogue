@@ -23,6 +23,13 @@ var scroll_container: ScrollContainer
 var item_container: VBoxContainer
 var header_draw: Control
 var shop_currencies: Array = []
+var battle_overlay: Control
+
+# Batalha distante
+var distant_battle := DistantBattle.new()
+var buy_flash_key := ""
+var buy_flash_time := 0.0
+const BUY_FLASH_DURATION := 0.6
 
 const GEM_COLORS := {
 	"credits": Color(1.0, 0.0, 0.6),
@@ -150,15 +157,40 @@ func _ready() -> void:
 	header_draw.draw.connect(_draw_header_currencies)
 	$MarginContainer/VBoxContainer/Header.add_child(header_draw)
 
-	$MarginContainer/VBoxContainer/BottomButtons/PlayButton.pressed.connect(_on_play_pressed)
-	$MarginContainer/VBoxContainer/BottomButtons/AscendButton.pressed.connect(_on_ascend_pressed)
+	battle_overlay = Control.new()
+	battle_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	battle_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	battle_overlay.draw.connect(_draw_distant_battle)
+	$Background.add_sibling(battle_overlay)
+	move_child(battle_overlay, 1)
+
+	var play_btn := $MarginContainer/VBoxContainer/BottomButtons/PlayButton
+	var ascend_btn := $MarginContainer/VBoxContainer/BottomButtons/AscendButton
+	play_btn.pressed.connect(_on_play_pressed)
+	ascend_btn.pressed.connect(_on_ascend_pressed)
+
+	# Estilo neon nos botoes
+	_style_neon_button(play_btn, Color(0.0, 1.0, 1.0))
+	_style_neon_button(ascend_btn, Color(1.0, 0.5, 0.0))
+
+	# Titulo neon
+	var title_label := $MarginContainer/VBoxContainer/Header/TitleLabel
+	title_label.add_theme_color_override("font_color", Color(1.0, 0.0, 0.6))
+
+	# Separador neon
+	var sep := $MarginContainer/VBoxContainer/HSeparator
+	var sep_style := StyleBoxFlat.new()
+	sep_style.bg_color = Color(1.0, 0.0, 0.6, 0.5)
+	sep_style.content_margin_top = 1
+	sep_style.content_margin_bottom = 1
+	sep.add_theme_stylebox_override("separator", sep_style)
 
 	if has_meta("eter_mode"):
 		eter_mode = get_meta("eter_mode")
 
 	if eter_mode:
 		$MarginContainer/VBoxContainer/Header/TitleLabel.text = "UPGRADES ETERNOS"
-		$MarginContainer/VBoxContainer/BottomButtons/AscendButton.visible = false
+		ascend_btn.visible = false
 		graph_viewport.visible = false
 		scroll_container.visible = true
 		_build_eter_list()
@@ -177,6 +209,11 @@ func _process(delta: float) -> void:
 	if not eter_mode and graph_canvas:
 		anim_time += delta
 		graph_canvas.queue_redraw()
+	if buy_flash_time > 0.0:
+		buy_flash_time -= delta
+	_update_distant_battle(delta)
+	if battle_overlay:
+		battle_overlay.queue_redraw()
 
 # ============================================================
 # GRAPH SETUP & LAYOUT
@@ -187,11 +224,32 @@ func _setup_graph() -> void:
 	graph_canvas.draw.connect(_draw_graph)
 	graph_canvas.gui_input.connect(_on_graph_input)
 	graph_viewport.add_child(graph_canvas)
-	await get_tree().process_frame
+	# Esperar ate o viewport ter tamanho valido (evita layout quebrado)
+	for attempt in 10:
+		await get_tree().process_frame
+		if graph_viewport.size.x > 1.0 and graph_viewport.size.y > 1.0:
+			break
 	var vp := graph_viewport.size
+	if vp.x < 1.0 or vp.y < 1.0:
+		# Fallback: usar tamanho da janela menos margens
+		vp = get_viewport().get_visible_rect().size - Vector2(40, 160)
 	graph_canvas.size = vp
 	graph_canvas.custom_minimum_size = vp
 	_calc_positions(vp)
+	# Recalcular se o viewport mudar de tamanho depois
+	if not graph_viewport.resized.is_connected(_on_graph_viewport_resized):
+		graph_viewport.resized.connect(_on_graph_viewport_resized)
+
+func _on_graph_viewport_resized() -> void:
+	if not graph_canvas:
+		return
+	var vp := graph_viewport.size
+	if vp.x < 1.0 or vp.y < 1.0:
+		return
+	graph_canvas.size = vp
+	graph_canvas.custom_minimum_size = vp
+	_calc_positions(vp)
+	graph_canvas.queue_redraw()
 
 func _calc_positions(vp: Vector2) -> void:
 	node_screen_positions.clear()
@@ -284,6 +342,8 @@ func _on_node_tapped(key: String) -> void:
 
 func _try_buy(key: String) -> void:
 	if upgrade_system.buy(key, currency):
+		buy_flash_key = key
+		buy_flash_time = BUY_FLASH_DURATION
 		purchase_made.emit()
 		_update_header()
 
@@ -351,6 +411,15 @@ func _draw_node(key: String) -> void:
 	else:
 		fill_col = Color(tier_col.r * 0.5, tier_col.g * 0.5, tier_col.b * 0.5, 0.7)
 
+	# Flash de compra
+	var is_flashing := key == buy_flash_key and buy_flash_time > 0.0
+	if is_flashing:
+		var flash_t := buy_flash_time / BUY_FLASH_DURATION
+		var flash_r := r + 20.0 * (1.0 - flash_t)
+		var flash_alpha := flash_t * 0.6
+		graph_canvas.draw_circle(center, flash_r, Color(1.0, 1.0, 1.0, flash_alpha * 0.3))
+		graph_canvas.draw_arc(center, flash_r, 0, TAU, 24, Color(tier_col.r, tier_col.g, tier_col.b, flash_alpha), 3.0, true)
+
 	if is_selected:
 		graph_canvas.draw_circle(center, r + 8, Color(1.0, 1.0, 1.0, 0.25))
 
@@ -389,7 +458,7 @@ func _draw_icon(key: String, center: Vector2, col: Color) -> void:
 			c.draw_rect(Rect2(center + Vector2(5, -3) * s, Vector2(7, 16) * s), col, true)
 		"ammo_pack":
 			for i in 3:
-				var y := center.y + (-10 + i * 10) * s
+				var y := center.y + (-10 + i * 10) * s - 3 * s
 				c.draw_rect(Rect2(center.x - 9 * s, y, 18 * s, 6 * s), col, true)
 		"magazine":
 			for i in 3:
@@ -584,34 +653,72 @@ func _build_eter_list() -> void:
 			item_container.add_child(item)
 	_update_header()
 
-func _create_list_item(key: String, u: Dictionary) -> HBoxContainer:
+func _create_list_item(key: String, u: Dictionary) -> PanelContainer:
+	var eter_col := Color(1.0, 0.5, 0.0)
+	var panel = PanelContainer.new()
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.05, 0.03, 0.01, 0.7)
+	panel_style.border_color = Color(eter_col.r * 0.5, eter_col.g * 0.5, eter_col.b * 0.5, 0.5)
+	panel_style.set_border_width_all(1)
+	panel_style.set_corner_radius_all(6)
+	panel_style.set_content_margin_all(12)
+	panel.add_theme_stylebox_override("panel", panel_style)
+
 	var row = HBoxContainer.new()
 	var info = VBoxContainer.new()
 	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var name_label = Label.new()
 	name_label.text = "%s (Lv %d/%d)" % [UPGRADE_NAMES.get(key, key), u["level"], u["max_level"]]
 	name_label.add_theme_font_size_override("font_size", 24)
+	name_label.add_theme_color_override("font_color", eter_col)
 	info.add_child(name_label)
 	var desc_label = Label.new()
 	desc_label.text = UPGRADE_DESCRIPTIONS.get(key, "")
 	desc_label.add_theme_font_size_override("font_size", 18)
+	desc_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
 	info.add_child(desc_label)
 	row.add_child(info)
-	var buy_button = Button.new()
 	var cur_type = u["currency"]
-	var cur_label = CURRENCY_LABELS.get(cur_type, cur_type)
+	var gem_col: Color = GEM_COLORS.get(cur_type, eter_col)
+	var buy_button = Button.new()
+	buy_button.add_theme_font_size_override("font_size", 22)
+	buy_button.pressed.connect(_on_eter_buy.bind(key))
+	buy_button.custom_minimum_size = Vector2(120, 50)
+	_style_neon_button(buy_button, eter_col)
+	var btn_content = HBoxContainer.new()
+	btn_content.alignment = BoxContainer.ALIGNMENT_CENTER
+	btn_content.add_theme_constant_override("separation", 4)
+	btn_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	btn_content.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	btn_content.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	btn_content.grow_vertical = Control.GROW_DIRECTION_BOTH
+	buy_button.add_child(btn_content)
 	if u["level"] >= u["max_level"]:
-		buy_button.text = "MAX"
+		var max_lbl = Label.new()
+		max_lbl.text = "MAX"
+		max_lbl.add_theme_font_size_override("font_size", 22)
+		max_lbl.add_theme_color_override("font_color", eter_col)
+		max_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		btn_content.add_child(max_lbl)
 		buy_button.disabled = true
 	else:
 		var cost = upgrade_system.get_cost(key)
-		buy_button.text = "%d %s" % [cost, cur_label]
+		var cost_lbl = Label.new()
+		cost_lbl.text = "%d" % cost
+		cost_lbl.add_theme_font_size_override("font_size", 22)
+		cost_lbl.add_theme_color_override("font_color", eter_col)
+		cost_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		btn_content.add_child(cost_lbl)
+		var gem_icon = Control.new()
+		gem_icon.custom_minimum_size = Vector2(18, 22)
+		gem_icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		gem_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		gem_icon.draw.connect(_draw_gem_on.bind(gem_icon, Vector2(9, 11), gem_col))
+		btn_content.add_child(gem_icon)
 		buy_button.disabled = currency.get_amount(cur_type) < cost
-	buy_button.add_theme_font_size_override("font_size", 22)
-	buy_button.pressed.connect(_on_eter_buy.bind(key))
-	buy_button.custom_minimum_size = Vector2(150, 50)
 	row.add_child(buy_button)
-	return row
+	panel.add_child(row)
+	return panel
 
 func _on_eter_buy(key: String) -> void:
 	if upgrade_system.buy(key, currency):
@@ -661,8 +768,49 @@ func _draw_gem_on(c: Control, center: Vector2, col: Color) -> void:
 	c.draw_line(center + Vector2(-8, 0), center + Vector2(0, -3), Color(1, 1, 1, 0.3), 1.0, true)
 	c.draw_line(center + Vector2(0, -3), center + Vector2(0, -10), Color(1, 1, 1, 0.3), 1.0, true)
 
+func _style_neon_button(btn: Button, col: Color) -> void:
+	var normal := StyleBoxFlat.new()
+	normal.bg_color = Color(col.r * 0.1, col.g * 0.1, col.b * 0.1, 0.8)
+	normal.border_color = col
+	normal.set_border_width_all(2)
+	normal.set_corner_radius_all(4)
+	btn.add_theme_stylebox_override("normal", normal)
+	var hover := StyleBoxFlat.new()
+	hover.bg_color = Color(col.r * 0.2, col.g * 0.2, col.b * 0.2, 0.9)
+	hover.border_color = Color(col.r, col.g, col.b, 1.0)
+	hover.set_border_width_all(3)
+	hover.set_corner_radius_all(4)
+	btn.add_theme_stylebox_override("hover", hover)
+	var pressed := StyleBoxFlat.new()
+	pressed.bg_color = Color(col.r * 0.3, col.g * 0.3, col.b * 0.3, 1.0)
+	pressed.border_color = Color(minf(col.r * 1.3, 1.0), minf(col.g * 1.3, 1.0), minf(col.b * 1.3, 1.0))
+	pressed.set_border_width_all(3)
+	pressed.set_corner_radius_all(4)
+	btn.add_theme_stylebox_override("pressed", pressed)
+	var disabled := StyleBoxFlat.new()
+	disabled.bg_color = Color(0.05, 0.05, 0.08, 0.6)
+	disabled.border_color = Color(0.3, 0.3, 0.3, 0.4)
+	disabled.set_border_width_all(1)
+	disabled.set_corner_radius_all(4)
+	btn.add_theme_stylebox_override("disabled", disabled)
+	btn.add_theme_color_override("font_color", col)
+	btn.add_theme_color_override("font_hover_color", Color(minf(col.r * 1.3, 1.0), minf(col.g * 1.3, 1.0), minf(col.b * 1.3, 1.0)))
+	btn.add_theme_color_override("font_pressed_color", Color.WHITE)
+	btn.add_theme_color_override("font_disabled_color", Color(0.4, 0.4, 0.4))
+
 func _on_ascend_pressed() -> void:
 	ascend_requested.emit()
 
 func _on_play_pressed() -> void:
 	start_run.emit()
+
+# ============================================================
+# BATALHA DISTANTE (background)
+# ============================================================
+
+func _update_distant_battle(delta: float) -> void:
+	var scr := get_viewport().get_visible_rect().size
+	distant_battle.update(delta, scr, scr.y * 0.55)
+
+func _draw_distant_battle() -> void:
+	distant_battle.draw(battle_overlay)
