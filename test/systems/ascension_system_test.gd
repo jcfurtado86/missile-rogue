@@ -18,7 +18,7 @@ func test_eter_calculation() -> void:
 	upgrades.buy("ammo_pack", currency)  # costs 120
 	# Total invested = 30 + 60 + 120 = 210
 	var eter = ascension.calculate_eter(upgrades)
-	assert_int(eter).is_equal(upgrades.get_total_invested() / 200)
+	assert_int(eter).is_equal(int(upgrades.get_total_invested() / 200.0))
 
 # 70
 func test_eter_calculation_large() -> void:
@@ -28,7 +28,7 @@ func test_eter_calculation_large() -> void:
 	for i in 5:
 		upgrades.buy("hyper_drive", currency)
 	var eter = ascension.calculate_eter(upgrades)
-	assert_int(eter).is_equal(upgrades.get_total_invested() / 200)
+	assert_int(eter).is_equal(int(upgrades.get_total_invested() / 200.0))
 
 # 71
 func test_ascension_resets_tiers_1_2_3() -> void:

@@ -37,7 +37,7 @@ func test_load_missing_file_returns_defaults() -> void:
 
 # 78
 func test_corrupted_data_returns_defaults() -> void:
-	var defaults = SaveSystem.get_defaults()
+	var _defaults = SaveSystem.get_defaults()
 	var upgrades = UpgradeSystem.new()
 	var ascension = AscensionSystem.new()
 	var currency = CurrencySystem.new()

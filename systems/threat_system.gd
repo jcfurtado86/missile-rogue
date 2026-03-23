@@ -3,7 +3,7 @@ extends RefCounted
 
 var level: float = 0.0
 var max_level: float = 100.0
-var time_rate: float = 2.0
+var time_rate: float = 0.5
 func update_time(delta: float) -> void:
 	level = minf(level + time_rate * delta, max_level)
 

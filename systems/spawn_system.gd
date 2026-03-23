@@ -9,9 +9,9 @@ var boss_threat := 100.0  # 100 normal, 300 com omega
 func get_spawn_distribution(threat: float) -> Dictionary:
 	if threat >= boss_threat:
 		return {"boss": true}
-	if threat >= 75.0:
+	if threat >= 65.0:
 		return {"basic": 0.55, "fast": 0.30, "cluster": 0.15}
-	if threat >= 50.0:
+	if threat >= 30.0:
 		return {"basic": 0.65, "fast": 0.35}
 	return {"basic": 1.0}
 

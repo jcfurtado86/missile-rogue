@@ -6,9 +6,23 @@ signal purchase_made
 
 var currency: CurrencySystem
 var upgrade_system: UpgradeSystem
-var item_container: VBoxContainer
 var credits_label: Label
 var eter_mode := false
+
+# Graph
+var graph_viewport: Control
+var graph_canvas: Control
+var selected_key := ""
+var anim_time := 0.0
+var drag_start := Vector2.ZERO
+var drag_distance := 0.0
+var node_screen_positions: Dictionary = {}
+
+# Eter mode (lista simples)
+var scroll_container: ScrollContainer
+var item_container: VBoxContainer
+
+const NODE_RADIUS := 32.0
 
 const CURRENCY_LABELS := {
 	"credits": "CR",
@@ -17,21 +31,15 @@ const CURRENCY_LABELS := {
 	"eter": "ET",
 }
 
-const TIER_NAMES := {
-	1: "TIER 1 — CREDITOS",
-	2: "TIER 2 — CRISTAIS",
-	3: "TIER 3 — VOID",
+# Cores baseadas nos inimigos que dropam cada moeda
+const TIER_COLORS := {
+	1: Color(1.0, 0.0, 0.6),   # credits — basic enemy (hot pink)
+	2: Color(0.2, 1.0, 0.1),   # crystals — fast enemy (neon green)
+	3: Color(0.7, 0.0, 1.0),   # void — cluster enemy (purple)
+	4: Color(1.0, 0.5, 0.0),   # eter — ascension (orange)
 }
 
-const TIER_CURRENCY := {
-	1: "credits",
-	2: "crystals",
-	3: "void",
-}
-
-# Nomes legiveis dos upgrades
 const UPGRADE_NAMES := {
-	# Tier 1
 	"extra_city": "EXTRA CITY",
 	"ammo_pack": "AMMO PACK",
 	"magazine": "MAGAZINE+",
@@ -42,7 +50,6 @@ const UPGRADE_NAMES := {
 	"credit_boost": "CREDIT BOOST",
 	"time_warp": "TIME WARP",
 	"early_warning": "EARLY WARNING",
-	# Tier 2
 	"extra_battery": "EXTRA BATTERY",
 	"city_shield": "CITY SHIELD",
 	"warp_reload": "WARP RELOAD",
@@ -50,17 +57,13 @@ const UPGRADE_NAMES := {
 	"critical_mass": "CRITICAL MASS",
 	"crystal_boost": "CRYSTAL BOOST",
 	"homing": "HOMING",
-	"chain_reaction": "CHAIN REACTION",
 	"triple_burst": "TRIPLE BURST",
-	# Tier 3
-	"twin_cannons": "TWIN CANNONS",
 	"temporal_freeze": "TEMPORAL FREEZE",
 	"phoenix_protocol": "PHOENIX PROTOCOL",
 	"singularity": "SINGULARITY",
 	"auto_turret": "AUTO TURRET",
 	"mirror_array": "MIRROR ARRAY",
 	"void_boost": "VOID BOOST",
-	# Tier 4
 	"ascendant_core": "ASCENDANT CORE",
 	"eternal_knowledge": "ETERNAL KNOWLEDGE",
 	"vault": "VAULT",
@@ -68,44 +71,67 @@ const UPGRADE_NAMES := {
 }
 
 const UPGRADE_DESCRIPTIONS := {
-	# Tier 1
 	"extra_city": "+1 cidade",
 	"ammo_pack": "+1 pente por bateria",
 	"magazine": "+1 tiro por pente",
-	"ammo_regen": "+0.2 pentes/s regenerados",
-	"hyper_drive": "+10% velocidade do missil",
-	"warhead": "+10% raio de explosao",
+	"ammo_regen": "+0.1 pentes/s regenerados",
+	"hyper_drive": "+40% velocidade do missil",
+	"warhead": "+40% raio de explosao",
 	"head_start": "+20 creditos ao iniciar run",
-	"credit_boost": "+10% creditos por abate",
+	"credit_boost": "+1 credito por abate",
 	"time_warp": "+8% chance de desacelerar inimigo",
 	"early_warning": "Mostra onde misseis vao cair",
-	# Tier 2
 	"extra_battery": "+1 bateria",
 	"city_shield": "Campo de forca nas cidades",
 	"warp_reload": "-12% tempo de recarga",
 	"overcharge": "+15% velocidade de carga especial",
 	"critical_mass": "+4% chance de explosao critica",
-	"crystal_boost": "+15% cristais por abate",
-	"homing": "Misseis rastreiam inimigos",
-	"chain_reaction": "+5% chance de explosao em cadeia",
+	"crystal_boost": "+1 cristal por abate",
+	"homing": "+15% chance de rastreamento",
 	"triple_burst": "+8% chance de tiro triplo",
-	# Tier 3
-	"twin_cannons": "+1 missil extra por tiro",
 	"temporal_freeze": "+1.5s de congelamento",
 	"phoenix_protocol": "+1 cidade revive automatico",
 	"singularity": "Explosoes puxam inimigos",
 	"auto_turret": "Baterias atiram automaticamente",
 	"mirror_array": "+5% chance de refletir",
-	"void_boost": "+20% void por abate",
-	# Tier 4
-	"ascendant_core": "+10% ganho de todas as moedas",
+	"void_boost": "+1 void por abate",
+	"ascendant_core": "x2/x3 ganho de todas as moedas",
 	"eternal_knowledge": "Mantem upgrades ao ascender",
 	"vault": "Mantem moedas ao ascender",
-	"omega_protocol": "+50% recompensas",
+	"omega_protocol": "3x dificuldade, 2 bosses",
+}
+
+# Ordem dos nos na profundidade 1 (filhos diretos de ammo_pack)
+const DEPTH_1_ORDER: Array[String] = [
+	"head_start", "extra_city", "time_warp", "early_warning",
+	"credit_boost", "warhead", "hyper_drive", "magazine",
+	"ammo_regen", "extra_battery",
+]
+
+# Profundidade 1 → profundidade 2 (um filho cada)
+const DEPTH_2_MAP := {
+	"time_warp": "triple_burst",
+	"extra_city": "city_shield",
+	"credit_boost": "crystal_boost",
+	"warhead": "critical_mass",
+	"hyper_drive": "homing",
+	"magazine": "warp_reload",
+	"ammo_regen": "overcharge",
+	"extra_battery": "auto_turret",
+}
+
+# Profundidade 2 → profundidade 3
+const DEPTH_3_MAP := {
+	"city_shield": ["mirror_array"],
+	"crystal_boost": ["void_boost"],
+	"critical_mass": ["temporal_freeze"],
+	"homing": ["singularity"],
 }
 
 func _ready() -> void:
 	credits_label = $MarginContainer/VBoxContainer/Header/CreditsLabel
+	graph_viewport = $MarginContainer/VBoxContainer/GraphViewport
+	scroll_container = $MarginContainer/VBoxContainer/ScrollContainer
 	item_container = $MarginContainer/VBoxContainer/ScrollContainer/ItemList
 
 	$MarginContainer/VBoxContainer/BottomButtons/PlayButton.pressed.connect(_on_play_pressed)
@@ -117,84 +143,460 @@ func _ready() -> void:
 	if eter_mode:
 		$MarginContainer/VBoxContainer/Header/TitleLabel.text = "UPGRADES ETERNOS"
 		$MarginContainer/VBoxContainer/BottomButtons/AscendButton.visible = false
+		graph_viewport.visible = false
+		scroll_container.visible = true
+		_build_eter_list()
+	else:
+		graph_viewport.visible = true
+		scroll_container.visible = false
+		_setup_graph()
 
-	_build_shop()
+	_update_header()
 
 func setup(p_currency: CurrencySystem, p_upgrades: UpgradeSystem, _p_ads = null) -> void:
 	currency = p_currency
 	upgrade_system = p_upgrades
 
-func _build_shop() -> void:
+func _process(delta: float) -> void:
+	if not eter_mode and graph_canvas:
+		anim_time += delta
+		graph_canvas.queue_redraw()
+
+# ============================================================
+# GRAPH SETUP
+# ============================================================
+
+func _setup_graph() -> void:
+	graph_canvas = Control.new()
+	graph_canvas.draw.connect(_draw_graph)
+	graph_canvas.gui_input.connect(_on_graph_input)
+	graph_viewport.add_child(graph_canvas)
+	await get_tree().process_frame
+	var vp := graph_viewport.size
+	graph_canvas.size = vp
+	graph_canvas.custom_minimum_size = vp
+	_calc_positions(vp)
+
+func _calc_positions(vp: Vector2) -> void:
+	node_screen_positions.clear()
+	var margin_x := NODE_RADIUS + 10.0
+	var usable_w := vp.x - 2.0 * margin_x
+	var count := DEPTH_1_ORDER.size()
+	var step := usable_w / float(count - 1)
+
+	# Centraliza verticalmente: 4 linhas com espaçamento compacto
+	var row_gap := vp.y * 0.16
+	var total_h := row_gap * 3.0
+	var y_start := (vp.y - total_h) / 2.0
+	var y0 := y_start
+	var y1 := y_start + row_gap
+	var y2 := y_start + row_gap * 2.0
+	var y3 := y_start + row_gap * 3.0
+
+	# Raiz
+	node_screen_positions["ammo_pack"] = Vector2(vp.x / 2.0, y0)
+
+	# Profundidade 1
+	for i in count:
+		var x := margin_x + step * float(i)
+		node_screen_positions[DEPTH_1_ORDER[i]] = Vector2(x, y1)
+
+	# Profundidade 2 (abaixo do pai)
+	for parent_key in DEPTH_2_MAP:
+		var child_key: String = DEPTH_2_MAP[parent_key]
+		var parent_pos: Vector2 = node_screen_positions[parent_key]
+		node_screen_positions[child_key] = Vector2(parent_pos.x, y2)
+
+	# Profundidade 3 (abaixo do pai, com offset se ramifica)
+	var branch_offset := step * 0.45
+	for parent_key in DEPTH_3_MAP:
+		var children: Array = DEPTH_3_MAP[parent_key]
+		var parent_pos: Vector2 = node_screen_positions[parent_key]
+		if children.size() == 1:
+			node_screen_positions[children[0]] = Vector2(parent_pos.x, y3)
+		else:
+			for j in children.size():
+				var off_x := (float(j) - float(children.size() - 1) / 2.0) * branch_offset
+				node_screen_positions[children[j]] = Vector2(parent_pos.x + off_x, y3)
+
+# ============================================================
+# INPUT (TAP)
+# ============================================================
+
+func _on_graph_input(event: InputEvent) -> void:
+	if event is InputEventScreenTouch:
+		if event.pressed:
+			drag_start = event.position
+			drag_distance = 0.0
+		else:
+			if drag_distance < 12.0:
+				_handle_tap(event.position)
+	elif event is InputEventScreenDrag:
+		drag_distance = maxf(drag_distance, (event.position - drag_start).length())
+	elif event is InputEventMouseButton:
+		if event.button_index == MOUSE_BUTTON_LEFT:
+			if event.pressed:
+				drag_start = event.position
+				drag_distance = 0.0
+			else:
+				if drag_distance < 12.0:
+					_handle_tap(event.position)
+	elif event is InputEventMouseMotion and event.button_mask & MOUSE_BUTTON_MASK_LEFT:
+		drag_distance = maxf(drag_distance, (event.position - drag_start).length())
+
+func _is_visible(key: String) -> bool:
+	if not upgrade_system.can_unlock(key):
+		return false
+	var cur_type: String = upgrade_system.upgrades[key]["currency"]
+	return currency.is_unlocked(cur_type)
+
+func _handle_tap(pos: Vector2) -> void:
+	if not upgrade_system:
+		return
+	for key in node_screen_positions:
+		if not upgrade_system.upgrades.has(key):
+			continue
+		if not _is_visible(key):
+			continue
+		var node_center: Vector2 = node_screen_positions[key]
+		if pos.distance_to(node_center) <= NODE_RADIUS + 6:
+			_on_node_tapped(key)
+			return
+	selected_key = ""
+
+func _on_node_tapped(key: String) -> void:
+	if selected_key == key:
+		_try_buy(key)
+	else:
+		selected_key = key
+
+func _try_buy(key: String) -> void:
+	if upgrade_system.buy(key, currency):
+		purchase_made.emit()
+		_update_header()
+
+# ============================================================
+# GRAPH DRAWING
+# ============================================================
+
+func _draw_graph() -> void:
+	if not upgrade_system or not currency:
+		return
+
+	# Edges — linhas de prerequisito (so visveis)
+	for key in node_screen_positions:
+		if not upgrade_system.upgrades.has(key):
+			continue
+		if not _is_visible(key):
+			continue
+		var u = upgrade_system.upgrades[key]
+		var req: String = u["requires"]
+		if req == "" or not node_screen_positions.has(req):
+			continue
+		var from_pos: Vector2 = node_screen_positions[req]
+		var to_pos: Vector2 = node_screen_positions[key]
+		var tc: Color = TIER_COLORS[u["tier"]]
+		var edge_col := Color(tc.r * 0.5, tc.g * 0.5, tc.b * 0.5, 0.5)
+		_draw_tree_line(from_pos, to_pos, edge_col)
+
+	# Nodes (so visiveis)
+	for key in node_screen_positions:
+		if not upgrade_system.upgrades.has(key):
+			continue
+		if not _is_visible(key):
+			continue
+		_draw_node(key)
+
+	# Popup
+	if selected_key != "" and upgrade_system.upgrades.has(selected_key):
+		_draw_popup(selected_key)
+
+func _draw_tree_line(from_pos: Vector2, to_pos: Vector2, col: Color) -> void:
+	var mid_y := (from_pos.y + to_pos.y) / 2.0
+	graph_canvas.draw_line(from_pos, Vector2(from_pos.x, mid_y), col, 2.5, true)
+	graph_canvas.draw_line(Vector2(from_pos.x, mid_y), Vector2(to_pos.x, mid_y), col, 2.5, true)
+	graph_canvas.draw_line(Vector2(to_pos.x, mid_y), to_pos, col, 2.5, true)
+
+func _draw_node(key: String) -> void:
+	var u = upgrade_system.upgrades[key]
+	var center: Vector2 = node_screen_positions[key]
+	var tier: int = u["tier"]
+	var level: int = u["level"]
+	var max_level: int = u["max_level"]
+	var is_maxed := level >= max_level
+	var is_bought := level > 0
+	var is_selected := key == selected_key
+
+	var tier_col: Color = TIER_COLORS[tier]
+	var r := NODE_RADIUS
+
+	var fill_col: Color
+	if is_maxed:
+		fill_col = Color(tier_col.r * 0.9, tier_col.g * 0.9, tier_col.b * 0.3, 1.0)
+	elif is_bought:
+		fill_col = tier_col
+		fill_col.a = 0.9
+	else:
+		fill_col = Color(tier_col.r * 0.5, tier_col.g * 0.5, tier_col.b * 0.5, 0.7)
+
+	# Glow de selecao
+	if is_selected:
+		graph_canvas.draw_circle(center, r + 8, Color(1.0, 1.0, 1.0, 0.25))
+
+	# Sombra
+	graph_canvas.draw_circle(center + Vector2(2, 2), r, Color(0.0, 0.0, 0.0, 0.3))
+	# Circulo principal
+	graph_canvas.draw_circle(center, r, fill_col)
+	# Borda
+	graph_canvas.draw_arc(center, r, 0, TAU, 32, Color(fill_col.r * 0.6, fill_col.g * 0.6, fill_col.b * 0.6, 0.8), 2.5, true)
+
+	# Icone
+	var icon_col := Color(0.95, 0.92, 0.85)
+	if not is_bought:
+		icon_col = Color(0.85, 0.82, 0.75, 0.8)
+	_draw_icon(key, center, icon_col)
+
+	# Badge de nivel
+	if is_bought and not is_maxed:
+		var badge_pos := center + Vector2(r * 0.6, r * 0.6)
+		graph_canvas.draw_circle(badge_pos, 12.0, Color(0.1, 0.1, 0.15, 0.9))
+		var font := ThemeDB.fallback_font
+		graph_canvas.draw_string(font, badge_pos + Vector2(-5, 6), "%d" % level, HORIZONTAL_ALIGNMENT_CENTER, 14, 14, Color.WHITE)
+
+	# Indicador MAX
+	if is_maxed:
+		var font := ThemeDB.fallback_font
+		graph_canvas.draw_string(font, center + Vector2(-18, r + 16), "MAX", HORIZONTAL_ALIGNMENT_CENTER, 36, 16, Color(1.0, 0.85, 0.0))
+
+# ============================================================
+# ICONES PROCEDURAIS (escala 1.3x)
+# ============================================================
+
+func _draw_icon(key: String, center: Vector2, col: Color) -> void:
+	var c := graph_canvas
+	var w := 3.0
+	var s := 1.3
+
+	match key:
+		"extra_city":
+			c.draw_rect(Rect2(center + Vector2(-10, -5) * s, Vector2(7, 18) * s), col, true)
+			c.draw_rect(Rect2(center + Vector2(-2, -13) * s, Vector2(7, 26) * s), col, true)
+			c.draw_rect(Rect2(center + Vector2(5, -3) * s, Vector2(7, 16) * s), col, true)
+		"ammo_pack":
+			for i in 3:
+				var y := center.y + (-10 + i * 10) * s
+				c.draw_rect(Rect2(center.x - 9 * s, y, 18 * s, 6 * s), col, true)
+		"magazine":
+			for i in 3:
+				c.draw_circle(center + Vector2((-10 + i * 10) * s, 0), 5.0 * s, col)
+		"ammo_regen":
+			c.draw_arc(center, 13.0 * s, -PI * 0.3, PI * 1.3, 16, col, w, true)
+			var tip := center + Vector2(cos(-PI * 0.3), sin(-PI * 0.3)) * 13 * s
+			c.draw_line(tip, tip + Vector2(-6, 0) * s, col, w, true)
+			c.draw_line(tip, tip + Vector2(0, 6) * s, col, w, true)
+		"hyper_drive":
+			c.draw_line(center + Vector2(0, 13) * s, center + Vector2(0, -13) * s, col, 3.5, true)
+			c.draw_line(center + Vector2(0, -13) * s, center + Vector2(-7, -4) * s, col, w, true)
+			c.draw_line(center + Vector2(0, -13) * s, center + Vector2(7, -4) * s, col, w, true)
+			c.draw_line(center + Vector2(-9, 6) * s, center + Vector2(-9, 13) * s, col, 2.5, true)
+			c.draw_line(center + Vector2(9, 6) * s, center + Vector2(9, 13) * s, col, 2.5, true)
+		"warhead":
+			for i in 8:
+				var a := float(i) / 8.0 * TAU
+				var r := (13.0 if i % 2 == 0 else 8.0) * s
+				c.draw_line(center, center + Vector2(cos(a), sin(a)) * r, col, w, true)
+		"head_start":
+			c.draw_line(center + Vector2(-8, 0) * s, center + Vector2(8, 0) * s, col, 3.5, true)
+			c.draw_line(center + Vector2(0, -8) * s, center + Vector2(0, 8) * s, col, 3.5, true)
+			c.draw_arc(center, 13.0 * s, 0, TAU, 16, col, 2.5, true)
+		"credit_boost":
+			c.draw_line(center + Vector2(0, 10) * s, center + Vector2(0, -10) * s, col, 3.5, true)
+			c.draw_line(center + Vector2(0, -10) * s, center + Vector2(-6, -4) * s, col, w, true)
+			c.draw_line(center + Vector2(0, -10) * s, center + Vector2(6, -4) * s, col, w, true)
+		"time_warp":
+			c.draw_arc(center, 13.0 * s, 0, TAU, 16, col, 2.5, true)
+			c.draw_line(center, center + Vector2(0, -9) * s, col, w, true)
+			c.draw_line(center, center + Vector2(7, 3) * s, col, w, true)
+		"early_warning":
+			var pts: PackedVector2Array = []
+			for i in 13:
+				var t := float(i) / 12.0
+				pts.append(center + Vector2(lerpf(-13, 13, t), -sin(t * PI) * 8) * s)
+			for i in pts.size() - 1:
+				c.draw_line(pts[i], pts[i + 1], col, w, true)
+			var pts2: PackedVector2Array = []
+			for i in 13:
+				var t := float(i) / 12.0
+				pts2.append(center + Vector2(lerpf(-13, 13, t), sin(t * PI) * 8) * s)
+			for i in pts2.size() - 1:
+				c.draw_line(pts2[i], pts2[i + 1], col, w, true)
+			c.draw_circle(center, 4.5 * s, col)
+		"extra_battery":
+			c.draw_rect(Rect2(center + Vector2(-9, -6) * s, Vector2(18, 20) * s), col, false, 2.5)
+			c.draw_rect(Rect2(center + Vector2(-5, -12) * s, Vector2(10, 6) * s), col, true)
+		"city_shield":
+			c.draw_arc(center + Vector2(0, 4) * s, 13.0 * s, PI, TAU, 12, col, 3.0, true)
+			c.draw_line(center + Vector2(-13, 4) * s, center + Vector2(-13, 10) * s, col, 3.0, true)
+			c.draw_line(center + Vector2(13, 4) * s, center + Vector2(13, 10) * s, col, 3.0, true)
+		"warp_reload":
+			c.draw_arc(center, 12.0 * s, -0.3, PI - 0.3, 10, col, w, true)
+			c.draw_arc(center, 12.0 * s, PI - 0.3, TAU - 0.3, 10, col, w, true)
+			var t1 := center + Vector2(cos(-0.3), sin(-0.3)) * 12 * s
+			c.draw_line(t1, t1 + Vector2(-5, -4) * s, col, w, true)
+			var t2 := center + Vector2(cos(PI - 0.3), sin(PI - 0.3)) * 12 * s
+			c.draw_line(t2, t2 + Vector2(5, 4) * s, col, w, true)
+		"overcharge":
+			c.draw_line(center + Vector2(-4, -15) * s, center + Vector2(4, -4) * s, col, 3.5, true)
+			c.draw_line(center + Vector2(4, -4) * s, center + Vector2(-4, -4) * s, col, 3.5, true)
+			c.draw_line(center + Vector2(-4, -4) * s, center + Vector2(4, 15) * s, col, 3.5, true)
+		"critical_mass":
+			c.draw_circle(center, 8.0 * s, Color(col.r, col.g, col.b, col.a * 0.4))
+			c.draw_arc(center, 13.0 * s, 0, TAU, 16, col, 2.5, true)
+			c.draw_arc(center, 8.0 * s, 0, TAU, 12, col, 2.5, true)
+		"crystal_boost":
+			var d := PackedVector2Array([
+				center + Vector2(0, -15) * s, center + Vector2(10, 0) * s,
+				center + Vector2(0, 15) * s, center + Vector2(-10, 0) * s,
+			])
+			c.draw_polyline(d, col, w, true)
+			c.draw_line(d[3], d[0], col, w, true)
+		"homing":
+			c.draw_arc(center, 13.0 * s, 0, TAU, 16, col, 2.5, true)
+			c.draw_arc(center, 7.0 * s, 0, TAU, 12, col, 2.5, true)
+			c.draw_circle(center, 2.5 * s, col)
+		"triple_burst":
+			for i in 3:
+				var offset := Vector2((-10 + i * 10) * s, 0)
+				c.draw_line(center + offset + Vector2(0, 9) * s, center + offset + Vector2(0, -9) * s, col, 2.5, true)
+				c.draw_line(center + offset + Vector2(0, -9) * s, center + offset + Vector2(-4, -3) * s, col, 2.5, true)
+				c.draw_line(center + offset + Vector2(0, -9) * s, center + offset + Vector2(4, -3) * s, col, 2.5, true)
+		"temporal_freeze":
+			for i in 6:
+				var a := float(i) / 6.0 * TAU
+				c.draw_line(center, center + Vector2(cos(a), sin(a)) * 13 * s, col, 2.5, true)
+				var mid := center + Vector2(cos(a), sin(a)) * 8 * s
+				var perp := Vector2(-sin(a), cos(a)) * 5 * s
+				c.draw_line(mid - perp, mid + perp, col, 2.0, true)
+		"phoenix_protocol":
+			c.draw_line(center + Vector2(0, 8) * s, center + Vector2(0, -4) * s, col, w, true)
+			c.draw_line(center + Vector2(0, -4) * s, center + Vector2(-12, -13) * s, col, w, true)
+			c.draw_line(center + Vector2(0, -4) * s, center + Vector2(12, -13) * s, col, w, true)
+			c.draw_line(center + Vector2(-12, -13) * s, center + Vector2(-7, -7) * s, col, 2.5, true)
+			c.draw_line(center + Vector2(12, -13) * s, center + Vector2(7, -7) * s, col, 2.5, true)
+		"singularity":
+			c.draw_circle(center, 5.0 * s, col)
+			for i in 4:
+				var a := float(i) / 4.0 * TAU + 0.4
+				var from := center + Vector2(cos(a), sin(a)) * 15 * s
+				var to := center + Vector2(cos(a), sin(a)) * 8 * s
+				c.draw_line(from, to, col, 2.5, true)
+				c.draw_line(to, to + Vector2(cos(a + 0.5), sin(a + 0.5)) * 4 * s, col, 2.0, true)
+				c.draw_line(to, to + Vector2(cos(a - 0.5), sin(a - 0.5)) * 4 * s, col, 2.0, true)
+		"auto_turret":
+			c.draw_rect(Rect2(center + Vector2(-7, 3) * s, Vector2(14, 10) * s), col, true)
+			c.draw_line(center + Vector2(0, 3) * s, center + Vector2(0, -10) * s, col, 3.5, true)
+			c.draw_circle(center + Vector2(0, -10) * s, 4.0 * s, col)
+		"mirror_array":
+			c.draw_line(center + Vector2(0, -13) * s, center + Vector2(0, 13) * s, col, 3.0, true)
+			c.draw_line(center + Vector2(-13, -7) * s, center + Vector2(-1, 0) * s, col, 2.5, true)
+			c.draw_line(center + Vector2(1, 0) * s, center + Vector2(13, -7) * s, col, 2.5, true)
+			c.draw_line(center + Vector2(-13, -7) * s, center + Vector2(-9, -10) * s, col, 2.5, true)
+			c.draw_line(center + Vector2(13, -7) * s, center + Vector2(9, -10) * s, col, 2.5, true)
+		"void_boost":
+			c.draw_arc(center, 13.0 * s, 0, TAU, 16, col, 2.5, true)
+			c.draw_line(center + Vector2(-7, -7) * s, center + Vector2(0, 9) * s, col, 3.0, true)
+			c.draw_line(center + Vector2(7, -7) * s, center + Vector2(0, 9) * s, col, 3.0, true)
+		_:
+			c.draw_circle(center, 8.0 * s, col)
+
+# ============================================================
+# POPUP
+# ============================================================
+
+func _draw_popup(key: String) -> void:
+	var u = upgrade_system.upgrades[key]
+	var tier: int = u["tier"]
+	var level: int = u["level"]
+	var max_level: int = u["max_level"]
+	var can_buy: bool = upgrade_system.can_unlock(key)
+	var is_maxed := level >= max_level
+	var is_locked := not can_buy
+	var tier_col: Color = TIER_COLORS[tier]
+
+	var node_center: Vector2 = node_screen_positions[key]
+	var popup_w := 320.0
+	var popup_h := 130.0
+	var popup_pos := Vector2(node_center.x - popup_w / 2.0, node_center.y + NODE_RADIUS + 14)
+
+	# Se o popup passa da borda inferior, mostra acima
+	if popup_pos.y + popup_h > graph_canvas.size.y - 10:
+		popup_pos.y = node_center.y - NODE_RADIUS - popup_h - 14
+
+	# Clampa nas bordas laterais
+	popup_pos.x = clampf(popup_pos.x, 4.0, graph_canvas.size.x - popup_w - 4.0)
+
+	var popup_rect := Rect2(popup_pos, Vector2(popup_w, popup_h))
+	graph_canvas.draw_rect(popup_rect, Color(0.05, 0.06, 0.12, 0.95), true)
+	graph_canvas.draw_rect(popup_rect, Color(tier_col.r, tier_col.g, tier_col.b, 0.6), false, 2.0)
+
+	var font := ThemeDB.fallback_font
+	var tx: float = popup_pos.x + 14
+	var ty: float = popup_pos.y + 26
+
+	var name_text: String = UPGRADE_NAMES.get(key, key)
+	graph_canvas.draw_string(font, Vector2(tx, ty), name_text, HORIZONTAL_ALIGNMENT_LEFT, popup_w - 28, 22, tier_col)
+
+	var desc: String = UPGRADE_DESCRIPTIONS.get(key, "")
+	graph_canvas.draw_string(font, Vector2(tx, ty + 26), desc, HORIZONTAL_ALIGNMENT_LEFT, popup_w - 28, 16, Color(0.7, 0.7, 0.7))
+
+	var level_str := "Lv %d/%d" % [level, max_level] if not is_maxed else "MAX"
+	graph_canvas.draw_string(font, Vector2(tx, ty + 52), level_str, HORIZONTAL_ALIGNMENT_LEFT, popup_w - 28, 16, Color(0.9, 0.9, 0.9))
+
+	if is_maxed:
+		graph_canvas.draw_string(font, Vector2(tx, ty + 78), "COMPLETO", HORIZONTAL_ALIGNMENT_LEFT, popup_w - 28, 16, Color(1.0, 0.85, 0.0))
+	elif is_locked:
+		var req_name: String = UPGRADE_NAMES.get(u["requires"], u["requires"])
+		graph_canvas.draw_string(font, Vector2(tx, ty + 78), "Requer: " + req_name, HORIZONTAL_ALIGNMENT_LEFT, popup_w - 28, 15, Color(1.0, 0.3, 0.3))
+	else:
+		var cost: int = upgrade_system.get_cost(key)
+		var cur_type: String = u["currency"]
+		var cur_label: String = CURRENCY_LABELS.get(cur_type, cur_type)
+		var can_afford: bool = currency.get_amount(cur_type) >= cost
+		var cost_col := Color(0.3, 1.0, 0.5) if can_afford else Color(1.0, 0.3, 0.3)
+		graph_canvas.draw_string(font, Vector2(tx, ty + 78), "Custo: %d %s  —  toque para comprar" % [cost, cur_label], HORIZONTAL_ALIGNMENT_LEFT, popup_w - 28, 15, cost_col)
+
+# ============================================================
+# ETER MODE (lista simples)
+# ============================================================
+
+func _build_eter_list() -> void:
 	if not item_container or not currency or not upgrade_system:
 		return
-
-	# Limpa itens anteriores
 	for child in item_container.get_children():
 		child.queue_free()
-
-	if eter_mode:
-		# Modo eter: so mostra tier 4
-		for key in upgrade_system.upgrades:
-			var u = upgrade_system.upgrades[key]
-			if u["tier"] == 4:
-				# Omega protocol so aparece depois de derrotar o boss
-				if key == "omega_protocol" and not upgrade_system.boss_cleared:
-					continue
-				var item = _create_item(key, u)
-				item_container.add_child(item)
-		_update_header()
-		return
-
-	# Itera por tiers 1-3, mostrando apenas os desbloqueados
-	for tier in [1, 2, 3]:
-		var tier_currency = TIER_CURRENCY[tier]
-		if tier > 1 and not currency.is_unlocked(tier_currency):
-			continue
-
-		# Separador do tier
-		var separator = _create_tier_separator(tier)
-		item_container.add_child(separator)
-
-		# Upgrades do tier
-		for key in upgrade_system.upgrades:
-			var u = upgrade_system.upgrades[key]
-			if u["tier"] == tier:
-				var item = _create_item(key, u)
-				item_container.add_child(item)
-
+	for key in upgrade_system.upgrades:
+		var u = upgrade_system.upgrades[key]
+		if u["tier"] == 4:
+			if key == "omega_protocol" and not upgrade_system.boss_cleared:
+				continue
+			var item = _create_list_item(key, u)
+			item_container.add_child(item)
 	_update_header()
 
-func _create_tier_separator(tier: int) -> Label:
-	var label = Label.new()
-	label.text = TIER_NAMES[tier]
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 22)
-	var colors := {1: Color(1.0, 1.0, 0.0), 2: Color(0.0, 1.0, 1.0), 3: Color(0.7, 0.0, 1.0)}
-	label.add_theme_color_override("font_color", colors[tier])
-	return label
-
-func _create_item(key: String, u: Dictionary) -> HBoxContainer:
+func _create_list_item(key: String, u: Dictionary) -> HBoxContainer:
 	var row = HBoxContainer.new()
-	row.set_meta("upgrade_key", key)
-
 	var info = VBoxContainer.new()
 	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-
 	var name_label = Label.new()
 	name_label.text = "%s (Lv %d/%d)" % [UPGRADE_NAMES.get(key, key), u["level"], u["max_level"]]
-	name_label.name = "NameLabel"
 	name_label.add_theme_font_size_override("font_size", 24)
 	info.add_child(name_label)
-
 	var desc_label = Label.new()
 	desc_label.text = UPGRADE_DESCRIPTIONS.get(key, "")
 	desc_label.add_theme_font_size_override("font_size", 18)
 	info.add_child(desc_label)
-
 	row.add_child(info)
-
 	var buy_button = Button.new()
-	buy_button.name = "BuyButton"
 	var cur_type = u["currency"]
 	var cur_label = CURRENCY_LABELS.get(cur_type, cur_type)
 	if u["level"] >= u["max_level"]:
@@ -205,16 +607,19 @@ func _create_item(key: String, u: Dictionary) -> HBoxContainer:
 		buy_button.text = "%d %s" % [cost, cur_label]
 		buy_button.disabled = currency.get_amount(cur_type) < cost
 	buy_button.add_theme_font_size_override("font_size", 22)
-	buy_button.pressed.connect(_on_buy_pressed.bind(key))
+	buy_button.pressed.connect(_on_eter_buy.bind(key))
 	buy_button.custom_minimum_size = Vector2(150, 50)
 	row.add_child(buy_button)
-
 	return row
 
-func _on_buy_pressed(key: String) -> void:
+func _on_eter_buy(key: String) -> void:
 	if upgrade_system.buy(key, currency):
-		_build_shop()
+		_build_eter_list()
 		purchase_made.emit()
+
+# ============================================================
+# HEADER & SIGNALS
+# ============================================================
 
 func _update_header() -> void:
 	if not credits_label or not currency:
