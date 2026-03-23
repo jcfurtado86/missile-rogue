@@ -57,8 +57,8 @@ const STRINGS := {
 	"DOUBLE_EARNINGS_AD": { "pt": "DOBRAR GANHOS (AD)", "en": "DOUBLE EARNINGS (AD)", "es": "DOBLAR GANANCIAS (AD)", "fr": "DOUBLER GAINS (PUB)", "zh": "双倍收入(广告)" },
 	"THREAT_FMT": { "pt": "AMEAÇA: %d", "en": "THREAT: %d", "es": "AMENAZA: %d", "fr": "MENACE: %d", "zh": "威胁：%d" },
 
-	# ===== LOJA =====
-	"SHOP_TITLE": { "pt": "LOJA", "en": "SHOP", "es": "TIENDA", "fr": "BOUTIQUE", "zh": "商店" },
+	# ===== ARSENAL =====
+	"SHOP_TITLE": { "pt": "ARSENAL", "en": "ARSENAL", "es": "ARSENAL", "fr": "ARSENAL", "zh": "军火库" },
 	"ETER_SHOP_TITLE": { "pt": "UPGRADES ETERNOS", "en": "ETERNAL UPGRADES", "es": "MEJORAS ETERNAS", "fr": "AMÉLIORATIONS ÉTERNELLES", "zh": "永恒升级" },
 	"ASCEND": { "pt": "ASCENDER", "en": "ASCEND", "es": "ASCENDER", "fr": "ASCENSION", "zh": "飞升" },
 	"MAX": { "pt": "MAX", "en": "MAX", "es": "MÁX", "fr": "MAX", "zh": "满级" },
