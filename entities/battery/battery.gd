@@ -167,7 +167,9 @@ func _draw_armed() -> void:
 		var mbl := _persp(Vector2(mx, mag_y + 4.0))
 		var mbr := _persp(Vector2(mx + mw, mag_y + 4.0))
 		var mag_col: Color
-		if mi < magazines:
+		# Total de pentes disponiveis = reserva + pente ativo (se tem municao ou esta recarregando)
+		var active_mags := magazines + (1 if (magazine_ammo > 0 or reloading) else 0)
+		if mi < active_mags:
 			mag_col = Color(0.0, 1.0, 1.0, 0.5)
 		else:
 			mag_col = Color(0.0, 0.2, 0.3, 0.2)

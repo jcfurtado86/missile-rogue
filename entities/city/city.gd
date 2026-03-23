@@ -544,7 +544,7 @@ func take_hit() -> void:
 		return
 	if shield_active:
 		shield_active = false
-		shield_timer = 0.01  # DEBUG: escudo imortal (recarrega instantaneo)
+		shield_timer = shield_cooldown
 		queue_redraw()
 		return
 	data.take_hit()

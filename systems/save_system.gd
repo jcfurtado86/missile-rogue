@@ -19,6 +19,7 @@ func to_dict(upgrade_system: UpgradeSystem, ascension: AscensionSystem, currency
 		"ascension_count": ascension.get_ascension_count(),
 		"total_eter": ascension.get_total_eter(),
 		"unlocked_currencies": currency.unlocked.duplicate(),
+		"boss_cleared": upgrade_system.boss_cleared,
 	}
 
 func from_dict(data: Dictionary, upgrade_system: UpgradeSystem, ascension: AscensionSystem, currency: CurrencySystem) -> void:
@@ -35,6 +36,7 @@ func from_dict(data: Dictionary, upgrade_system: UpgradeSystem, ascension: Ascen
 	for key in saved_unlocked:
 		if saved_unlocked[key]:
 			currency.unlocked[key] = true
+	upgrade_system.boss_cleared = data.get("boss_cleared", false)
 	var levels = data.get("upgrades", {})
 	for name in levels:
 		if upgrade_system.upgrades.has(name):

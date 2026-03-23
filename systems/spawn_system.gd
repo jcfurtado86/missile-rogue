@@ -4,8 +4,10 @@ extends RefCounted
 var base_interval: float = 2.0
 var min_interval: float = 0.3
 
+var boss_threat := 100.0  # 100 normal, 300 com omega
+
 func get_spawn_distribution(threat: float) -> Dictionary:
-	if threat >= 300.0:
+	if threat >= boss_threat:
 		return {"boss": true}
 	if threat >= 75.0:
 		return {"basic": 0.55, "fast": 0.30, "cluster": 0.15}
@@ -18,4 +20,4 @@ func get_spawn_interval(threat: float) -> float:
 	return lerpf(base_interval, min_interval, t)
 
 func should_spawn_boss(threat: float) -> bool:
-	return threat >= 300.0
+	return threat >= boss_threat

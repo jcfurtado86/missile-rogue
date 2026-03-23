@@ -2,9 +2,10 @@ class_name ThreatSystem
 extends RefCounted
 
 var level: float = 0.0
-var time_rate: float = 0.5
+var max_level: float = 100.0
+var time_rate: float = 2.0
 func update_time(delta: float) -> void:
-	level = minf(level + time_rate * delta, 300.0)
+	level = minf(level + time_rate * delta, max_level)
 
 func register_kill() -> void:
 	pass

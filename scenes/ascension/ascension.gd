@@ -36,7 +36,7 @@ func _update_display() -> void:
 	confirm_button.disabled = false
 
 func _on_confirm() -> void:
-	ascension_system.perform_ascension(upgrade_system, currency)
+	# O reset real acontece em main.gd depois da eter shop
 	ascension_confirmed.emit()
 
 func _on_cancel() -> void:

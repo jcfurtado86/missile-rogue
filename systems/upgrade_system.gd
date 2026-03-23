@@ -42,7 +42,7 @@ func _register_tier3() -> void:
 	_add("void_boost", 3, "void", 20, 2.5, 3, 1.0, "flat_void")
 
 func _register_tier4() -> void:
-	_add("ascendant_core", 4, "eter", 50, 2.0, 3, 1.0, "flat_all_currencies")
+	_add("ascendant_core", 4, "eter", 50, 2.0, 2, 1.0, "flat_all_currencies_mult")
 	_add("eternal_knowledge", 4, "eter", 200, 1.0, 1, 1.0, "bool_keep_upgrades")
 	_add("vault", 4, "eter", 150, 1.0, 1, 1.0, "bool_keep_currencies")
 	_add("omega_protocol", 4, "eter", 100, 1.0, 1, 0.50, "percent_reward_boost")

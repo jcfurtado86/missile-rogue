@@ -136,8 +136,18 @@ func _gen_mountain_ridge(seed_val: int, min_h: float, max_h: float, envelope_str
 		var envelope := 1.0 - dist_from_center * envelope_strength
 		envelope = maxf(envelope, 0.3)
 		var h := rng.randf_range(min_h, max_h) * envelope
-		if i % 2 == 1:
-			h *= rng.randf_range(0.2, 0.5)
+		# Variacao organica: alguns picos altos, planaltos, vales suaves
+		var role := rng.randf()
+		if role < 0.25:
+			# Vale suave
+			h *= rng.randf_range(0.15, 0.4)
+		elif role < 0.5:
+			# Planalto medio
+			h *= rng.randf_range(0.5, 0.7)
+		elif role < 0.8:
+			# Pico normal
+			h *= rng.randf_range(0.7, 0.95)
+		# else: pico alto (sem reducao)
 		var y := horizon_y - h
 		ridge.append(Vector2(x, y))
 

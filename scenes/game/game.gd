@@ -58,13 +58,16 @@ var boss_spawned := false
 
 func _ready() -> void:
 	screen_height = get_viewport().get_visible_rect().size.y
-	# Omega protocol: dificuldade 3x
+	# Omega protocol: dificuldade 3x, boss em 300
 	if stats and stats.reward_boost_mult > 1.0:
 		threat.time_rate *= 3.0
+		spawner.boss_threat = 300.0
+		threat.max_level = 300.0
 
 	var hud_scene := preload("res://scenes/game/hud.tscn")
 	hud = hud_scene.instantiate()
 	add_child(hud)
+	hud.threat_bar.max_value = threat.max_level
 
 	# Musica
 	var music := AudioStreamPlayer.new()
@@ -284,10 +287,13 @@ func _spawn_boss() -> void:
 	var is_omega: bool = stats.reward_boost_mult > 1.0
 	var boss_count := 2 if is_omega else 1
 	var heights := [200.0, 450.0] if is_omega else [300.0]
+	var directions := [1.0, -1.0]
 	for i in boss_count:
 		var b = BossScene.instantiate()
 		b.position.x = 540.0
 		b.boss_y = heights[i]
+		if is_omega:
+			b.move_direction = directions[i]
 		b.ground_y = screen_height - CITY_Y_OFFSET
 		b.boss_defeated.connect(_on_boss_defeated)
 		add_child(b)
@@ -316,7 +322,7 @@ func _on_enemy_destroyed(_enemy: Area2D, drop_currency: String = "credits", drop
 	threat.register_kill()
 	if drop_currency != "" and drop_amount > 0:
 		var bonus: int = stats.credits_bonus if drop_currency == "credits" else (stats.crystals_bonus if drop_currency == "crystals" else stats.void_bonus)
-		var amount: int = drop_amount + bonus + stats.all_currencies_bonus
+		var amount: int = (drop_amount + bonus) * stats.all_currencies_mult
 		currency.add(drop_currency, amount)
 		run_earnings[drop_currency] += amount
 
@@ -327,7 +333,7 @@ func _connect_fragments() -> void:
 
 func _on_fragment_destroyed(_frag: Area2D) -> void:
 	threat.register_kill()
-	var void_amount: int = 1 + stats.void_bonus + stats.all_currencies_bonus
+	var void_amount: int = (1 + stats.void_bonus) * stats.all_currencies_mult
 	currency.add("void", void_amount)
 	run_earnings["void"] += void_amount
 
