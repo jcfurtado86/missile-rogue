@@ -13,8 +13,12 @@ func perform_ascension(upgrade_system: UpgradeSystem, currency: CurrencySystem) 
 	var eter_gained = calculate_eter(upgrade_system)
 	total_eter += eter_gained
 	currency.add("eter", eter_gained)
-	upgrade_system.reset_tiers(1, 3)
-	currency.reset_run_currencies()
+	var keep_upgrades := upgrade_system.get_effect("eternal_knowledge") > 0
+	var keep_currencies := upgrade_system.get_effect("vault") > 0
+	if not keep_upgrades:
+		upgrade_system.reset_tiers(1, 3)
+	if not keep_currencies:
+		currency.reset_run_currencies()
 	ascension_count += 1
 
 func get_ascension_count() -> int:

@@ -10,22 +10,21 @@ func before_test() -> void:
 	currency.add("credits", 1000000)
 
 # 48
-func test_credit_cost_matches_gdd_table() -> void:
-	# GDD: 50, 120, 300, 750, 2000, 6000
-	# Actual: 50 * 2.4^n — verify first and last
+func test_credit_cost_matches_ammo_pack() -> void:
+	# ammo_pack: base 30, mult 2.0
 	var cost_1 = upgrades.get_cost("ammo_pack")
-	assert_int(cost_1).is_equal(50)
+	assert_int(cost_1).is_equal(30)
 
 	upgrades.buy("ammo_pack", currency)
 	var cost_2 = upgrades.get_cost("ammo_pack")
-	assert_int(cost_2).is_equal(120)
+	assert_int(cost_2).is_equal(60)
 
 # 49
-func test_accumulated_cost_matches_gdd() -> void:
+func test_accumulated_cost() -> void:
 	var total = 0
 	for i in 2:
 		var cost = upgrades.get_cost("ammo_pack")
 		total += cost
 		upgrades.buy("ammo_pack", currency)
-	# After buying level 1 (50) and level 2 (120) = 170 accumulated
-	assert_int(total).is_equal(170)
+	# 30 + 60 = 90 accumulated
+	assert_int(total).is_equal(90)

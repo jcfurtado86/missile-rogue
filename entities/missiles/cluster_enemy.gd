@@ -6,6 +6,7 @@ signal destroyed(enemy: Area2D)
 
 var target_position := Vector2.ZERO
 var fragment_count: int
+var mirror_chance := 0.0
 
 var ClusterFragmentScene := preload("res://entities/missiles/cluster_fragment.tscn")
 
@@ -22,6 +23,14 @@ func _ready() -> void:
 	add_to_group("enemy")
 	fragment_count = randi_range(3, 5)
 	area_entered.connect(_on_area_entered)
+	if mirror_chance > 0.0 and randf() < mirror_chance:
+		_reflect()
+
+func _reflect() -> void:
+	target_position = Vector2(global_position.x + randf_range(-100, 100), -50)
+	speed *= 1.5
+	remove_from_group("enemy")
+	add_to_group("reflected")
 
 func _draw() -> void:
 	# Trail

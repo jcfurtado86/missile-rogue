@@ -3,10 +3,12 @@ extends Node2D
 @export var max_magazines := 2
 @export var magazine_size := 3
 @export var reload_time := 3.0
+@export var ammo_regen_rate := 0.0  # pentes/s regenerados
 
 var magazines: int
 var magazine_ammo: int
 var reloading := false
+var regen_accumulator := 0.0
 
 @onready var reload_timer: Timer = $ReloadTimer
 
@@ -19,9 +21,16 @@ const SILO_CY := 12.0  # centro vertical do silo
 var vanish_lx := 0.0  # vanish point em coords locais
 var persp_ratio := 1.0  # ratio topo/base
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	if reloading:
 		queue_redraw()
+	# Ammo regen passivo
+	if ammo_regen_rate > 0.0 and magazines < max_magazines - 1:
+		regen_accumulator += ammo_regen_rate * delta
+		if regen_accumulator >= 1.0:
+			regen_accumulator -= 1.0
+			magazines += 1
+			queue_redraw()
 
 func _ready() -> void:
 	magazines = max_magazines - 1  # 1 pente ja esta carregado na arma
@@ -216,17 +225,10 @@ func _draw_empty() -> void:
 func can_fire() -> bool:
 	return magazine_ammo > 0
 
-func fire(target: Vector2, missile_scene: PackedScene, speed_mult: float = 1.0, radius_mult: float = 1.0) -> void:
+func consume_ammo() -> void:
 	if magazine_ammo <= 0:
 		return
 	magazine_ammo -= 1
-	var missile = missile_scene.instantiate()
-	missile.global_position = global_position
-	missile.target = target
-	missile.speed *= speed_mult
-	missile.explosion_radius *= radius_mult
-	get_tree().current_scene.add_child(missile)
-
 	queue_redraw()
 	if magazine_ammo <= 0 and not reloading:
 		_start_reload()

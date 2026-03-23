@@ -5,6 +5,7 @@ signal destroyed(enemy: Area2D)
 @export var speed := 200.0
 
 var target_position := Vector2.ZERO
+var mirror_chance := 0.0
 
 const BASE_COLOR := Color(1.0, 0.0, 0.6)
 const TRAIL_LENGTH := 25
@@ -18,6 +19,16 @@ var MushroomCloudScene := preload("res://entities/missiles/mushroom_cloud.tscn")
 func _ready() -> void:
 	add_to_group("enemy")
 	area_entered.connect(_on_area_entered)
+	if mirror_chance > 0.0 and randf() < mirror_chance:
+		_reflect()
+
+func _reflect() -> void:
+	# Inverte direcao — volta pro topo da tela
+	target_position = Vector2(global_position.x + randf_range(-100, 100), -50)
+	speed *= 1.5
+	# Muda grupo pra nao contar como inimigo
+	remove_from_group("enemy")
+	add_to_group("reflected")
 
 func _draw() -> void:
 	# Trail

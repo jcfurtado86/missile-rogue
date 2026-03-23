@@ -4,9 +4,10 @@ extends RefCounted
 var charge: float = 0.0
 var max_charge: float = 100.0
 var charge_per_second: float = 2.5  # ~40s pra recarregar do zero
+var charge_speed_mult: float = 1.0
 
 func update_time(delta: float) -> void:
-	charge = minf(charge + charge_per_second * delta, max_charge)
+	charge = minf(charge + charge_per_second * charge_speed_mult * delta, max_charge)
 
 func is_ready() -> bool:
 	return charge >= max_charge

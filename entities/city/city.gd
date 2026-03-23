@@ -5,6 +5,11 @@ signal city_destroyed
 var data: CityData
 var anim_time := 0.0
 
+# Shield
+var shield_active := false
+var shield_cooldown := 0.0  # 0 = sem escudo
+var shield_timer := 0.0     # tempo restante ate escudo voltar
+
 # Dados procedurais
 var traces: Array[Array] = []
 var pin_positions: PackedVector2Array
@@ -35,6 +40,11 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	anim_time += delta
+	# Shield regen
+	if shield_cooldown > 0.0 and not shield_active and data.is_alive():
+		shield_timer -= delta
+		if shield_timer <= 0.0:
+			shield_active = true
 	queue_redraw()
 
 # Calcula o quadrilatero do grid onde a cidade esta
@@ -326,6 +336,21 @@ func _draw_alive() -> void:
 				break
 			accum += seg_len
 
+	# Shield visual
+	if shield_active:
+		var center := (chip_tl + chip_tr + chip_br + chip_bl) / 4.0
+		var shield_r := maxf(chip_tr.distance_to(chip_tl), chip_bl.distance_to(chip_tl)) * 0.7
+		var shield_pulse := (sin(anim_time * 3.0) + 1.0) * 0.5
+		var shield_alpha := lerpf(0.08, 0.15, shield_pulse)
+		draw_circle(center, shield_r, Color(0.0, 1.0, 1.0, shield_alpha))
+		draw_arc(center, shield_r, 0, TAU, 48, Color(0.0, 1.0, 1.0, lerpf(0.3, 0.6, shield_pulse)), 2.0, true)
+	elif shield_cooldown > 0.0 and shield_timer > 0.0:
+		# Shield recharging indicator
+		var center := (chip_tl + chip_tr + chip_br + chip_bl) / 4.0
+		var shield_r := maxf(chip_tr.distance_to(chip_tl), chip_bl.distance_to(chip_tl)) * 0.7
+		var progress := 1.0 - (shield_timer / shield_cooldown)
+		draw_arc(center, shield_r, -PI / 2.0, -PI / 2.0 + TAU * progress, 48, Color(0.0, 1.0, 1.0, 0.15), 1.5, true)
+
 
 func _draw_dead() -> void:
 	var dead := Color(0.0, 0.6, 1.0, 0.2)
@@ -390,6 +415,11 @@ func _draw_dead() -> void:
 func take_hit() -> void:
 	if not data.is_alive():
 		return
+	if shield_active:
+		shield_active = false
+		shield_timer = shield_cooldown
+		queue_redraw()
+		return
 	data.take_hit()
 	queue_redraw()
 	city_destroyed.emit()
@@ -401,6 +431,11 @@ func revive() -> void:
 	queue_redraw()
 	set_deferred("monitorable", true)
 	set_deferred("monitoring", true)
+
+func setup_shield(cooldown: float) -> void:
+	shield_cooldown = cooldown
+	if cooldown > 0.0:
+		shield_active = true
 
 func is_alive() -> bool:
 	return data.is_alive()

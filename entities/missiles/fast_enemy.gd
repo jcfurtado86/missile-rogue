@@ -6,6 +6,7 @@ signal destroyed(enemy: Area2D)
 
 var target_position := Vector2.ZERO
 var city_positions: Array[Vector2] = []
+var mirror_chance := 0.0
 
 # Troca de alvo aleatoria
 var retarget_timer := 0.0
@@ -26,6 +27,15 @@ func _ready() -> void:
 	add_to_group("enemy")
 	area_entered.connect(_on_area_entered)
 	_schedule_retarget()
+	if mirror_chance > 0.0 and randf() < mirror_chance:
+		_reflect()
+
+func _reflect() -> void:
+	target_position = Vector2(global_position.x + randf_range(-100, 100), -50)
+	city_positions.clear()
+	speed *= 1.5
+	remove_from_group("enemy")
+	add_to_group("reflected")
 
 func _draw() -> void:
 	# Trail

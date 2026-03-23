@@ -23,6 +23,15 @@ var ad_system = null
 var spawn_timer := 0.0
 var run_earnings := {"credits": 0, "crystals": 0, "void": 0}
 
+# Phoenix protocol
+var phoenix_revives_remaining := 0
+
+# Auto turret
+var auto_turret_timer := 0.0
+
+# Early warning
+var warning_indicators: Array[Dictionary] = []
+
 # Screen effects
 var shake_intensity := 0.0
 var shake_timer := 0.0
@@ -54,6 +63,7 @@ func _ready() -> void:
 		battery.max_magazines = stats.max_magazines
 		battery.magazine_size = stats.magazine_size
 		battery.reload_time = stats.reload_time
+		battery.ammo_regen_rate = stats.ammo_regen
 		add_child(battery)
 		batteries.append(battery)
 
@@ -63,11 +73,19 @@ func _ready() -> void:
 		var city = city_scene.instantiate()
 		city.position = Vector2(ratio * screen_width, city_y)
 		city.city_destroyed.connect(_on_city_destroyed.bind(city))
+		if stats.shield_cooldown > 0.0:
+			city.setup_shield(stats.shield_cooldown)
 		add_child(city)
 		cities.append(city)
 
 	if stats and stats.head_start_credits > 0:
 		currency.add("credits", stats.head_start_credits)
+
+	# Overcharge
+	special.charge_speed_mult = stats.charge_speed_mult
+
+	# Phoenix protocol
+	phoenix_revives_remaining = stats.city_revives
 
 func _physics_process(delta: float) -> void:
 	# Screen effects rodam sempre
@@ -78,6 +96,7 @@ func _physics_process(delta: float) -> void:
 	special.update_time(delta)
 	_handle_spawning(delta)
 	_connect_fragments()
+	_handle_auto_turret(delta)
 	_check_game_over()
 	hud.update_threat(threat.get_level())
 	hud.update_currencies(run_earnings)
@@ -106,7 +125,35 @@ func _fire_at(target: Vector2) -> void:
 			closest_battery = battery
 
 	if closest_battery:
-		closest_battery.fire(target, PlayerMissileScene, stats.missile_speed_mult, stats.explosion_radius_mult)
+		# Gasta municao 1x
+		closest_battery.consume_ammo()
+
+		# Determina quantos misseis disparar
+		var missile_count := 1 + stats.extra_missiles  # twin_cannons
+
+		# Triple burst — chance de 3 misseis
+		if stats.triple_chance > 0.0 and randf() < stats.triple_chance:
+			missile_count = 3
+
+		for i in missile_count:
+			if i == 0:
+				_spawn_player_missile(closest_battery, target)
+			else:
+				# Misseis extras com leve offset
+				var offset := Vector2(randf_range(-30, 30), randf_range(-30, 30))
+				_spawn_player_missile(closest_battery, target + offset)
+
+func _spawn_player_missile(battery: Node2D, target: Vector2) -> void:
+	var missile = PlayerMissileScene.instantiate()
+	missile.global_position = battery.global_position
+	missile.target = target
+	missile.speed *= stats.missile_speed_mult
+	missile.explosion_radius *= stats.explosion_radius_mult
+	missile.homing_strength = stats.homing_strength
+	missile.critical_mass_chance = stats.critical_mass_chance
+	missile.chain_chance = stats.chain_chance
+	missile.pull_force = stats.pull_force
+	add_child(missile)
 
 func _handle_spawning(delta: float) -> void:
 	spawn_timer -= delta
@@ -155,8 +202,23 @@ func _spawn_enemy() -> void:
 		enemy.target_position = target_city.global_position
 		enemy.speed = lerpf(150.0, 400.0, threat_level / 100.0)
 
+	# Time warp — chance de desacelerar
+	if stats.time_warp_chance > 0.0 and randf() < stats.time_warp_chance:
+		enemy.speed *= 0.5
+
+	# Mirror array — chance de refletir
+	enemy.mirror_chance = stats.mirror_chance
+
 	enemy.position = Vector2(randf_range(50, screen_width - 50), -20)
 	enemy.destroyed.connect(_on_enemy_destroyed.bind(drop_currency, drop_amount))
+
+	# Early warning — marca onde o missil vai cair
+	if stats.has_early_warning:
+		warning_indicators.append({
+			"pos": target_city.global_position,
+			"enemy": enemy,
+		})
+
 	add_child(enemy)
 
 func _spawn_boss() -> void:
@@ -184,6 +246,8 @@ func _on_enemy_destroyed(_enemy: Area2D, drop_currency: String = "credits", drop
 	threat.register_kill()
 	if drop_currency != "" and drop_amount > 0:
 		var mult: float = stats.credits_mult if drop_currency == "credits" else (stats.crystals_mult if drop_currency == "crystals" else stats.void_mult)
+		# ascendant_core + omega_protocol
+		mult *= stats.all_currencies_mult * stats.reward_boost_mult
 		var amount = int(drop_amount * mult)
 		currency.add(drop_currency, amount)
 		run_earnings[drop_currency] += amount
@@ -195,17 +259,82 @@ func _connect_fragments() -> void:
 
 func _on_fragment_destroyed(_frag: Area2D) -> void:
 	threat.register_kill()
-	currency.add("void", 1)
-	run_earnings["void"] += 1
+	var void_amount := int(1 * stats.void_mult * stats.all_currencies_mult * stats.reward_boost_mult)
+	if void_amount < 1:
+		void_amount = 1
+	currency.add("void", void_amount)
+	run_earnings["void"] += void_amount
 
 var NovaBombWaveScene := preload("res://entities/nova_bomb_wave.tscn")
 
 func activate_nova_bomb() -> void:
 	if not special.activate():
 		return
+
+	# Temporal freeze — congela todos os inimigos
+	if stats.freeze_seconds > 0.0:
+		_freeze_enemies(stats.freeze_seconds)
+
 	var wave = NovaBombWaveScene.instantiate()
 	wave.position = Vector2(540.0, screen_height)
 	add_child(wave)
+
+func _freeze_enemies(duration: float) -> void:
+	for enemy in get_tree().get_nodes_in_group("enemy"):
+		if is_instance_valid(enemy) and not enemy.is_in_group("boss"):
+			enemy.set_physics_process(false)
+			get_tree().create_timer(duration).timeout.connect(func():
+				if is_instance_valid(enemy):
+					enemy.set_physics_process(true)
+			)
+	for frag in get_tree().get_nodes_in_group("fragment"):
+		if is_instance_valid(frag):
+			frag.set_physics_process(false)
+			get_tree().create_timer(duration).timeout.connect(func():
+				if is_instance_valid(frag):
+					frag.set_physics_process(true)
+			)
+
+# --- Auto turret ---
+
+func _handle_auto_turret(delta: float) -> void:
+	if stats.auto_turret_rate <= 0.0:
+		return
+	auto_turret_timer -= delta
+	if auto_turret_timer > 0.0:
+		return
+	# Intervalo entre tiros: 3s no nivel 1, 1.5s no nivel 2, 1s no nivel 3
+	auto_turret_timer = 3.0 / stats.auto_turret_rate
+
+	var enemies := get_tree().get_nodes_in_group("enemy")
+	if enemies.is_empty():
+		return
+
+	# Encontra inimigo mais proximo de qualquer bateria
+	var best_enemy: Area2D = null
+	var best_dist := INF
+	for enemy in enemies:
+		if not is_instance_valid(enemy):
+			continue
+		for battery in batteries:
+			var dist := battery.global_position.distance_to(enemy.global_position)
+			if dist < best_dist:
+				best_dist = dist
+				best_enemy = enemy
+
+	if best_enemy:
+		# Auto turret nao gasta municao — dispara de bateria aleatoria
+		var battery = batteries.pick_random()
+		var missile = PlayerMissileScene.instantiate()
+		missile.global_position = battery.global_position
+		missile.target = best_enemy.global_position
+		missile.speed = 400.0 * stats.missile_speed_mult
+		missile.explosion_radius = 30.0 * stats.explosion_radius_mult * 0.7
+		missile.homing_strength = maxf(stats.homing_strength, 0.3)  # auto turret sempre tem leve homing
+		missile.pull_force = stats.pull_force
+		add_child(missile)
+
+# --- Game over & revive ---
 
 func _check_game_over() -> void:
 	if is_game_over:
@@ -248,6 +377,8 @@ func _do_revive() -> void:
 		var city = destroyed_order.pop_back()
 		if not city.is_alive():
 			city.revive()
+			if stats.shield_cooldown > 0.0:
+				city.setup_shield(stats.shield_cooldown)
 			break
 	hud.hide_revive_offer()
 
@@ -267,13 +398,55 @@ func decline_double() -> void:
 	hud.hide_double_offer()
 	game_over.emit()
 
-# --- Screen effects ---
+# --- Phoenix protocol ---
 
 func _on_city_destroyed(city: Node2D) -> void:
 	destroyed_order.append(city)
 	flash_alpha = 0.7
 	shake_intensity = 8.0
 	shake_timer = 0.3
+	# Phoenix protocol — revive automatico
+	if phoenix_revives_remaining > 0:
+		phoenix_revives_remaining -= 1
+		get_tree().create_timer(1.5).timeout.connect(func():
+			if is_instance_valid(city) and not city.is_alive():
+				city.revive()
+				if stats.shield_cooldown > 0.0:
+					city.setup_shield(stats.shield_cooldown)
+		)
+
+# --- Early warning ---
+
+func _draw() -> void:
+	if flash_alpha > 0.0:
+		draw_rect(Rect2(-screen_width, -screen_height, screen_width * 3, screen_height * 3), Color(1.0, 0.3, 0.2, flash_alpha))
+
+	# Early warning indicators
+	if stats and stats.has_early_warning:
+		_draw_warnings()
+
+func _draw_warnings() -> void:
+	var to_remove: Array[int] = []
+	for i in warning_indicators.size():
+		var indicator = warning_indicators[i]
+		var enemy = indicator["enemy"]
+		if not is_instance_valid(enemy) or not enemy.is_inside_tree():
+			to_remove.append(i)
+			continue
+		var target_pos: Vector2 = indicator["pos"]
+		# Crosshair no ponto de impacto
+		var local_pos := target_pos - global_position
+		var col := Color(1.0, 0.0, 0.3, 0.4)
+		draw_line(local_pos + Vector2(-12, 0), local_pos + Vector2(12, 0), col, 1.5, true)
+		draw_line(local_pos + Vector2(0, -12), local_pos + Vector2(0, 12), col, 1.5, true)
+		draw_arc(local_pos, 10.0, 0, TAU, 16, col, 1.0, true)
+	# Remove indicadores de inimigos destruidos (de tras pra frente)
+	for i in range(to_remove.size() - 1, -1, -1):
+		warning_indicators.remove_at(to_remove[i])
+	if not warning_indicators.is_empty():
+		queue_redraw()
+
+# --- Screen effects ---
 
 func _update_screen_effects(delta: float) -> void:
 	if shake_timer > 0.0:
@@ -291,7 +464,3 @@ func _update_screen_effects(delta: float) -> void:
 		if flash_alpha < 0.0:
 			flash_alpha = 0.0
 		queue_redraw()
-
-func _draw() -> void:
-	if flash_alpha > 0.0:
-		draw_rect(Rect2(-screen_width, -screen_height, screen_width * 3, screen_height * 3), Color(1.0, 0.3, 0.2, flash_alpha))
