@@ -28,6 +28,7 @@ window/size/viewport_width=1080
 window/size/viewport_height=1920
 window/stretch/mode="canvas_items"
 window/stretch/aspect="keep_width"
+window/stretch/border_color=Color(0.02, 0.01, 0.08, 1)
 window/handheld/orientation=1
 
 [editor_plugins]

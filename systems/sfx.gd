@@ -54,16 +54,14 @@ func _ready() -> void:
 	_start_music()
 
 func _start_music() -> void:
-	var ogg_file := FileAccess.open("res://assets/audio/neon.ogg", FileAccess.READ)
-	if ogg_file:
-		var ogg_stream := AudioStreamOggVorbis.load_from_file("res://assets/audio/neon.ogg")
-		if ogg_stream:
-			ogg_stream.loop = true
-			music_player = AudioStreamPlayer.new()
-			music_player.stream = ogg_stream
-			music_player.bus = "Music"
-			add_child(music_player)
-			music_player.play()
+	var ogg_stream = load("res://assets/audio/neon.ogg")
+	if ogg_stream:
+		ogg_stream.loop = true
+		music_player = AudioStreamPlayer.new()
+		music_player.stream = ogg_stream
+		music_player.bus = "Music"
+		add_child(music_player)
+		music_player.play()
 
 func _process(delta: float) -> void:
 	if music_player and abs(music_current_pitch - music_target_pitch) > 0.01:
