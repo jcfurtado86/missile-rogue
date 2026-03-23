@@ -129,6 +129,7 @@ func _pick_new_target() -> void:
 	target_position = new_target
 
 func _spawn_mushroom_cloud() -> void:
+	get_node("/root/SoundManager").ground_hit()
 	var mc = MushroomCloudScene.instantiate()
 	mc.position = global_position
 	mc.color = BASE_COLOR

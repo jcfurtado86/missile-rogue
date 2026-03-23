@@ -71,9 +71,9 @@ func _ready() -> void:
 
 	# Musica
 	var music := AudioStreamPlayer.new()
-	var ogg_file := FileAccess.open("res://assets/neon.ogg", FileAccess.READ)
+	var ogg_file := FileAccess.open("res://assets/audio/neon.ogg", FileAccess.READ)
 	if ogg_file:
-		var ogg_stream := AudioStreamOggVorbis.load_from_file("res://assets/neon.ogg")
+		var ogg_stream := AudioStreamOggVorbis.load_from_file("res://assets/audio/neon.ogg")
 		if ogg_stream:
 			ogg_stream.loop = true
 			music.stream = ogg_stream
@@ -347,6 +347,7 @@ func activate_nova_bomb() -> void:
 	if not special.activate():
 		return
 
+	get_node("/root/SoundManager").nova_bomb()
 	var wave = NovaBombWaveScene.instantiate()
 	wave.position = Vector2(540.0, screen_height)
 	add_child(wave)
@@ -485,7 +486,7 @@ func decline_double() -> void:
 
 func _on_city_destroyed(city: Node2D) -> void:
 	destroyed_order.append(city)
-	get_node("/root/SoundManager").city_destroyed()
+	get_node("/root/SoundManager").city_nuked()
 	flash_alpha = 0.7
 	shake_intensity = 8.0
 	shake_timer = 0.3

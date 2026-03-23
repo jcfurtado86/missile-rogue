@@ -339,9 +339,11 @@ func _on_node_tapped(key: String) -> void:
 		_try_buy(key)
 	else:
 		selected_key = key
+		get_node("/root/SoundManager").ui_click()
 
 func _try_buy(key: String) -> void:
 	if upgrade_system.buy(key, currency):
+		get_node("/root/SoundManager").purchase()
 		buy_flash_key = key
 		buy_flash_time = BUY_FLASH_DURATION
 		purchase_made.emit()
@@ -722,6 +724,7 @@ func _create_list_item(key: String, u: Dictionary) -> PanelContainer:
 
 func _on_eter_buy(key: String) -> void:
 	if upgrade_system.buy(key, currency):
+		get_node("/root/SoundManager").purchase()
 		_build_eter_list()
 		purchase_made.emit()
 

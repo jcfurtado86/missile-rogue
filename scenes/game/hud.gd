@@ -49,6 +49,8 @@ func _ready() -> void:
 	currency_draw.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	currency_draw.draw.connect(_draw_currencies)
 	add_child(currency_draw)
+	nova_button.set_meta("no_click_sfx", true)
+	freeze_button.set_meta("no_click_sfx", true)
 	nova_button.pressed.connect(_on_nova_pressed)
 	freeze_button.pressed.connect(_on_freeze_pressed)
 	victory_button.pressed.connect(_on_victory_pressed)
