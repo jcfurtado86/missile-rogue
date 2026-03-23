@@ -16,7 +16,27 @@ func _ready() -> void:
 	currency.add("crystals", 99999)
 	currency.add("void", 99999)
 	currency.add("eter", 99999)
-	_open_title()
+	_show_splash()
+
+func _show_splash() -> void:
+	var splash := ColorRect.new()
+	splash.color = Color(0.02, 0.01, 0.08, 1.0)
+	splash.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(splash)
+	current_scene = splash
+
+	var logo := TextureRect.new()
+	logo.texture = load("res://assets/robot-logo.png")
+	logo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	logo.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	logo.modulate = Color(1, 1, 1, 0)
+	splash.add_child(logo)
+
+	var tw := create_tween()
+	tw.tween_property(logo, "modulate:a", 1.0, 0.5)
+	tw.tween_interval(1.5)
+	tw.tween_property(logo, "modulate:a", 0.0, 0.5)
+	tw.tween_callback(_open_title)
 
 func _open_title() -> void:
 	_clear_current()

@@ -15,7 +15,6 @@ func to_dict(upgrade_system: UpgradeSystem, ascension: AscensionSystem, currency
 		"void": currency.get_amount("void"),
 		"eter": currency.get_amount("eter"),
 		"upgrades": upgrade_levels,
-		"total_invested": upgrade_system.get_total_invested(),
 		"ascension_count": ascension.get_ascension_count(),
 		"total_eter": ascension.get_total_eter(),
 		"unlocked_currencies": currency.unlocked.duplicate(),
@@ -31,7 +30,6 @@ func from_dict(data: Dictionary, upgrade_system: UpgradeSystem, ascension: Ascen
 	currency.add("eter", data.get("eter", 0))
 	ascension.ascension_count = data.get("ascension_count", 0)
 	ascension.total_eter = data.get("total_eter", 0)
-	upgrade_system.total_invested = data.get("total_invested", 0)
 	var saved_unlocked = data.get("unlocked_currencies", {})
 	for key in saved_unlocked:
 		if saved_unlocked[key]:
@@ -49,7 +47,6 @@ static func get_defaults() -> Dictionary:
 		"void": 0,
 		"eter": 0,
 		"upgrades": {},
-		"total_invested": 0,
 		"ascension_count": 0,
 		"total_eter": 0,
 	}
