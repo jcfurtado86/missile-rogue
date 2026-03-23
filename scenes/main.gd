@@ -128,12 +128,15 @@ func _on_start_run() -> void:
 	_start_game()
 
 func _save_game() -> void:
+	save_system.locale_loaded = get_node("/root/Tr").locale
 	var data = save_system.to_dict(upgrade_system, ascension_system, currency)
 	save_system.save_to_file(SAVE_PATH, data)
 
 func _load_game() -> void:
 	var data = save_system.load_from_file(SAVE_PATH)
 	save_system.from_dict(data, upgrade_system, ascension_system, currency)
+	var tr_node = get_node("/root/Tr")
+	tr_node.set_locale(save_system.locale_loaded)
 
 func _clear_current() -> void:
 	if current_scene:

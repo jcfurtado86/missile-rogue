@@ -38,6 +38,46 @@ func _ready() -> void:
 	$Buttons/PlayButton.pressed.connect(func(): play_pressed.emit())
 	$Buttons/ResetButton.pressed.connect(_on_reset)
 	$Buttons/QuitButton.pressed.connect(func(): get_tree().quit())
+	_update_texts()
+	_build_locale_selector()
+
+func _update_texts() -> void:
+	var tr_node = get_node("/root/Tr")
+	$Buttons/PlayButton.text = tr_node.t("PLAY")
+	$Buttons/ResetButton.text = tr_node.t("RESET_SAVE")
+	$Buttons/QuitButton.text = tr_node.t("QUIT")
+
+func _build_locale_selector() -> void:
+	var tr_node = get_node("/root/Tr")
+	var scr := get_viewport().get_visible_rect().size
+	var locales: Array = tr_node.LOCALES
+	var labels: Array = tr_node.LOCALE_LABELS
+	var total_w := locales.size() * 70.0 + (locales.size() - 1) * 10.0
+	var start_x := (scr.x - total_w) / 2.0
+	for i in locales.size():
+		var btn := Button.new()
+		btn.text = labels[i]
+		btn.add_theme_font_size_override("font_size", 20)
+		btn.offset_left = start_x + i * 80.0
+		btn.offset_top = scr.y * 0.57
+		btn.offset_right = start_x + i * 80.0 + 70.0
+		btn.offset_bottom = scr.y * 0.57 + 45.0
+		var loc: String = locales[i]
+		var is_active: bool = (loc == tr_node.locale)
+		var col := Color(1.0, 0.0, 0.6) if is_active else Color(0.4, 0.4, 0.4)
+		_style_neon_button(btn, col)
+		btn.pressed.connect(_on_locale_selected.bind(loc))
+		add_child(btn)
+
+func _on_locale_selected(loc: String) -> void:
+	var tr_node = get_node("/root/Tr")
+	tr_node.set_locale(loc)
+	_update_texts()
+	# Rebuild selector to update active highlight
+	for child in get_children():
+		if child is Button and child != $Buttons/PlayButton and child != $Buttons/ResetButton and child != $Buttons/QuitButton:
+			child.queue_free()
+	_build_locale_selector.call_deferred()
 
 func _process(delta: float) -> void:
 	title_pulse += delta
@@ -159,7 +199,8 @@ func _on_reset() -> void:
 	panel.add_child(border)
 
 	var title := Label.new()
-	title.text = "APAGAR DADOS?"
+	var tr_node = get_node("/root/Tr")
+	title.text = tr_node.t("CONFIRM_DELETE")
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 32)
 	title.add_theme_color_override("font_color", col)
@@ -170,7 +211,7 @@ func _on_reset() -> void:
 	panel.add_child(title)
 
 	var desc := Label.new()
-	desc.text = "Todo progresso sera perdido.\nEssa acao nao pode ser desfeita."
+	desc.text = tr_node.t("DELETE_WARNING")
 	desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	desc.add_theme_font_size_override("font_size", 22)
 	desc.add_theme_color_override("font_color", Color(0.7, 0.4, 0.4))
@@ -190,7 +231,7 @@ func _on_reset() -> void:
 	panel.add_child(btn_box)
 
 	var cancel_btn := Button.new()
-	cancel_btn.text = "CANCELAR"
+	cancel_btn.text = tr_node.t("CANCEL")
 	cancel_btn.custom_minimum_size = Vector2(180, 60)
 	cancel_btn.add_theme_font_size_override("font_size", 24)
 	_style_neon_button(cancel_btn, Color(0.5, 0.5, 0.5))
@@ -198,7 +239,7 @@ func _on_reset() -> void:
 	btn_box.add_child(cancel_btn)
 
 	var confirm_btn := Button.new()
-	confirm_btn.text = "APAGAR"
+	confirm_btn.text = tr_node.t("DELETE")
 	confirm_btn.custom_minimum_size = Vector2(180, 60)
 	confirm_btn.add_theme_font_size_override("font_size", 24)
 	_style_neon_button(confirm_btn, col)

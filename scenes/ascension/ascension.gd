@@ -43,6 +43,7 @@ func _draw_battle() -> void:
 	distant_battle.draw(battle_overlay)
 
 func _build_panel() -> void:
+	var tr_node = get_node("/root/Tr")
 	var scr := get_viewport().get_visible_rect().size
 	var pw := 620.0
 	var ph := 780.0
@@ -87,7 +88,7 @@ func _build_panel() -> void:
 
 	# Title
 	var title := Label.new()
-	title.text = "ASCENSAO"
+	title.text = tr_node.t("ASC_TITLE")
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 40)
 	title.add_theme_color_override("font_color", ETER_COL)
@@ -152,7 +153,7 @@ func _build_panel() -> void:
 	panel.add_child(warn_icon)
 
 	var warn_title := Label.new()
-	warn_title.text = "AVISO"
+	warn_title.text = tr_node.t("WARNING_TITLE")
 	warn_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	warn_title.add_theme_font_size_override("font_size", 28)
 	warn_title.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
@@ -164,7 +165,7 @@ func _build_panel() -> void:
 	panel.add_child(warn_title)
 
 	var warn_text := Label.new()
-	warn_text.text = "Upgrades serao perdidos\nMoedas serao zeradas"
+	warn_text.text = tr_node.t("WARNING_TEXT")
 	warn_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	warn_text.add_theme_font_size_override("font_size", 22)
 	warn_text.add_theme_color_override("font_color", Color(0.8, 0.45, 0.45))
@@ -186,7 +187,7 @@ func _build_panel() -> void:
 	panel.add_child(btn_container)
 
 	var cancel_btn := Button.new()
-	cancel_btn.text = "VOLTAR"
+	cancel_btn.text = tr_node.t("BACK")
 	cancel_btn.custom_minimum_size = Vector2(220, 70)
 	cancel_btn.add_theme_font_size_override("font_size", 26)
 	_style_neon_button(cancel_btn, Color(0.5, 0.5, 0.5))
@@ -194,7 +195,7 @@ func _build_panel() -> void:
 	btn_container.add_child(cancel_btn)
 
 	var confirm_btn := Button.new()
-	confirm_btn.text = "ASCENDER"
+	confirm_btn.text = tr_node.t("ASC_CONFIRM")
 	confirm_btn.custom_minimum_size = Vector2(240, 70)
 	confirm_btn.add_theme_font_size_override("font_size", 26)
 	_style_neon_button(confirm_btn, ETER_COL)
@@ -239,6 +240,7 @@ func _draw_ascension_icon(c: Control, center: Vector2) -> void:
 func _draw_eter_info(c: Control) -> void:
 	if not ascension_system or not upgrade_system:
 		return
+	var tr_node = get_node("/root/Tr")
 	var font := ThemeDB.fallback_font
 	var w := c.size.x
 	var y := 10.0
@@ -248,7 +250,7 @@ func _draw_eter_info(c: Control) -> void:
 	total_invested = upgrade_system.get_total_invested()
 
 	# Eter ganho
-	var gain_text := "ETER GANHO"
+	var gain_text = tr_node.t("ETER_GAINED")
 	var gain_w := font.get_string_size(gain_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 20).x
 	c.draw_string(font, Vector2((w - gain_w) / 2.0, y + 15), gain_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color(0.6, 0.6, 0.6))
 	y += 30
@@ -269,19 +271,19 @@ func _draw_eter_info(c: Control) -> void:
 	y += 15
 
 	# Eter total
-	var total_text := "ETER TOTAL: %d → %d" % [eter_old, eter_old + eter_gain]
+	var total_text = tr_node.t("ETER_TOTAL_FMT") % [eter_old, eter_old + eter_gain]
 	var total_tw := font.get_string_size(total_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 22).x
 	c.draw_string(font, Vector2((w - total_tw) / 2.0, y + 18), total_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 22, Color(0.9, 0.7, 0.4))
 	y += 32
 
 	# Invested
-	var inv_text := "INVESTIDO: %d / %d" % [total_invested, ascension_system.conversion_factor]
+	var inv_text = tr_node.t("INVESTED_FMT") % [total_invested, ascension_system.conversion_factor]
 	var inv_tw := font.get_string_size(inv_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 18).x
 	c.draw_string(font, Vector2((w - inv_tw) / 2.0, y + 15), inv_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color(0.5, 0.5, 0.5))
 	y += 28
 
 	# Ascension count
-	var asc_text := "ASCENSOES: %d" % ascension_system.get_ascension_count()
+	var asc_text = tr_node.t("ASC_COUNT_FMT") % ascension_system.get_ascension_count()
 	var asc_tw := font.get_string_size(asc_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 18).x
 	c.draw_string(font, Vector2((w - asc_tw) / 2.0, y + 15), asc_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color(0.5, 0.5, 0.5))
 

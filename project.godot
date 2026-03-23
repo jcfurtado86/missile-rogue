@@ -20,6 +20,7 @@ config/icon="res://icon.svg"
 [autoload]
 
 SoundManager="*res://systems/sfx.gd"
+Tr="*res://systems/tr.gd"
 
 [display]
 

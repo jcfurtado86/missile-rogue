@@ -68,6 +68,7 @@ func _ready() -> void:
 	hud = hud_scene.instantiate()
 	add_child(hud)
 	hud.threat_bar.max_value = threat.max_level
+	hud.quit_to_menu.connect(func(): game_over.emit())
 
 	screen_width = get_viewport().get_visible_rect().size.x
 	var battery_y := screen_height - BATTERY_Y_OFFSET

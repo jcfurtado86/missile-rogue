@@ -25,7 +25,10 @@ const GEM_SHORT := {
 @onready var boss_bar: ProgressBar = $BossBar
 @onready var boss_label: Label = $BossLabel
 
+signal quit_to_menu
+
 var debug_threat := false
+var pause_button: Button
 
 # Popup system
 var dimmer: ColorRect
@@ -53,6 +56,7 @@ func _ready() -> void:
 	freeze_button.set_meta("no_click_sfx", true)
 	nova_button.pressed.connect(_on_nova_pressed)
 	freeze_button.pressed.connect(_on_freeze_pressed)
+	_setup_pause_button()
 	_apply_neon_style()
 	_reposition_for_screen()
 	# Dimmer (escurece a tela atras do popup)
@@ -103,6 +107,69 @@ func _apply_neon_style() -> void:
 	boss_bar.add_theme_stylebox_override("background", boss_bg)
 	_reposition_for_screen()
 
+func _setup_pause_button() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS
+	pause_button = Button.new()
+	pause_button.text = "ll"
+	pause_button.add_theme_font_size_override("font_size", 28)
+	pause_button.offset_left = 15.0
+	pause_button.offset_top = 15.0
+	pause_button.offset_right = 75.0
+	pause_button.offset_bottom = 65.0
+	_style_popup_button(pause_button, Color(1.0, 0.0, 0.6))
+	pause_button.pressed.connect(_on_pause_pressed)
+	add_child(pause_button)
+
+func _on_pause_pressed() -> void:
+	get_tree().paused = true
+	var panel := _create_popup_panel(Color(0.5, 0.5, 0.5), 500.0, 350.0)
+	panel.process_mode = Node.PROCESS_MODE_ALWAYS
+
+	var title := Label.new()
+	title.text = get_node("/root/Tr").t("PAUSED")
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 40)
+	title.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8))
+	title.offset_left = 20.0
+	title.offset_top = 40.0
+	title.offset_right = 480.0
+	title.offset_bottom = 100.0
+	panel.add_child(title)
+
+	var btn_box := VBoxContainer.new()
+	btn_box.offset_left = 80.0
+	btn_box.offset_top = 120.0
+	btn_box.offset_right = 420.0
+	btn_box.offset_bottom = 320.0
+	btn_box.alignment = BoxContainer.ALIGNMENT_CENTER
+	btn_box.add_theme_constant_override("separation", 20)
+	panel.add_child(btn_box)
+
+	var resume_btn := Button.new()
+	resume_btn.text = get_node("/root/Tr").t("RESUME")
+	resume_btn.custom_minimum_size = Vector2(300, 65)
+	resume_btn.add_theme_font_size_override("font_size", 28)
+	_style_popup_button(resume_btn, Color(0.0, 1.0, 1.0))
+	resume_btn.pressed.connect(func():
+		get_tree().paused = false
+		_dismiss_popup()
+	)
+	btn_box.add_child(resume_btn)
+
+	var quit_btn := Button.new()
+	quit_btn.text = get_node("/root/Tr").t("GIVE_UP")
+	quit_btn.custom_minimum_size = Vector2(300, 65)
+	quit_btn.add_theme_font_size_override("font_size", 28)
+	_style_popup_button(quit_btn, Color(1.0, 0.2, 0.2))
+	quit_btn.pressed.connect(func():
+		get_tree().paused = false
+		_dismiss_popup()
+		quit_to_menu.emit()
+	)
+	btn_box.add_child(quit_btn)
+
+	_show_popup(panel)
+
 func _reposition_for_screen() -> void:
 	var screen := get_viewport().get_visible_rect().size
 	var screen_h := screen.y
@@ -126,7 +193,7 @@ func _reposition_for_screen() -> void:
 
 func update_threat(level: float) -> void:
 	if debug_threat:
-		threat_label.text = "AMEACA: %d" % int(level)
+		threat_label.text = get_node("/root/Tr").t("THREAT_FMT") % int(level)
 		threat_bar.value = level
 
 func update_currencies(earnings: Dictionary) -> void:
@@ -395,7 +462,7 @@ func _draw_earnings(c: Control) -> void:
 		if amount > 0:
 			entries.append({"type": cur_type, "amount": amount})
 	if entries.is_empty():
-		c.draw_string(font, Vector2(w / 2.0 - 80, 20), "Nenhum ganho", HORIZONTAL_ALIGNMENT_LEFT, -1, 22, Color(0.5, 0.5, 0.5))
+		c.draw_string(font, Vector2(w / 2.0 - 80, 20), get_node("/root/Tr").t("NO_EARNINGS"), HORIZONTAL_ALIGNMENT_LEFT, -1, 22, Color(0.5, 0.5, 0.5))
 		return
 	var total_w := 0.0
 	for entry in entries:
@@ -428,7 +495,7 @@ func show_game_over() -> void:
 	panel.add_child(popup_icon_draw)
 	# Title
 	var title := Label.new()
-	title.text = "GAME OVER"
+	title.text = get_node("/root/Tr").t("GAME_OVER")
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 42)
 	title.add_theme_color_override("font_color", red)
@@ -449,7 +516,7 @@ func show_game_over() -> void:
 	panel.add_child(sep)
 	# Ganhos label
 	var ganhos_lbl := Label.new()
-	ganhos_lbl.text = "GANHOS DA RUN"
+	ganhos_lbl.text = get_node("/root/Tr").t("RUN_EARNINGS")
 	ganhos_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	ganhos_lbl.add_theme_font_size_override("font_size", 18)
 	ganhos_lbl.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
@@ -481,14 +548,14 @@ func show_game_over() -> void:
 	var game = get_parent()
 	if game.ad_system and game.ad_system.can_show_shop_ad():
 		var double_btn := Button.new()
-		double_btn.text = "DOBRAR GANHOS (AD)"
+		double_btn.text = get_node("/root/Tr").t("DOUBLE_EARNINGS_AD")
 		double_btn.custom_minimum_size = Vector2(280, 65)
 		double_btn.add_theme_font_size_override("font_size", 22)
 		_style_popup_button(double_btn, Color(1.0, 0.8, 0.0))
 		double_btn.pressed.connect(_on_double_pressed)
 		btn_container.add_child(double_btn)
 		var decline_btn := Button.new()
-		decline_btn.text = "NAO"
+		decline_btn.text = get_node("/root/Tr").t("NO")
 		decline_btn.custom_minimum_size = Vector2(140, 65)
 		decline_btn.add_theme_font_size_override("font_size", 22)
 		_style_popup_button(decline_btn, Color(0.6, 0.2, 0.2))
@@ -496,7 +563,7 @@ func show_game_over() -> void:
 		btn_container.add_child(decline_btn)
 	else:
 		var cont_btn := Button.new()
-		cont_btn.text = "CONTINUAR"
+		cont_btn.text = get_node("/root/Tr").t("CONTINUE")
 		cont_btn.custom_minimum_size = Vector2(240, 65)
 		cont_btn.add_theme_font_size_override("font_size", 24)
 		_style_popup_button(cont_btn, red)
@@ -523,7 +590,7 @@ func show_victory() -> void:
 	panel.add_child(popup_icon_draw)
 	# Title
 	var title := Label.new()
-	title.text = "VITORIA!"
+	title.text = get_node("/root/Tr").t("VICTORY")
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 42)
 	title.add_theme_color_override("font_color", green)
@@ -544,7 +611,7 @@ func show_victory() -> void:
 	panel.add_child(sep)
 	# Ganhos label
 	var ganhos_lbl := Label.new()
-	ganhos_lbl.text = "GANHOS DA RUN"
+	ganhos_lbl.text = get_node("/root/Tr").t("RUN_EARNINGS")
 	ganhos_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	ganhos_lbl.add_theme_font_size_override("font_size", 18)
 	ganhos_lbl.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
@@ -573,7 +640,7 @@ func show_victory() -> void:
 	btn_container.alignment = BoxContainer.ALIGNMENT_CENTER
 	panel.add_child(btn_container)
 	var cont_btn := Button.new()
-	cont_btn.text = "CONTINUAR"
+	cont_btn.text = get_node("/root/Tr").t("CONTINUE")
 	cont_btn.custom_minimum_size = Vector2(280, 65)
 	cont_btn.add_theme_font_size_override("font_size", 26)
 	_style_popup_button(cont_btn, green)
@@ -600,7 +667,7 @@ func show_revive_offer() -> void:
 	panel.add_child(popup_icon_draw)
 	# Title
 	var title := Label.new()
-	title.text = "REVIVER?"
+	title.text = get_node("/root/Tr").t("REVIVE_TITLE")
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 36)
 	title.add_theme_color_override("font_color", cyan)
@@ -612,7 +679,7 @@ func show_revive_offer() -> void:
 	panel.add_child(title)
 	# Subtitle
 	var sub := Label.new()
-	sub.text = "Assista um anuncio para continuar"
+	sub.text = get_node("/root/Tr").t("REVIVE_SUBTITLE")
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	sub.add_theme_font_size_override("font_size", 18)
 	sub.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
@@ -632,14 +699,14 @@ func show_revive_offer() -> void:
 	btn_container.add_theme_constant_override("separation", 30)
 	panel.add_child(btn_container)
 	var revive_btn := Button.new()
-	revive_btn.text = "REVIVER"
+	revive_btn.text = get_node("/root/Tr").t("REVIVE")
 	revive_btn.custom_minimum_size = Vector2(200, 65)
 	revive_btn.add_theme_font_size_override("font_size", 24)
 	_style_popup_button(revive_btn, Color(0.0, 1.0, 0.5))
 	revive_btn.pressed.connect(_on_revive_pressed)
 	btn_container.add_child(revive_btn)
 	var decline_btn := Button.new()
-	decline_btn.text = "NAO"
+	decline_btn.text = get_node("/root/Tr").t("NO")
 	decline_btn.custom_minimum_size = Vector2(140, 65)
 	decline_btn.add_theme_font_size_override("font_size", 24)
 	_style_popup_button(decline_btn, Color(0.6, 0.2, 0.2))
@@ -660,7 +727,7 @@ func show_double_offer(earnings: Dictionary) -> void:
 	var panel := _create_popup_panel(gold, 560.0, 380.0)
 	# Title
 	var title := Label.new()
-	title.text = "DOBRAR GANHOS?"
+	title.text = get_node("/root/Tr").t("DOUBLE_TITLE")
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 32)
 	title.add_theme_color_override("font_color", gold)
@@ -691,7 +758,7 @@ func show_double_offer(earnings: Dictionary) -> void:
 	panel.add_child(popup_earnings_draw)
 	# Sub
 	var sub := Label.new()
-	sub.text = "Assista um anuncio para dobrar"
+	sub.text = get_node("/root/Tr").t("DOUBLE_SUBTITLE")
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	sub.add_theme_font_size_override("font_size", 18)
 	sub.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
@@ -711,14 +778,14 @@ func show_double_offer(earnings: Dictionary) -> void:
 	btn_container.add_theme_constant_override("separation", 30)
 	panel.add_child(btn_container)
 	var double_btn := Button.new()
-	double_btn.text = "DOBRAR (AD)"
+	double_btn.text = get_node("/root/Tr").t("DOUBLE_BTN")
 	double_btn.custom_minimum_size = Vector2(240, 65)
 	double_btn.add_theme_font_size_override("font_size", 22)
 	_style_popup_button(double_btn, gold)
 	double_btn.pressed.connect(_on_double_pressed)
 	btn_container.add_child(double_btn)
 	var decline_btn := Button.new()
-	decline_btn.text = "NAO"
+	decline_btn.text = get_node("/root/Tr").t("NO")
 	decline_btn.custom_minimum_size = Vector2(140, 65)
 	decline_btn.add_theme_font_size_override("font_size", 22)
 	_style_popup_button(decline_btn, Color(0.6, 0.2, 0.2))
@@ -765,7 +832,7 @@ func show_game_over_final() -> void:
 	popup_icon_draw.draw.connect(func(): _draw_skull(_icon, Vector2(50, 35), red))
 	panel.add_child(popup_icon_draw)
 	var title := Label.new()
-	title.text = "GAME OVER"
+	title.text = get_node("/root/Tr").t("GAME_OVER")
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 42)
 	title.add_theme_color_override("font_color", red)
@@ -800,7 +867,7 @@ func show_game_over_final() -> void:
 	btn_container.alignment = BoxContainer.ALIGNMENT_CENTER
 	panel.add_child(btn_container)
 	var cont_btn := Button.new()
-	cont_btn.text = "CONTINUAR"
+	cont_btn.text = get_node("/root/Tr").t("CONTINUE")
 	cont_btn.custom_minimum_size = Vector2(260, 65)
 	cont_btn.add_theme_font_size_override("font_size", 24)
 	_style_popup_button(cont_btn, red)

@@ -55,68 +55,6 @@ const TIER_COLORS := {
 	4: Color(1.0, 0.5, 0.0),   # eter — ascension (orange)
 }
 
-const UPGRADE_NAMES := {
-	"extra_city": "EXTRA CITY",
-	"ammo_pack": "AMMO PACK",
-	"magazine": "MAGAZINE+",
-	"ammo_regen": "AMMO REGEN",
-	"hyper_drive": "HYPER DRIVE",
-	"warhead": "WARHEAD+",
-	"head_start": "HEAD START",
-	"credit_boost": "CREDIT BOOST",
-	"time_warp": "TIME WARP",
-	"early_warning": "EARLY WARNING",
-	"extra_battery": "EXTRA BATTERY",
-	"city_shield": "CITY SHIELD",
-	"warp_reload": "WARP RELOAD",
-	"overcharge": "OVERCHARGE",
-	"critical_mass": "CRITICAL MASS",
-	"crystal_boost": "CRYSTAL BOOST",
-	"homing": "HOMING",
-	"triple_burst": "TRIPLE BURST",
-	"temporal_freeze": "TEMPORAL FREEZE",
-	"phoenix_protocol": "PHOENIX PROTOCOL",
-	"singularity": "SINGULARITY",
-	"auto_turret": "AUTO TURRET",
-	"mirror_array": "MIRROR ARRAY",
-	"void_boost": "VOID BOOST",
-	"ascendant_core": "ASCENDANT CORE",
-	"eternal_knowledge": "ETERNAL KNOWLEDGE",
-	"vault": "VAULT",
-	"omega_protocol": "OMEGA PROTOCOL",
-}
-
-const UPGRADE_DESCRIPTIONS := {
-	"extra_city": "+1 cidade por nivel",
-	"ammo_pack": "+1 pente por bateria por nivel",
-	"magazine": "+1 tiro por pente por nivel",
-	"ammo_regen": "+0.1 pentes/s por nivel",
-	"hyper_drive": "+40% velocidade do missil por nivel",
-	"warhead": "+40% raio de explosao por nivel",
-	"head_start": "+20 creditos iniciais por nivel",
-	"credit_boost": "+1 credito por abate por nivel",
-	"time_warp": "+8% chance de slow por nivel",
-	"early_warning": "Mostra onde misseis vao cair",
-	"extra_battery": "+1 bateria por nivel",
-	"city_shield": "+1 escudo por cidade por nivel",
-	"warp_reload": "-12% tempo de recarga por nivel",
-	"overcharge": "+15% velocidade de carga por nivel",
-	"critical_mass": "+4% chance de critico por nivel",
-	"crystal_boost": "+1 cristal por abate por nivel",
-	"homing": "+15% chance de guiar missil por nivel",
-	"triple_burst": "+8% chance de tiro triplo por nivel",
-	"temporal_freeze": "+1.5s de freeze por nivel",
-	"phoenix_protocol": "+1 revive de cidade por nivel",
-	"singularity": "+18.75% forca de puxar por nivel",
-	"auto_turret": "+1 torreta automatica por nivel",
-	"mirror_array": "+5% chance de refletir por nivel",
-	"void_boost": "+1 void por abate por nivel",
-	"ascendant_core": "x2 / x4 ganho de todas as moedas",
-	"eternal_knowledge": "Mantem upgrades ao ascender",
-	"vault": "Mantem moedas ao ascender",
-	"omega_protocol": "+50% recompensas, 3x dificuldade, 2 bosses",
-}
-
 # Estrutura da arvore — define filhos de cada no
 const TREE_CHILDREN := {
 	"ammo_pack": ["extra_city", "magazine", "warhead", "credit_boost"],
@@ -188,8 +126,13 @@ func _ready() -> void:
 	if has_meta("eter_mode"):
 		eter_mode = get_meta("eter_mode")
 
+	var tr_node = get_node("/root/Tr")
+	title_label.text = tr_node.t("SHOP_TITLE")
+	play_btn.text = tr_node.t("PLAY")
+	ascend_btn.text = tr_node.t("ASCEND")
+
 	if eter_mode:
-		$MarginContainer/VBoxContainer/Header/TitleLabel.text = "UPGRADES ETERNOS"
+		title_label.text = tr_node.t("ETER_SHOP_TITLE")
 		ascend_btn.visible = false
 		graph_viewport.visible = false
 		scroll_container.visible = true
@@ -442,7 +385,7 @@ func _draw_node(key: String) -> void:
 
 	if is_maxed:
 		var font := ThemeDB.fallback_font
-		graph_canvas.draw_string(font, center + Vector2(-20, r + 18), "MAX", HORIZONTAL_ALIGNMENT_CENTER, 40, 18, Color(1.0, 0.85, 0.0))
+		graph_canvas.draw_string(font, center + Vector2(-20, r + 18), get_node("/root/Tr").t("MAX"), HORIZONTAL_ALIGNMENT_CENTER, 40, 18, Color(1.0, 0.85, 0.0))
 
 # ============================================================
 # ICONES PROCEDURAIS (escala 1.5x)
@@ -611,31 +554,32 @@ func _draw_popup(key: String) -> void:
 	graph_canvas.draw_rect(popup_rect, Color(0.05, 0.06, 0.12, 0.95), true)
 	graph_canvas.draw_rect(popup_rect, Color(tier_col.r, tier_col.g, tier_col.b, 0.6), false, 2.0)
 
+	var tr_node = get_node("/root/Tr")
 	var font := ThemeDB.fallback_font
 	var tx: float = popup_pos.x + 16
 	var ty: float = popup_pos.y + 32
 
-	var name_text: String = UPGRADE_NAMES.get(key, key)
+	var name_text: String = tr_node.t("UPG_NAME_" + key)
 	graph_canvas.draw_string(font, Vector2(tx, ty), name_text, HORIZONTAL_ALIGNMENT_LEFT, popup_w - 32, 28, tier_col)
 
-	var desc: String = UPGRADE_DESCRIPTIONS.get(key, "")
+	var desc: String = tr_node.t("UPG_DESC_" + key)
 	graph_canvas.draw_string(font, Vector2(tx, ty + 34), desc, HORIZONTAL_ALIGNMENT_LEFT, popup_w - 32, 22, Color(0.7, 0.7, 0.7))
 
-	var level_str := "Lv %d/%d" % [level, max_level] if not is_maxed else "MAX"
+	var level_str: String = tr_node.t("LV_FMT") % [level, max_level] if not is_maxed else tr_node.t("MAX")
 	graph_canvas.draw_string(font, Vector2(tx, ty + 66), level_str, HORIZONTAL_ALIGNMENT_LEFT, popup_w - 32, 22, Color(0.9, 0.9, 0.9))
 
 	if is_maxed:
-		graph_canvas.draw_string(font, Vector2(tx, ty + 98), "COMPLETO", HORIZONTAL_ALIGNMENT_LEFT, popup_w - 32, 22, Color(1.0, 0.85, 0.0))
+		graph_canvas.draw_string(font, Vector2(tx, ty + 98), tr_node.t("COMPLETE"), HORIZONTAL_ALIGNMENT_LEFT, popup_w - 32, 22, Color(1.0, 0.85, 0.0))
 	else:
 		var cost: int = upgrade_system.get_cost(key)
 		var cur_type: String = u["currency"]
 		var can_afford: bool = currency.get_amount(cur_type) >= cost
 		var cost_col := Color(0.3, 1.0, 0.5) if can_afford else Color(1.0, 0.3, 0.3)
-		var cost_text := "Custo: %d" % cost
+		var cost_text: String = tr_node.t("COST_FMT") % cost
 		graph_canvas.draw_string(font, Vector2(tx, ty + 98), cost_text, HORIZONTAL_ALIGNMENT_LEFT, popup_w - 32, 20, cost_col)
 		var cost_text_w := font.get_string_size(cost_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 20).x
 		_draw_gem_on(graph_canvas, Vector2(tx + cost_text_w + 14, ty + 88), GEM_COLORS[cur_type])
-		graph_canvas.draw_string(font, Vector2(tx + cost_text_w + 30, ty + 98), "— toque para comprar", HORIZONTAL_ALIGNMENT_LEFT, popup_w - 32, 20, cost_col)
+		graph_canvas.draw_string(font, Vector2(tx + cost_text_w + 30, ty + 98), tr_node.t("TAP_TO_BUY"), HORIZONTAL_ALIGNMENT_LEFT, popup_w - 32, 20, cost_col)
 
 # ============================================================
 # ETER MODE (lista simples)
@@ -656,6 +600,7 @@ func _build_eter_list() -> void:
 	_update_header()
 
 func _create_list_item(key: String, u: Dictionary) -> PanelContainer:
+	var tr_node = get_node("/root/Tr")
 	var eter_col := Color(1.0, 0.5, 0.0)
 	var panel = PanelContainer.new()
 	var panel_style := StyleBoxFlat.new()
@@ -670,12 +615,12 @@ func _create_list_item(key: String, u: Dictionary) -> PanelContainer:
 	var info = VBoxContainer.new()
 	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var name_label = Label.new()
-	name_label.text = "%s (Lv %d/%d)" % [UPGRADE_NAMES.get(key, key), u["level"], u["max_level"]]
+	name_label.text = "%s (%s)" % [tr_node.t("UPG_NAME_" + key), tr_node.t("LV_FMT") % [u["level"], u["max_level"]]]
 	name_label.add_theme_font_size_override("font_size", 24)
 	name_label.add_theme_color_override("font_color", eter_col)
 	info.add_child(name_label)
 	var desc_label = Label.new()
-	desc_label.text = UPGRADE_DESCRIPTIONS.get(key, "")
+	desc_label.text = tr_node.t("UPG_DESC_" + key)
 	desc_label.add_theme_font_size_override("font_size", 18)
 	desc_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
 	info.add_child(desc_label)
@@ -697,7 +642,7 @@ func _create_list_item(key: String, u: Dictionary) -> PanelContainer:
 	buy_button.add_child(btn_content)
 	if u["level"] >= u["max_level"]:
 		var max_lbl = Label.new()
-		max_lbl.text = "MAX"
+		max_lbl.text = tr_node.t("MAX")
 		max_lbl.add_theme_font_size_override("font_size", 22)
 		max_lbl.add_theme_color_override("font_color", eter_col)
 		max_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE

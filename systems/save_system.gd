@@ -2,6 +2,7 @@ class_name SaveSystem
 extends RefCounted
 
 const SAVE_KEY := "m1ss1l3-r0gu3-s4lt-k3y-2024"
+var locale_loaded := "pt"
 
 func to_dict(upgrade_system: UpgradeSystem, ascension: AscensionSystem, currency: CurrencySystem) -> Dictionary:
 	var upgrade_levels := {}
@@ -19,6 +20,7 @@ func to_dict(upgrade_system: UpgradeSystem, ascension: AscensionSystem, currency
 		"total_eter": ascension.get_total_eter(),
 		"unlocked_currencies": currency.unlocked.duplicate(),
 		"boss_cleared": upgrade_system.boss_cleared,
+		"locale": locale_loaded,
 	}
 
 func from_dict(data: Dictionary, upgrade_system: UpgradeSystem, ascension: AscensionSystem, currency: CurrencySystem) -> void:
@@ -35,6 +37,9 @@ func from_dict(data: Dictionary, upgrade_system: UpgradeSystem, ascension: Ascen
 		if saved_unlocked[key]:
 			currency.unlocked[key] = true
 	upgrade_system.boss_cleared = data.get("boss_cleared", false)
+	var saved_locale: String = data.get("locale", "pt")
+	if saved_locale != "":
+		locale_loaded = saved_locale
 	var levels = data.get("upgrades", {})
 	for name in levels:
 		if upgrade_system.upgrades.has(name):
