@@ -302,8 +302,9 @@ func _draw_alive() -> void:
 	draw_circle(core_pos, 4.0, Color(0.0, 1.0, 1.0, core_alpha))
 	draw_circle(core_pos, 2.0, Color(0.8, 1.0, 1.0, core_alpha))
 
-	# Pulsos de energia nas trilhas
-	var pulse_t := fmod(anim_time * 0.25, 1.0)
+	# Pulsos de energia nas trilhas (ida e volta)
+	var raw_t := fmod(anim_time * 0.25, 2.0)
+	var pulse_t := raw_t if raw_t <= 1.0 else 2.0 - raw_t
 	for tpts in traces:
 		var pts: Array[Vector2] = tpts
 		if pts.size() < 2:

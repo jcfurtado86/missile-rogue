@@ -37,7 +37,7 @@ func _persp(p: Vector2) -> Vector2:
 	var t := (p.y - (SILO_CY - SILO_H / 2.0)) / SILO_H
 	t = clampf(t, 0.0, 1.0)
 	var r := lerpf(persp_ratio, 1.0, t)
-	var capped_vanish := clampf(vanish_lx, -100.0, 100.0)
+	var capped_vanish := clampf(vanish_lx, -110.0, 110.0)
 	var px := capped_vanish + (p.x - capped_vanish) * r
 	return Vector2(px, p.y)
 
@@ -102,7 +102,7 @@ func _draw_armed() -> void:
 
 	# Barra de municao
 	var ammo_ratio := float(ammo) / max_ammo
-	var bar_y := bot_y + 2.0
+	var bar_y := bot_y + 6.0
 	var bar_h := 10.0
 	var bar_tl := _persp(Vector2(-SILO_W + 2, bar_y))
 	var bar_tr := _persp(Vector2(SILO_W - 2, bar_y))
@@ -114,11 +114,18 @@ func _draw_armed() -> void:
 	# Fundo
 	draw_polygon(PackedVector2Array([bar_tl, bar_tr, bar_br, bar_bl]),
 		PackedColorArray([Color(0.0, 0.2, 0.3, 0.25), Color(0.0, 0.2, 0.3, 0.25), Color(0.0, 0.2, 0.3, 0.25), Color(0.0, 0.2, 0.3, 0.25)]))
-	# Preenchimento
+	# Preenchimento — cor varia de vermelho > amarelo > verde
+	var bar_color: Color
+	if ammo_ratio < 0.5:
+		var t := ammo_ratio * 2.0  # 0..1
+		bar_color = Color(1.0, t * 0.9, 0.0, 0.8)  # vermelho -> amarelo
+	else:
+		var t := (ammo_ratio - 0.5) * 2.0  # 0..1
+		bar_color = Color(1.0 - t, 0.9 + t * 0.1, 0.0, 0.8)  # amarelo -> verde
 	var filled_tr := bar_tl.lerp(bar_tr, ammo_ratio)
 	var filled_br := bar_bl.lerp(bar_br, ammo_ratio)
 	draw_polygon(PackedVector2Array([bar_tl, filled_tr, filled_br, bar_bl]),
-		PackedColorArray([Color(0.0, 1.0, 1.0, 0.7), Color(0.0, 1.0, 1.0, 0.7), Color(0.0, 1.0, 1.0, 0.7), Color(0.0, 1.0, 1.0, 0.7)]))
+		PackedColorArray([bar_color, bar_color, bar_color, bar_color]))
 	# Outline
 	_draw_quad_outline(PackedVector2Array([bar_tl, bar_tr, bar_br, bar_bl]), Color(0.0, 1.0, 1.0, 0.6), 2.0)
 
@@ -143,7 +150,7 @@ func _draw_empty() -> void:
 		draw_line(_persp(Vector2(2, ly)), _persp(Vector2(SILO_W - 3, ly)), Color(0.0, 0.3, 0.4, 0.1), 1.0, true)
 
 	# Barra vazia
-	var bar_y := bot_y + 2.0
+	var bar_y := bot_y + 6.0
 	var bar_h := 10.0
 	var bar_tl := _persp(Vector2(-SILO_W + 2, bar_y))
 	var bar_tr := _persp(Vector2(SILO_W - 2, bar_y))
