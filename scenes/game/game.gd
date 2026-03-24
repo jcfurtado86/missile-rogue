@@ -53,6 +53,7 @@ var BossScene := preload("res://entities/boss/overlord.tscn")
 
 var hud: CanvasLayer
 var warning_layer: Node2D
+var target_lock_layer: Node2D
 var boss: Area2D = null
 var boss_spawned := false
 var boss_rage_triggered := false
@@ -100,6 +101,12 @@ func _ready() -> void:
 	warning_layer.z_index = 100
 	warning_layer.game = self
 	add_child(warning_layer)
+
+	# Target lock layer
+	target_lock_layer = TargetLockLayer.new()
+	target_lock_layer.z_index = 99
+	target_lock_layer.game = self
+	add_child(target_lock_layer)
 
 	if stats and stats.head_start_credits > 0:
 		currency.add("credits", stats.head_start_credits)
@@ -179,6 +186,11 @@ func _fire_at(target: Vector2) -> void:
 		# Gasta municao 1x
 		closest_battery.consume_ammo()
 		get_node("/root/SoundManager").fire()
+
+		# Target lock visual
+		if stats.has_target_lock:
+			var radius: float = 30.0 * stats.explosion_radius_mult
+			target_lock_layer.activate(closest_battery.global_position, target, radius)
 
 		# Determina quantos misseis disparar
 		var missile_count: int = 1
@@ -576,6 +588,50 @@ class WarningLayer extends Node2D:
 			draw_arc(local_pos, 20.0, 0, TAU, 24, Color(1.0, 0.0, 0.3, 0.3), 1.5, true)
 		for i in range(to_remove.size() - 1, -1, -1):
 			game.warning_indicators.remove_at(to_remove[i])
+
+class TargetLockLayer extends Node2D:
+	var game: Node2D
+	var target_pos := Vector2.ZERO
+	var battery_pos := Vector2.ZERO
+	var explosion_radius := 30.0
+	var alpha := 0.0
+
+	func activate(batt_pos: Vector2, tgt_pos: Vector2, radius: float) -> void:
+		battery_pos = batt_pos - game.global_position
+		target_pos = tgt_pos - game.global_position
+		explosion_radius = radius
+		alpha = 1.0
+
+	func _process(delta: float) -> void:
+		if alpha <= 0.0:
+			return
+		alpha -= delta * 0.5
+		if alpha < 0.0:
+			alpha = 0.0
+		queue_redraw()
+
+	func _draw() -> void:
+		if alpha <= 0.0:
+			return
+		var col := Color(1.0, 0.2, 0.2, 0.6 * alpha)
+		var col_dim := Color(1.0, 0.2, 0.2, 0.3 * alpha)
+		# Linha tracejada da bateria ate o alvo
+		var dir := (target_pos - battery_pos)
+		var dist := dir.length()
+		var step := 12.0
+		var gap := 8.0
+		var d := 0.0
+		var norm := dir.normalized()
+		while d < dist:
+			var seg_end := minf(d + step, dist)
+			draw_line(battery_pos + norm * d, battery_pos + norm * seg_end, col_dim, 4.5, true)
+			d = seg_end + gap
+		# Crosshair
+		var s := 12.6
+		draw_line(target_pos + Vector2(-s, 0), target_pos + Vector2(s, 0), col, 5.0, true)
+		draw_line(target_pos + Vector2(0, -s), target_pos + Vector2(0, s), col, 5.0, true)
+		# Circulo do raio de explosao
+		draw_arc(target_pos, explosion_radius, 0, TAU, 32, col, 4.5, true)
 
 # --- Screen effects ---
 

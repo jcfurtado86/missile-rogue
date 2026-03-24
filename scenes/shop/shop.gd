@@ -81,7 +81,7 @@ const TREE_CHILDREN := {
 	"extra_battery": ["auto_turret"],
 	# OFENSIVA: warhead → hyper_drive → homing → singularity
 	#                                 → critical_mass → temporal_freeze
-	"warhead": ["hyper_drive"],
+	"warhead": ["hyper_drive", "target_lock"],
 	"hyper_drive": ["homing", "critical_mass"],
 	"homing": ["singularity"],
 	"critical_mass": ["temporal_freeze"],

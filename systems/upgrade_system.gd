@@ -22,6 +22,7 @@ func _register_tier1() -> void:
 	_add("credit_boost", 1, "credits", 19, 2.4, 5, 1.0, "flat_credits", "ammo_pack")
 	_add("time_warp", 1, "credits", 22, 2.5, 3, 0.08, "percent_slow_chance", "credit_boost")
 	_add("early_warning", 1, "credits", 37, 1.0, 1, 1.0, "bool_warning", "extra_city")
+	_add("target_lock", 1, "credits", 50, 1.0, 1, 1.0, "bool_target_lock", "warhead")
 
 func _register_tier2() -> void:
 	_add("extra_battery", 2, "crystals", 30, 3.0, 2, 1.0, "flat_extra_battery", "magazine")
