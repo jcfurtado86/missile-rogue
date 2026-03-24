@@ -2,7 +2,7 @@ class_name SaveSystem
 extends RefCounted
 
 const SAVE_KEY := "m1ss1l3-r0gu3-s4lt-k3y-2024"
-var locale_loaded := "pt"
+var locale_loaded := "en"
 var music_volume := 1.0
 var sfx_volume := 1.0
 var scanlines_enabled := false

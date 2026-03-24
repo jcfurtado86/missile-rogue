@@ -1,7 +1,7 @@
 class_name TrSystem
 extends Node
 
-var locale := "pt"
+var locale := "en"
 signal locale_changed
 
 const LOCALES := ["en", "pt", "es", "fr", "zh"]
@@ -154,8 +154,8 @@ func t(key: String) -> String:
 	var entry: Dictionary = STRINGS[key]
 	if entry.has(locale):
 		return entry[locale]
-	if entry.has("pt"):
-		return entry["pt"]
+	if entry.has("en"):
+		return entry["en"]
 	return key
 
 func set_locale(loc: String) -> void:

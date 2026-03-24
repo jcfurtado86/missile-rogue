@@ -48,7 +48,6 @@ func _sf(val: int) -> int:
 	return int(val * ui_scale)
 
 func _ready() -> void:
-	var scr_size := get_viewport().get_visible_rect().size
 	var real_size := DisplayServer.screen_get_size()
 	ui_scale = clampf(minf(real_size.x / BASE_WIDTH, real_size.y / BASE_HEIGHT), 1.0, 1.5)
 	threat_label.visible = false
