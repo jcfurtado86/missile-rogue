@@ -5,6 +5,7 @@ const SAVE_KEY := "m1ss1l3-r0gu3-s4lt-k3y-2024"
 var locale_loaded := "pt"
 var music_volume := 1.0
 var sfx_volume := 1.0
+var scanlines_enabled := false
 
 func to_dict(upgrade_system: UpgradeSystem, ascension: AscensionSystem, currency: CurrencySystem) -> Dictionary:
 	var upgrade_levels := {}
@@ -25,6 +26,7 @@ func to_dict(upgrade_system: UpgradeSystem, ascension: AscensionSystem, currency
 		"locale": locale_loaded,
 		"music_volume": music_volume,
 		"sfx_volume": sfx_volume,
+		"scanlines": scanlines_enabled,
 	}
 
 func from_dict(data: Dictionary, upgrade_system: UpgradeSystem, ascension: AscensionSystem, currency: CurrencySystem) -> void:
@@ -46,6 +48,7 @@ func from_dict(data: Dictionary, upgrade_system: UpgradeSystem, ascension: Ascen
 		locale_loaded = saved_locale
 	music_volume = data.get("music_volume", 1.0)
 	sfx_volume = data.get("sfx_volume", 1.0)
+	scanlines_enabled = data.get("scanlines", false)
 	var levels = data.get("upgrades", {})
 	for name in levels:
 		if upgrade_system.upgrades.has(name):

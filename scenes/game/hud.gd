@@ -133,7 +133,7 @@ func _setup_pause_button() -> void:
 
 func _on_pause_pressed() -> void:
 	get_tree().paused = true
-	var panel := _create_popup_panel(Color(0.5, 0.5, 0.5), 500.0, 520.0)
+	var panel := _create_popup_panel(Color(0.5, 0.5, 0.5), 500.0, 580.0)
 	panel.process_mode = Node.PROCESS_MODE_ALWAYS
 
 	var title := Label.new()
@@ -187,12 +187,34 @@ func _on_pause_pressed() -> void:
 	sfx_slider.value_changed.connect(func(val): sm.set_sfx_volume(val))
 	slider_box.add_child(sfx_slider)
 
+	# Scanlines toggle
+	var scanline_box := HBoxContainer.new()
+	scanline_box.offset_left = _s(60.0)
+	scanline_box.offset_top = _s(285.0)
+	scanline_box.offset_right = _s(440.0)
+	scanline_box.offset_bottom = _s(325.0)
+	scanline_box.alignment = BoxContainer.ALIGNMENT_CENTER
+	scanline_box.add_theme_constant_override("separation", _sf(12))
+	panel.add_child(scanline_box)
+
+	var scanline_label := Label.new()
+	scanline_label.text = get_node("/root/Tr").t("SCANLINES")
+	scanline_label.add_theme_font_size_override("font_size", _sf(20))
+	scanline_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
+	scanline_box.add_child(scanline_label)
+
+	var scanline_toggle := CheckButton.new()
+	var main_node = get_node("/root/Main")
+	scanline_toggle.button_pressed = main_node.save_system.scanlines_enabled
+	scanline_toggle.toggled.connect(func(on: bool): main_node.set_scanlines(on))
+	scanline_box.add_child(scanline_toggle)
+
 	# Botoes
 	var btn_box := VBoxContainer.new()
 	btn_box.offset_left = _s(80.0)
-	btn_box.offset_top = _s(300.0)
+	btn_box.offset_top = _s(350.0)
 	btn_box.offset_right = _s(420.0)
-	btn_box.offset_bottom = _s(490.0)
+	btn_box.offset_bottom = _s(550.0)
 	btn_box.alignment = BoxContainer.ALIGNMENT_CENTER
 	btn_box.add_theme_constant_override("separation", _sf(20))
 	panel.add_child(btn_box)

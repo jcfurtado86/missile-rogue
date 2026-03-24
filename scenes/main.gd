@@ -3,6 +3,7 @@ extends Node
 const SAVE_PATH := "user://save.json"
 
 var current_scene: Node = null
+var scanline_overlay: ColorRect
 var currency := CurrencySystem.new()
 var upgrade_system := UpgradeSystem.new()
 var ascension_system := AscensionSystem.new()
@@ -16,6 +17,7 @@ func _ready() -> void:
 	currency.add("crystals", 99999)
 	currency.add("void", 99999)
 	currency.add("eter", 99999)
+	_setup_scanlines()
 	_show_splash()
 
 func _show_splash() -> void:
@@ -141,6 +143,26 @@ func _load_game() -> void:
 	var sm = get_node("/root/SoundManager")
 	sm.set_music_volume(save_system.music_volume)
 	sm.set_sfx_volume(save_system.sfx_volume)
+
+func _setup_scanlines() -> void:
+	var layer := CanvasLayer.new()
+	layer.layer = 100
+	add_child(layer)
+	scanline_overlay = ColorRect.new()
+	var scr := get_viewport().get_visible_rect().size
+	scanline_overlay.offset_right = scr.x
+	scanline_overlay.offset_bottom = scr.y
+	scanline_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var shader := load("res://shaders/scanlines.gdshader")
+	var mat := ShaderMaterial.new()
+	mat.shader = shader
+	scanline_overlay.material = mat
+	scanline_overlay.visible = save_system.scanlines_enabled
+	layer.add_child(scanline_overlay)
+
+func set_scanlines(enabled: bool) -> void:
+	save_system.scanlines_enabled = enabled
+	scanline_overlay.visible = enabled
 
 func _clear_current() -> void:
 	if current_scene:

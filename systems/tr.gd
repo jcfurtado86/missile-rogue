@@ -27,6 +27,7 @@ const STRINGS := {
 	"PAUSED": { "pt": "PAUSADO", "en": "PAUSED", "es": "PAUSA", "fr": "PAUSE", "zh": "暂停" },
 	"MUSIC": { "pt": "MÚSICA", "en": "MUSIC", "es": "MÚSICA", "fr": "MUSIQUE", "zh": "音乐" },
 	"SFX": { "pt": "EFEITOS", "en": "SFX", "es": "EFECTOS", "fr": "EFFETS", "zh": "音效" },
+	"SCANLINES": { "pt": "SCANLINES", "en": "SCANLINES", "es": "SCANLINES", "fr": "SCANLINES", "zh": "扫描线" },
 	"RESUME": { "pt": "CONTINUAR", "en": "RESUME", "es": "CONTINUAR", "fr": "REPRENDRE", "zh": "继续" },
 	"MAIN_MENU": { "pt": "MENU INICIAL", "en": "MAIN MENU", "es": "MENÚ PRINCIPAL", "fr": "MENU PRINCIPAL", "zh": "主菜单" },
 	"GIVE_UP": { "pt": "DESISTIR", "en": "GIVE UP", "es": "RENDIRSE", "fr": "ABANDONNER", "zh": "放弃" },

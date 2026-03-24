@@ -30,6 +30,7 @@ var distant_battle := DistantBattle.new()
 var buy_flash_key := ""
 var buy_flash_time := 0.0
 const BUY_FLASH_DURATION := 0.6
+var _tapped_this_frame := false
 
 const GEM_COLORS := {
 	"credits": Color(1.0, 0.0, 0.6),
@@ -149,6 +150,7 @@ func setup(p_currency: CurrencySystem, p_upgrades: UpgradeSystem, _p_ads = null)
 	upgrade_system = p_upgrades
 
 func _process(delta: float) -> void:
+	_tapped_this_frame = false
 	if not eter_mode and graph_canvas:
 		anim_time += delta
 		graph_canvas.queue_redraw()
@@ -291,7 +293,8 @@ func _on_graph_input(event: InputEvent) -> void:
 			drag_start = event.position
 			drag_distance = 0.0
 		else:
-			if drag_distance < 12.0:
+			if drag_distance < 12.0 and not _tapped_this_frame:
+				_tapped_this_frame = true
 				_handle_tap(event.position)
 	elif event is InputEventScreenDrag:
 		drag_distance = maxf(drag_distance, (event.position - drag_start).length())
@@ -301,7 +304,8 @@ func _on_graph_input(event: InputEvent) -> void:
 				drag_start = event.position
 				drag_distance = 0.0
 			else:
-				if drag_distance < 12.0:
+				if drag_distance < 12.0 and not _tapped_this_frame:
+					_tapped_this_frame = true
 					_handle_tap(event.position)
 	elif event is InputEventMouseMotion and event.button_mask & MOUSE_BUTTON_MASK_LEFT:
 		drag_distance = maxf(drag_distance, (event.position - drag_start).length())
