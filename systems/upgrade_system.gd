@@ -33,6 +33,7 @@ func _register_tier2() -> void:
 	_add("crystal_boost", 2, "crystals", 22, 2.5, 4, 1.0, "flat_crystals", "credit_boost")
 	_add("homing", 2, "crystals", 45, 2.5, 3, 0.15, "percent_homing", "hyper_drive")
 	_add("triple_burst", 2, "crystals", 37, 2.5, 3, 0.08, "percent_triple_chance", "time_warp")
+	_add("future_sight", 2, "crystals", 50, 1.0, 1, 1.0, "bool_future_sight", "target_lock")
 
 func _register_tier3() -> void:
 	_add("temporal_freeze", 3, "void", 15, 2.5, 3, 1.5, "flat_freeze_seconds", "critical_mass")

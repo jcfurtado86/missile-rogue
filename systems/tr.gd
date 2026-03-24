@@ -118,6 +118,7 @@ const STRINGS := {
 	"UPG_NAME_eternal_knowledge": { "pt": "ETERNAL KNOWLEDGE", "en": "ETERNAL KNOWLEDGE", "es": "SABER ETERNO", "fr": "SAVOIR ÉTERNEL", "zh": "永恒知识" },
 	"UPG_NAME_vault": { "pt": "VAULT", "en": "VAULT", "es": "BÓVEDA", "fr": "COFFRE", "zh": "保险库" },
 	"UPG_NAME_target_lock": { "pt": "TARGET LOCK", "en": "TARGET LOCK", "es": "BLOQUEO DE MIRA", "fr": "VERROUILLAGE", "zh": "目标锁定" },
+	"UPG_NAME_future_sight": { "pt": "FUTURE SIGHT", "en": "FUTURE SIGHT", "es": "VISIÓN FUTURA", "fr": "VISION FUTURE", "zh": "未来视觉" },
 	"UPG_NAME_omega_protocol": { "pt": "OMEGA PROTOCOL", "en": "OMEGA PROTOCOL", "es": "PROTOCOLO OMEGA", "fr": "PROTOCOLE OMÉGA", "zh": "终极协议" },
 
 	# ===== DESCRIÇÕES DE UPGRADE =====
@@ -148,7 +149,8 @@ const STRINGS := {
 	"UPG_DESC_ascendant_core": { "pt": "x2 → x4 ganho de moedas", "en": "x2 → x4 currency gain", "es": "x2 → x4 ganancia monedas", "fr": "x2 → x4 gain monnaies", "zh": "x2 → x4 货币收益" },
 	"UPG_DESC_eternal_knowledge": { "pt": "Mantém upgrades ao ascender", "en": "Keep upgrades on ascension", "es": "Conserva mejoras al ascender", "fr": "Garde les améliorations à l'ascension", "zh": "飞升保留升级" },
 	"UPG_DESC_vault": { "pt": "Mantém moedas ao ascender", "en": "Keep currencies on ascension", "es": "Conserva monedas al ascender", "fr": "Garde les monnaies à l'ascension", "zh": "飞升保留货币" },
-	"UPG_DESC_target_lock": { "pt": "Mostra mira e trajetória", "en": "Shows aim and trajectory", "es": "Muestra mira y trayectoria", "fr": "Affiche viseur et trajectoire", "zh": "显示瞄准和弹道" },
+	"UPG_DESC_target_lock": { "pt": "Segure para ver mira e trajetória", "en": "Hold to see aim and trajectory", "es": "Mantén para ver mira y trayectoria", "fr": "Maintenez pour voir viseur et trajectoire", "zh": "按住查看瞄准和弹道" },
+	"UPG_DESC_future_sight": { "pt": "Segure para prever interceptação", "en": "Hold to predict interception", "es": "Mantén para predecir intercepción", "fr": "Maintenez pour prédire l'interception", "zh": "按住预测拦截点" },
 	"UPG_DESC_omega_protocol": { "pt": "+50% drops, 3x dificuldade, 2 bosses", "en": "+50% drops, 3x difficulty, 2 bosses", "es": "+50% drops, 3x dificultad, 2 jefes", "fr": "+50% drops, 3x difficulté, 2 boss", "zh": "+50%掉落，3倍难度，2个Boss" },
 }
 

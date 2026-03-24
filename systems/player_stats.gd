@@ -39,6 +39,7 @@ var shield_cooldown: float  # 0 = sem escudo
 var time_warp_chance: float
 var has_early_warning: bool
 var has_target_lock: bool
+var has_future_sight: bool
 
 # --- T3 avancados ---
 var freeze_seconds: float
@@ -93,6 +94,7 @@ func _init(us: UpgradeSystem) -> void:
 	time_warp_chance = us.get_effect("time_warp")
 	has_early_warning = us.get_effect("early_warning") > 0
 	has_target_lock = us.get_effect("target_lock") > 0
+	has_future_sight = us.get_effect("future_sight") > 0
 
 	# T3
 	freeze_seconds = us.get_effect("temporal_freeze")

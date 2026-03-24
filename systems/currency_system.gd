@@ -2,17 +2,17 @@ class_name CurrencySystem
 extends RefCounted
 
 var wallet: Dictionary = {
-	"credits": 0,
-	"crystals": 0,
-	"void": 0,
-	"eter": 0,
+	"credits": 99999,
+	"crystals": 99999,
+	"void": 99999,
+	"eter": 99999,
 }
 
 var unlocked: Dictionary = {
 	"credits": true,
-	"crystals": false,
-	"void": false,
-	"eter": false,
+	"crystals": true,
+	"void": true,
+	"eter": true,
 }
 
 func add(type: String, amount: int) -> void:

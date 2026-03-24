@@ -154,18 +154,49 @@ func _physics_process(delta: float) -> void:
 			get_node("/root/SoundManager").set_music_pitch(1.4)
 
 var _fired_this_frame := false
+var _holding := false
+var _hold_pos := Vector2.ZERO
+var _hold_index := -1  # finger index do toque ativo
 
 func _unhandled_input(event: InputEvent) -> void:
 	if is_game_over:
 		return
 	if _fired_this_frame:
 		return
-	if event is InputEventScreenTouch and event.pressed:
-		_fire_at(event.position)
-		_fired_this_frame = true
-	elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		_fire_at(event.position)
-		_fired_this_frame = true
+	# Touch
+	if event is InputEventScreenTouch:
+		if event.pressed and not _holding:
+			_holding = true
+			_hold_index = event.index
+			_hold_pos = event.position
+			if stats.has_target_lock:
+				_update_target_lock_preview(_hold_pos)
+		elif not event.pressed and _holding and event.index == _hold_index:
+			_holding = false
+			_hold_index = -1
+			target_lock_layer.alpha = 0.0
+			_fire_at(_hold_pos)
+			_fired_this_frame = true
+	elif event is InputEventScreenDrag and _holding and event.index == _hold_index:
+		_hold_pos = event.position
+		if stats.has_target_lock:
+			_update_target_lock_preview(_hold_pos)
+	# Mouse
+	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		if event.pressed and not _holding:
+			_holding = true
+			_hold_pos = event.position
+			if stats.has_target_lock:
+				_update_target_lock_preview(_hold_pos)
+		elif not event.pressed and _holding:
+			_holding = false
+			target_lock_layer.alpha = 0.0
+			_fire_at(_hold_pos)
+			_fired_this_frame = true
+	elif event is InputEventMouseMotion and _holding:
+		_hold_pos = event.position
+		if stats.has_target_lock:
+			_update_target_lock_preview(_hold_pos)
 
 func _process(_delta: float) -> void:
 	_fired_this_frame = false
@@ -221,6 +252,67 @@ func _fire_at(target: Vector2) -> void:
 				break
 		if not any_reloading:
 			_show_no_ammo(target)
+
+func _update_target_lock_preview(pos: Vector2) -> void:
+	# Encontra bateria mais proxima com ammo
+	var closest_battery: Node2D = null
+	var closest_dist := INF
+	for battery in batteries:
+		if not battery.can_fire():
+			continue
+		var dist = battery.global_position.distance_to(pos)
+		if dist < closest_dist:
+			closest_dist = dist
+			closest_battery = battery
+	if not closest_battery:
+		target_lock_layer.alpha = 0.0
+		return
+	var radius: float = 30.0 * stats.explosion_radius_mult
+	var intercept := Vector2.ZERO
+	if stats.has_future_sight:
+		intercept = _calc_intercept(closest_battery.global_position, pos)
+	target_lock_layer.activate(closest_battery.global_position, pos, radius, intercept)
+	target_lock_layer.alpha = 1.0  # manter visivel enquanto segura
+
+func _calc_intercept(battery_pos: Vector2, aim_pos: Vector2) -> Vector2:
+	var missile_speed: float = 400.0 * stats.missile_speed_mult
+	var best_point := Vector2.ZERO
+	var best_dist := INF
+	for enemy in get_tree().get_nodes_in_group("enemy"):
+		if not is_instance_valid(enemy) or not enemy.is_inside_tree():
+			continue
+		var e_pos: Vector2 = enemy.global_position
+		var e_target: Vector2 = enemy.target_position
+		var e_speed: float = enemy.speed
+		var e_dir: Vector2 = e_pos.direction_to(e_target)
+		# Resolver equacao quadratica de interceptacao
+		# |E + Ve*t - B| = Vm * t
+		var rel := e_pos - battery_pos
+		var vel := e_dir * e_speed
+		var a: float = vel.dot(vel) - missile_speed * missile_speed
+		var b: float = 2.0 * rel.dot(vel)
+		var c: float = rel.dot(rel)
+		var disc: float = b * b - 4.0 * a * c
+		if disc < 0.0:
+			continue
+		var sqrt_disc := sqrt(disc)
+		var t1 := (-b - sqrt_disc) / (2.0 * a)
+		var t2 := (-b + sqrt_disc) / (2.0 * a)
+		var t := -1.0
+		if t1 > 0.01 and t2 > 0.01:
+			t = minf(t1, t2)
+		elif t1 > 0.01:
+			t = t1
+		elif t2 > 0.01:
+			t = t2
+		if t < 0.0:
+			continue
+		var intercept_point := e_pos + vel * t
+		var dist_to_aim := intercept_point.distance_to(aim_pos)
+		if dist_to_aim < best_dist:
+			best_dist = dist_to_aim
+			best_point = intercept_point
+	return best_point
 
 func _show_no_ammo(pos: Vector2) -> void:
 	var lbl := Label.new()
@@ -593,21 +685,24 @@ class TargetLockLayer extends Node2D:
 	var game: Node2D
 	var target_pos := Vector2.ZERO
 	var battery_pos := Vector2.ZERO
+	var intercept_pos := Vector2.ZERO
 	var explosion_radius := 30.0
 	var alpha := 0.0
 
-	func activate(batt_pos: Vector2, tgt_pos: Vector2, radius: float) -> void:
+	func activate(batt_pos: Vector2, tgt_pos: Vector2, radius: float, intercept := Vector2.ZERO) -> void:
 		battery_pos = batt_pos - game.global_position
 		target_pos = tgt_pos - game.global_position
+		intercept_pos = intercept - game.global_position if intercept != Vector2.ZERO else Vector2.ZERO
 		explosion_radius = radius
 		alpha = 1.0
 
 	func _process(delta: float) -> void:
 		if alpha <= 0.0:
 			return
-		alpha -= delta * 0.5
-		if alpha < 0.0:
-			alpha = 0.0
+		if not game._holding:
+			alpha -= delta * 0.5
+			if alpha < 0.0:
+				alpha = 0.0
 		queue_redraw()
 
 	func _draw() -> void:
@@ -632,6 +727,24 @@ class TargetLockLayer extends Node2D:
 		draw_line(target_pos + Vector2(0, -s), target_pos + Vector2(0, s), col, 5.0, true)
 		# Circulo do raio de explosao
 		draw_arc(target_pos, explosion_radius, 0, TAU, 32, col, 4.5, true)
+		# Ponto de interceptacao (nv2)
+		if intercept_pos != Vector2.ZERO:
+			var dist_circles := target_pos.distance_to(intercept_pos)
+			var overlapping := dist_circles < explosion_radius * 2.0
+			var icol: Color
+			var icol_dim: Color
+			if overlapping:
+				icol = Color(0.2, 1.0, 0.2, 0.7 * alpha)
+				icol_dim = Color(0.2, 1.0, 0.2, 0.3 * alpha)
+			else:
+				icol = Color(1.0, 0.8, 0.0, 0.7 * alpha)
+				icol_dim = Color(1.0, 0.8, 0.0, 0.3 * alpha)
+			# X no ponto de interceptacao
+			var ix := 10.0
+			draw_line(intercept_pos + Vector2(-ix, -ix), intercept_pos + Vector2(ix, ix), icol, 4.0, true)
+			draw_line(intercept_pos + Vector2(ix, -ix), intercept_pos + Vector2(-ix, ix), icol, 4.0, true)
+			# Circulo de explosao no ponto de interceptacao
+			draw_arc(intercept_pos, explosion_radius, 0, TAU, 32, icol_dim, 3.0, true)
 
 # --- Screen effects ---
 

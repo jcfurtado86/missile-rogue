@@ -82,6 +82,7 @@ const TREE_CHILDREN := {
 	# OFENSIVA: warhead → hyper_drive → homing → singularity
 	#                                 → critical_mass → temporal_freeze
 	"warhead": ["hyper_drive", "target_lock"],
+	"target_lock": ["future_sight"],
 	"hyper_drive": ["homing", "critical_mass"],
 	"homing": ["singularity"],
 	"critical_mass": ["temporal_freeze"],
