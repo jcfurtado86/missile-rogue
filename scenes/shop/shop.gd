@@ -32,6 +32,16 @@ var buy_flash_time := 0.0
 const BUY_FLASH_DURATION := 0.6
 var _tapped_this_frame := false
 
+const BASE_WIDTH := 1080.0
+const BASE_HEIGHT := 1920.0
+var ui_scale := 1.0
+
+func _s(val: float) -> float:
+	return val * ui_scale
+
+func _sf(val: int) -> int:
+	return int(val * ui_scale)
+
 const GEM_COLORS := {
 	"credits": Color(1.0, 0.0, 0.6),
 	"crystals": Color(0.2, 1.0, 0.1),
@@ -84,6 +94,8 @@ const TREE_CHILDREN := {
 }
 
 func _ready() -> void:
+	var real_size := DisplayServer.screen_get_size()
+	ui_scale = clampf(minf(real_size.x / BASE_WIDTH, real_size.y / BASE_HEIGHT), 1.0, 1.5)
 	credits_label = $MarginContainer/VBoxContainer/Header/CreditsLabel
 	credits_label.visible = false
 	graph_viewport = $MarginContainer/VBoxContainer/GraphViewport
@@ -115,6 +127,10 @@ func _ready() -> void:
 	# Titulo neon
 	var title_label := $MarginContainer/VBoxContainer/Header/TitleLabel
 	title_label.add_theme_color_override("font_color", Color(1.0, 0.0, 0.6))
+	title_label.add_theme_font_size_override("font_size", _sf(36))
+	credits_label.add_theme_font_size_override("font_size", _sf(28))
+	play_btn.add_theme_font_size_override("font_size", _sf(28))
+	ascend_btn.add_theme_font_size_override("font_size", _sf(28))
 
 	# Separador neon
 	var sep := $MarginContainer/VBoxContainer/HSeparator
@@ -672,19 +688,19 @@ func _create_list_item(key: String, u: Dictionary) -> PanelContainer:
 	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var name_label = Label.new()
 	name_label.text = "%s (%s)" % [tr_node.t("UPG_NAME_" + key), tr_node.t("LV_FMT") % [u["level"], u["max_level"]]]
-	name_label.add_theme_font_size_override("font_size", 24)
+	name_label.add_theme_font_size_override("font_size", _sf(24))
 	name_label.add_theme_color_override("font_color", eter_col)
 	info.add_child(name_label)
 	var desc_label = Label.new()
 	desc_label.text = tr_node.t("UPG_DESC_" + key)
-	desc_label.add_theme_font_size_override("font_size", 18)
+	desc_label.add_theme_font_size_override("font_size", _sf(18))
 	desc_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
 	info.add_child(desc_label)
 	row.add_child(info)
 	var cur_type = u["currency"]
 	var gem_col: Color = GEM_COLORS.get(cur_type, eter_col)
 	var buy_button = Button.new()
-	buy_button.add_theme_font_size_override("font_size", 22)
+	buy_button.add_theme_font_size_override("font_size", _sf(22))
 	buy_button.pressed.connect(_on_eter_buy.bind(key))
 	buy_button.custom_minimum_size = Vector2(120, 50)
 	_style_neon_button(buy_button, eter_col)
@@ -699,7 +715,7 @@ func _create_list_item(key: String, u: Dictionary) -> PanelContainer:
 	if u["level"] >= u["max_level"]:
 		var max_lbl = Label.new()
 		max_lbl.text = tr_node.t("MAX")
-		max_lbl.add_theme_font_size_override("font_size", 22)
+		max_lbl.add_theme_font_size_override("font_size", _sf(22))
 		max_lbl.add_theme_color_override("font_color", eter_col)
 		max_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		btn_content.add_child(max_lbl)
@@ -708,7 +724,7 @@ func _create_list_item(key: String, u: Dictionary) -> PanelContainer:
 		var cost = upgrade_system.get_cost(key)
 		var cost_lbl = Label.new()
 		cost_lbl.text = "%d" % cost
-		cost_lbl.add_theme_font_size_override("font_size", 22)
+		cost_lbl.add_theme_font_size_override("font_size", _sf(22))
 		cost_lbl.add_theme_color_override("font_color", eter_col)
 		cost_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		btn_content.add_child(cost_lbl)

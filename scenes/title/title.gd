@@ -8,7 +8,16 @@ var battle_overlay: Control
 var title_draw: Control
 var title_pulse := 0.0
 
+const BASE_WIDTH := 1080.0
+const BASE_HEIGHT := 1920.0
+var ui_scale := 1.0
+
+func _sf(val: int) -> int:
+	return int(val * ui_scale)
+
 func _ready() -> void:
+	var real_size := DisplayServer.screen_get_size()
+	ui_scale = clampf(minf(real_size.x / BASE_WIDTH, real_size.y / BASE_HEIGHT), 1.0, 1.5)
 	# Background shader ja vem do .tscn
 
 	# Batalha distante
@@ -31,6 +40,9 @@ func _ready() -> void:
 	var neon_pink := Color(1.0, 0.0, 0.6)
 	var neon_red := Color(1.0, 0.2, 0.2)
 	var neon_dim := Color(0.5, 0.5, 0.5)
+	$Buttons/PlayButton.add_theme_font_size_override("font_size", _sf(32))
+	$Buttons/ResetButton.add_theme_font_size_override("font_size", _sf(26))
+	$Buttons/QuitButton.add_theme_font_size_override("font_size", _sf(26))
 	_style_neon_button($Buttons/PlayButton, neon_pink)
 	_style_neon_button($Buttons/ResetButton, neon_red)
 	_style_neon_button($Buttons/QuitButton, neon_dim)
@@ -58,7 +70,7 @@ func _build_locale_selector() -> void:
 	for i in locales.size():
 		var btn := Button.new()
 		btn.text = labels[i]
-		btn.add_theme_font_size_override("font_size", 20)
+		btn.add_theme_font_size_override("font_size", _sf(20))
 		btn.offset_left = start_x + i * 80.0
 		btn.offset_top = scr.y * 0.57
 		btn.offset_right = start_x + i * 80.0 + 70.0
@@ -310,7 +322,7 @@ func _on_reset() -> void:
 	var tr_node = get_node("/root/Tr")
 	title.text = tr_node.t("CONFIRM_DELETE")
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 32)
+	title.add_theme_font_size_override("font_size", _sf(32))
 	title.add_theme_color_override("font_color", col)
 	title.offset_left = 20.0
 	title.offset_top = 30.0
@@ -321,7 +333,7 @@ func _on_reset() -> void:
 	var desc := Label.new()
 	desc.text = tr_node.t("DELETE_WARNING")
 	desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	desc.add_theme_font_size_override("font_size", 22)
+	desc.add_theme_font_size_override("font_size", _sf(22))
 	desc.add_theme_color_override("font_color", Color(0.7, 0.4, 0.4))
 	desc.offset_left = 20.0
 	desc.offset_top = 85.0
@@ -341,7 +353,7 @@ func _on_reset() -> void:
 	var cancel_btn := Button.new()
 	cancel_btn.text = tr_node.t("CANCEL")
 	cancel_btn.custom_minimum_size = Vector2(180, 60)
-	cancel_btn.add_theme_font_size_override("font_size", 24)
+	cancel_btn.add_theme_font_size_override("font_size", _sf(24))
 	_style_neon_button(cancel_btn, Color(0.5, 0.5, 0.5))
 	cancel_btn.pressed.connect(func(): dimmer.queue_free())
 	btn_box.add_child(cancel_btn)
@@ -349,7 +361,7 @@ func _on_reset() -> void:
 	var confirm_btn := Button.new()
 	confirm_btn.text = tr_node.t("DELETE")
 	confirm_btn.custom_minimum_size = Vector2(180, 60)
-	confirm_btn.add_theme_font_size_override("font_size", 24)
+	confirm_btn.add_theme_font_size_override("font_size", _sf(24))
 	_style_neon_button(confirm_btn, col)
 	confirm_btn.pressed.connect(func():
 		dimmer.queue_free()

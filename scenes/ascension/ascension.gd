@@ -19,7 +19,16 @@ var total_invested := 0
 const ETER_COL := Color(1.0, 0.5, 0.0)
 const GEM_COL := Color(1.0, 0.5, 0.0)
 
+const BASE_WIDTH := 1080.0
+const BASE_HEIGHT := 1920.0
+var ui_scale := 1.0
+
+func _sf(val: int) -> int:
+	return int(val * ui_scale)
+
 func _ready() -> void:
+	var real_size := DisplayServer.screen_get_size()
+	ui_scale = clampf(minf(real_size.x / BASE_WIDTH, real_size.y / BASE_HEIGHT), 1.0, 1.5)
 	# Batalha distante
 	battle_overlay = Control.new()
 	battle_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -90,7 +99,7 @@ func _build_panel() -> void:
 	var title := Label.new()
 	title.text = tr_node.t("ASC_TITLE")
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 40)
+	title.add_theme_font_size_override("font_size", _sf(40))
 	title.add_theme_color_override("font_color", ETER_COL)
 	title.offset_left = 30.0
 	title.offset_top = 120.0
@@ -155,7 +164,7 @@ func _build_panel() -> void:
 	var warn_title := Label.new()
 	warn_title.text = tr_node.t("WARNING_TITLE")
 	warn_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	warn_title.add_theme_font_size_override("font_size", 28)
+	warn_title.add_theme_font_size_override("font_size", _sf(28))
 	warn_title.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
 	warn_title.offset_left = 30.0
 	warn_title.offset_top = 462.0
@@ -167,7 +176,7 @@ func _build_panel() -> void:
 	var warn_text := Label.new()
 	warn_text.text = tr_node.t("WARNING_TEXT")
 	warn_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	warn_text.add_theme_font_size_override("font_size", 22)
+	warn_text.add_theme_font_size_override("font_size", _sf(22))
 	warn_text.add_theme_color_override("font_color", Color(0.8, 0.45, 0.45))
 	warn_text.offset_left = 35.0
 	warn_text.offset_top = 505.0
@@ -189,7 +198,7 @@ func _build_panel() -> void:
 	var cancel_btn := Button.new()
 	cancel_btn.text = tr_node.t("BACK")
 	cancel_btn.custom_minimum_size = Vector2(220, 70)
-	cancel_btn.add_theme_font_size_override("font_size", 26)
+	cancel_btn.add_theme_font_size_override("font_size", _sf(26))
 	_style_neon_button(cancel_btn, Color(0.5, 0.5, 0.5))
 	cancel_btn.pressed.connect(_on_cancel)
 	btn_container.add_child(cancel_btn)
@@ -197,7 +206,7 @@ func _build_panel() -> void:
 	var confirm_btn := Button.new()
 	confirm_btn.text = tr_node.t("ASC_CONFIRM")
 	confirm_btn.custom_minimum_size = Vector2(240, 70)
-	confirm_btn.add_theme_font_size_override("font_size", 26)
+	confirm_btn.add_theme_font_size_override("font_size", _sf(26))
 	_style_neon_button(confirm_btn, ETER_COL)
 	confirm_btn.pressed.connect(_on_confirm)
 	btn_container.add_child(confirm_btn)

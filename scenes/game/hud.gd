@@ -49,7 +49,8 @@ func _sf(val: int) -> int:
 
 func _ready() -> void:
 	var scr_size := get_viewport().get_visible_rect().size
-	ui_scale = minf(scr_size.x / BASE_WIDTH, scr_size.y / BASE_HEIGHT)
+	var real_size := DisplayServer.screen_get_size()
+	ui_scale = clampf(minf(real_size.x / BASE_WIDTH, real_size.y / BASE_HEIGHT), 1.0, 1.5)
 	threat_label.visible = false
 	threat_bar.visible = false
 	credits_label.visible = false
@@ -81,6 +82,11 @@ func _ready() -> void:
 	add_child(dimmer)
 
 func _apply_neon_style() -> void:
+	threat_label.add_theme_font_size_override("font_size", _sf(32))
+	credits_label.add_theme_font_size_override("font_size", _sf(28))
+	boss_label.add_theme_font_size_override("font_size", _sf(28))
+	nova_button.add_theme_font_size_override("font_size", _sf(24))
+	freeze_button.add_theme_font_size_override("font_size", _sf(24))
 	threat_label.add_theme_color_override("font_color", Color(1.0, 0.0, 0.6))
 	credits_label.add_theme_color_override("font_color", Color(0.0, 1.0, 1.0))
 	boss_label.add_theme_color_override("font_color", Color(1.0, 0.0, 0.3))
