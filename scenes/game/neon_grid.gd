@@ -482,8 +482,6 @@ func _draw_flyby() -> void:
 		_draw_santa()
 	elif flyby_type == FlybyType.INVADER:
 		_draw_invader()
-	elif flyby_type == FlybyType.DELOREAN:
-		_draw_delorean()
 
 func _draw_ufo() -> void:
 	var pos := Vector2(flyby_x, flyby_y)
@@ -810,72 +808,6 @@ func _draw_invader() -> void:
 				var px := pos.x + (col_idx * d) * s + offset_x * d
 				var py := pos.y + row * s + offset_y
 				draw_rect(Rect2(px - 0.5, py - 0.5, s * d + 1.0, s + 1.0), col_dim, false, 1.0)
-
-func _draw_delorean() -> void:
-	var pos := Vector2(flyby_x, flyby_y)
-	var d := flyby_direction
-	var bounce := sin(nyan_anim * 6.0) * 2.0
-	pos.y += bounce
-	var alpha := clampf(1.0 - abs(flyby_x - screen_size.x * 0.5) / (screen_size.x * 0.8), 0.2, 1.0)
-	var neon := Color(0.5, 0.8, 1.0, alpha)
-	var neon_dim := Color(0.5, 0.8, 1.0, alpha * 0.4)
-	var steel := Color(0.6, 0.65, 0.7, alpha * 0.15)
-	var fire := Color(0.3, 0.6, 1.0, alpha * 0.8)
-	# Corpo principal — silhueta wedge/cunha baixa e larga
-	var body := PackedVector2Array([
-		pos + Vector2(-50.0 * d, 0.0),   # traseira baixo
-		pos + Vector2(-48.0 * d, -6.0),  # traseira topo
-		pos + Vector2(-15.0 * d, -14.0), # teto traseiro
-		pos + Vector2(20.0 * d, -14.0),  # teto dianteiro
-		pos + Vector2(45.0 * d, -3.0),   # capo dianteiro (wedge)
-		pos + Vector2(50.0 * d, 2.0),    # frente baixo
-		pos + Vector2(-50.0 * d, 2.0),   # base
-	])
-	draw_polygon(body, PackedColorArray([steel, steel, steel, steel, steel, steel, steel]))
-	for i in range(body.size() - 1):
-		draw_line(body[i], body[i + 1], neon, 2.0, true)
-	draw_line(body[body.size() - 1], body[0], neon, 2.0, true)
-	# Linha de cintura (divisoria horizontal)
-	draw_line(pos + Vector2(-48.0 * d, -4.0), pos + Vector2(46.0 * d, -4.0), neon_dim, 1.0, true)
-	# Janela
-	var win := PackedVector2Array([
-		pos + Vector2(-12.0 * d, -6.0),
-		pos + Vector2(18.0 * d, -6.0),
-		pos + Vector2(16.0 * d, -13.0),
-		pos + Vector2(-10.0 * d, -13.0),
-	])
-	draw_polygon(win, PackedColorArray([Color(0.15, 0.25, 0.5, alpha * 0.3), Color(0.15, 0.25, 0.5, alpha * 0.3), Color(0.15, 0.25, 0.5, alpha * 0.3), Color(0.15, 0.25, 0.5, alpha * 0.3)]))
-	for i in win.size():
-		draw_line(win[i], win[(i + 1) % win.size()], neon_dim, 1.5, true)
-	# Porta gull-wing (levemente aberta)
-	var door_base := pos + Vector2(2.0 * d, -14.0)
-	var door_tip := pos + Vector2(4.0 * d, -22.0)
-	draw_line(door_base, door_tip, neon, 2.0, true)
-	draw_line(door_tip, pos + Vector2(-8.0 * d, -14.0), neon_dim, 1.5, true)
-	# Rodas
-	var wy := pos.y + 4.0
-	draw_circle(Vector2(pos.x - 32.0 * d, wy), 5.0, Color(0.03, 0.03, 0.06, alpha))
-	draw_arc(Vector2(pos.x - 32.0 * d, wy), 5.0, 0, TAU, 16, neon_dim, 1.5, true)
-	draw_circle(Vector2(pos.x + 30.0 * d, wy), 5.0, Color(0.03, 0.03, 0.06, alpha))
-	draw_arc(Vector2(pos.x + 30.0 * d, wy), 5.0, 0, TAU, 16, neon_dim, 1.5, true)
-	# Farois
-	draw_circle(pos + Vector2(51.0 * d, -1.0), 2.5, Color(1.0, 1.0, 0.8, alpha * 0.6))
-	draw_circle(pos + Vector2(51.0 * d, -1.0), 1.0, Color(1.0, 1.0, 1.0, alpha))
-	# Luz traseira vermelha
-	draw_circle(pos + Vector2(-51.0 * d, -3.0), 2.0, Color(1.0, 0.1, 0.1, alpha * 0.6))
-	# Trilhas de fogo azul (atras do carro)
-	for ti in 8:
-		var trail_t := fmod(nyan_anim * 3.5 + float(ti) * 0.4, 3.0)
-		var trail_x := pos.x - (52.0 + trail_t * 25.0) * d
-		var trail_y := pos.y - 1.0 + sin(nyan_anim * 10.0 + float(ti) * 1.2) * 2.5
-		var trail_alpha := (1.0 - trail_t / 3.0) * alpha * 0.7
-		if trail_alpha < 0.02:
-			continue
-		var trail_r := 3.5 - trail_t * 0.6
-		draw_circle(Vector2(trail_x, trail_y), trail_r, Color(fire.r, fire.g, fire.b, trail_alpha))
-		draw_circle(Vector2(trail_x, trail_y), trail_r * 2.0, Color(fire.r, fire.g, fire.b, trail_alpha * 0.2))
-	# Glow azul
-	draw_circle(pos + Vector2(-50.0 * d, 0.0), 30.0, Color(0.2, 0.5, 1.0, alpha * 0.06))
 
 # --- HORIZONTE ---
 
