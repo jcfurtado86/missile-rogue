@@ -58,6 +58,8 @@ const STRINGS := {
 	"DOUBLE_EARNINGS_AD": { "pt": "DOBRAR GANHOS (AD)", "en": "DOUBLE EARNINGS (AD)", "es": "DOBLAR GANANCIAS (AD)", "fr": "DOUBLER GAINS (PUB)", "zh": "双倍收入(广告)" },
 	"AD_UNAVAILABLE": { "pt": "ANÚNCIO INDISPONÍVEL", "en": "AD UNAVAILABLE", "es": "ANUNCIO NO DISPONIBLE", "fr": "PUB INDISPONIBLE", "zh": "广告不可用" },
 	"THREAT_FMT": { "pt": "AMEAÇA: %d", "en": "THREAT: %d", "es": "AMENAZA: %d", "fr": "MENACE: %d", "zh": "威胁：%d" },
+	"EMPTY": { "pt": "VAZIO", "en": "EMPTY", "es": "VACÍO", "fr": "VIDE", "zh": "空" },
+	"NO_AMMO": { "pt": "SEM MUNIÇÃO!", "en": "NO AMMO!", "es": "¡SIN MUNICIÓN!", "fr": "PAS DE MUNITIONS!", "zh": "没有弹药！" },
 
 	# ===== ARSENAL =====
 	"SHOP_TITLE": { "pt": "ARSENAL", "en": "ARSENAL", "es": "ARSENAL", "fr": "ARSENAL", "zh": "军火库" },

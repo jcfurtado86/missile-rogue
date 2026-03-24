@@ -200,6 +200,29 @@ func _fire_at(target: Vector2) -> void:
 				var angle := base_angle + t * spread_angle
 				var fan_target := closest_battery.global_position + Vector2.from_angle(angle) * dist
 				_spawn_player_missile(closest_battery, fan_target)
+	else:
+		# So mostra "no ammo" se todas as baterias estao realmente esgotadas
+		var any_reloading := false
+		for battery in batteries:
+			if battery.reloading or battery.magazines > 0 or battery.magazine_ammo > 0:
+				any_reloading = true
+				break
+		if not any_reloading:
+			_show_no_ammo(target)
+
+func _show_no_ammo(pos: Vector2) -> void:
+	var lbl := Label.new()
+	lbl.text = get_node("/root/Tr").t("NO_AMMO")
+	lbl.add_theme_font_size_override("font_size", 36)
+	lbl.add_theme_color_override("font_color", Color(1.0, 0.3, 0.2))
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.position = pos - Vector2(100, 20)
+	add_child(lbl)
+	var tw := create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(lbl, "position:y", pos.y - 80.0, 1.0)
+	tw.tween_property(lbl, "modulate:a", 0.0, 1.0).set_delay(0.3)
+	tw.chain().tween_callback(lbl.queue_free)
 
 func _spawn_player_missile(battery: Node2D, target: Vector2) -> void:
 	var missile = PlayerMissileScene.instantiate()

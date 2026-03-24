@@ -9,6 +9,7 @@ var magazines: int
 var magazine_ammo: int
 var reloading := false
 var regen_accumulator := 0.0
+var empty_pulse_time := 0.0
 
 @onready var reload_timer: Timer = $ReloadTimer
 
@@ -24,6 +25,12 @@ var persp_ratio := 1.0  # ratio topo/base
 func _process(delta: float) -> void:
 	if reloading:
 		queue_redraw()
+	# Pulso visual quando vazio
+	if magazine_ammo <= 0 and magazines <= 0 and not reloading:
+		empty_pulse_time += delta
+		queue_redraw()
+	else:
+		empty_pulse_time = 0.0
 	# Ammo regen passivo — regenera tiros no pente atual
 	if ammo_regen_rate > 0.0 and magazine_ammo < magazine_size and not reloading:
 		regen_accumulator += ammo_regen_rate * delta
@@ -219,6 +226,15 @@ func _draw_empty() -> void:
 		var mbr := _persp(Vector2(mx + mw, mag_y + 4.0))
 		draw_polygon(PackedVector2Array([mtl, mtr, mbr, mbl]),
 			PackedColorArray([Color(0.0, 0.2, 0.3, 0.2), Color(0.0, 0.2, 0.3, 0.2), Color(0.0, 0.2, 0.3, 0.2), Color(0.0, 0.2, 0.3, 0.2)]))
+
+	# Texto "EMPTY" pulsando
+	var pulse_alpha: float = 0.3 + 0.5 * abs(sin(empty_pulse_time * 2.5))
+	var empty_text: String = get_node("/root/Tr").t("EMPTY")
+	var font := ThemeDB.fallback_font
+	var font_size := 32
+	var text_size := font.get_string_size(empty_text, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size)
+	var text_pos := _persp(Vector2(-text_size.x / 2.0, SILO_CY + 2.0))
+	draw_string(font, text_pos, empty_text, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size, Color(1.0, 0.3, 0.2, pulse_alpha))
 
 # ============================================================
 # INTERFACE PUBLICA
