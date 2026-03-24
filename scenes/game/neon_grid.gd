@@ -28,7 +28,7 @@ var mountains_front: Array[Dictionary] = []
 var anim_time := 0.0
 
 # Flyby (OVNI, Nyan Cat ou Papai Noel)
-enum FlybyType { UFO, NYAN, SANTA }
+enum FlybyType { UFO, NYAN, SANTA, INVADER }
 var flyby_active := false
 var flyby_type: FlybyType = FlybyType.UFO
 var flyby_x := 0.0
@@ -38,6 +38,7 @@ var flyby_direction := 1.0  # 1 = direita, -1 = esquerda
 var flyby_timer := 0.0
 var flyby_next_time := 0.0
 var nyan_anim := 0.0  # animacao das patas
+var invader_color := Color(0.0, 1.0, 0.0)  # cor neon aleatoria do invader
 
 # Batalha distante no horizonte
 var distant_battle := DistantBattle.new()
@@ -55,7 +56,7 @@ func _ready() -> void:
 	else:
 		_generate_mountains(run_seed)
 
-	flyby_next_time = randf_range(15.0, 40.0)
+	flyby_next_time = randf_range(2.0, 4.0)  # DEBUG: tempo curto
 
 # ============================================================
 # GERACAO
@@ -439,11 +440,11 @@ func _update_flyby(delta: float) -> void:
 		var exit_margin := 300.0 if flyby_type == FlybyType.NYAN else 50.0
 		if flyby_direction > 0 and flyby_x > screen_size.x + MARGIN + exit_margin:
 			flyby_active = false
-			flyby_next_time = randf_range(20.0, 50.0)
+			flyby_next_time = randf_range(2.0, 4.0)  # DEBUG
 			flyby_timer = 0.0
 		elif flyby_direction < 0 and flyby_x < -MARGIN - exit_margin:
 			flyby_active = false
-			flyby_next_time = randf_range(20.0, 50.0)
+			flyby_next_time = randf_range(2.0, 4.0)  # DEBUG
 			flyby_timer = 0.0
 	else:
 		flyby_timer += delta
@@ -454,17 +455,14 @@ func _spawn_flyby() -> void:
 	flyby_active = true
 	flyby_y = randf_range(horizon_y * 0.15, horizon_y * 0.55)
 	nyan_anim = 0.0
-	# Sorteia tipo (80% UFO, 10% Nyan, 10% Santa)
-	var roll := randf()
-	if roll < 0.8:
-		flyby_type = FlybyType.UFO
-		flyby_speed = randf_range(30.0, 80.0)
-	elif roll < 0.9:
-		flyby_type = FlybyType.NYAN
-		flyby_speed = randf_range(80.0, 140.0)
-	else:
-		flyby_type = FlybyType.SANTA
-		flyby_speed = randf_range(60.0, 110.0)
+	# DEBUG: 100% invader
+	flyby_type = FlybyType.INVADER
+	flyby_speed = randf_range(40.0, 90.0)
+	var neon_colors := [
+		Color(0.0, 1.0, 1.0), Color(1.0, 0.0, 0.6), Color(0.2, 1.0, 0.2),
+		Color(1.0, 1.0, 0.0), Color(0.6, 0.0, 1.0), Color(1.0, 0.5, 0.0),
+	]
+	invader_color = neon_colors[randi() % neon_colors.size()]
 	# Direcao aleatoria
 	if randf() > 0.5:
 		flyby_direction = 1.0
@@ -480,8 +478,12 @@ func _draw_flyby() -> void:
 		_draw_ufo()
 	elif flyby_type == FlybyType.NYAN:
 		_draw_nyan()
-	else:
+	elif flyby_type == FlybyType.SANTA:
 		_draw_santa()
+	elif flyby_type == FlybyType.INVADER:
+		_draw_invader()
+	elif flyby_type == FlybyType.DELOREAN:
+		_draw_delorean()
 
 func _draw_ufo() -> void:
 	var pos := Vector2(flyby_x, flyby_y)
@@ -757,6 +759,123 @@ func _draw_santa() -> void:
 		var sc := sparkle_cols[si % sparkle_cols.size()]
 		draw_circle(Vector2(sx, sy), 2.0, Color(sc.r, sc.g, sc.b, sa))
 		draw_circle(Vector2(sx, sy), 4.0, Color(sc.r, sc.g, sc.b, sa * 0.3))
+
+func _draw_invader() -> void:
+	var pos := Vector2(flyby_x, flyby_y)
+	var d := flyby_direction
+	var bounce := sin(nyan_anim * 3.0) * 5.0
+	pos.y += bounce
+	var alpha := clampf(1.0 - abs(flyby_x - screen_size.x * 0.5) / (screen_size.x * 0.8), 0.2, 1.0)
+	var col := Color(invader_color.r, invader_color.g, invader_color.b, alpha)
+	var col_dim := Color(invader_color.r, invader_color.g, invader_color.b, alpha * 0.3)
+	var s := 4.0  # pixel scale
+	# Dois frames alternando (patas abertas/fechadas)
+	var frame := int(nyan_anim * 2.0) % 2
+	# Grid 11x8 — 1 = pixel preenchido
+	var frame0 := [
+		[0,0,1,0,0,0,0,0,1,0,0],
+		[0,0,0,1,0,0,0,1,0,0,0],
+		[0,0,1,1,1,1,1,1,1,0,0],
+		[0,1,1,0,1,1,1,0,1,1,0],
+		[1,1,1,1,1,1,1,1,1,1,1],
+		[1,0,1,1,1,1,1,1,1,0,1],
+		[1,0,1,0,0,0,0,0,1,0,1],
+		[0,0,0,1,1,0,1,1,0,0,0],
+	]
+	var frame1 := [
+		[0,0,1,0,0,0,0,0,1,0,0],
+		[1,0,0,1,0,0,0,1,0,0,1],
+		[1,0,1,1,1,1,1,1,1,0,1],
+		[1,1,1,0,1,1,1,0,1,1,1],
+		[1,1,1,1,1,1,1,1,1,1,1],
+		[0,1,1,1,1,1,1,1,1,1,0],
+		[0,0,1,0,0,0,0,0,1,0,0],
+		[0,1,0,0,0,0,0,0,0,1,0],
+	]
+	var grid: Array = frame0 if frame == 0 else frame1
+	var offset_x := -5.5 * s  # centrar horizontalmente
+	var offset_y := -4.0 * s  # centrar verticalmente
+	# Glow
+	draw_circle(pos, 30.0, Color(invader_color.r, invader_color.g, invader_color.b, alpha * 0.06))
+	for row in 8:
+		for col_idx in 11:
+			if grid[row][col_idx] == 1:
+				var px := pos.x + (col_idx * d) * s + offset_x * d
+				var py := pos.y + row * s + offset_y
+				draw_rect(Rect2(px, py, s * d, s), col, true)
+	# Outline sutil
+	for row in 8:
+		for col_idx in 11:
+			if grid[row][col_idx] == 1:
+				var px := pos.x + (col_idx * d) * s + offset_x * d
+				var py := pos.y + row * s + offset_y
+				draw_rect(Rect2(px - 0.5, py - 0.5, s * d + 1.0, s + 1.0), col_dim, false, 1.0)
+
+func _draw_delorean() -> void:
+	var pos := Vector2(flyby_x, flyby_y)
+	var d := flyby_direction
+	var bounce := sin(nyan_anim * 6.0) * 2.0
+	pos.y += bounce
+	var alpha := clampf(1.0 - abs(flyby_x - screen_size.x * 0.5) / (screen_size.x * 0.8), 0.2, 1.0)
+	var neon := Color(0.5, 0.8, 1.0, alpha)
+	var neon_dim := Color(0.5, 0.8, 1.0, alpha * 0.4)
+	var steel := Color(0.6, 0.65, 0.7, alpha * 0.15)
+	var fire := Color(0.3, 0.6, 1.0, alpha * 0.8)
+	# Corpo principal — silhueta wedge/cunha baixa e larga
+	var body := PackedVector2Array([
+		pos + Vector2(-50.0 * d, 0.0),   # traseira baixo
+		pos + Vector2(-48.0 * d, -6.0),  # traseira topo
+		pos + Vector2(-15.0 * d, -14.0), # teto traseiro
+		pos + Vector2(20.0 * d, -14.0),  # teto dianteiro
+		pos + Vector2(45.0 * d, -3.0),   # capo dianteiro (wedge)
+		pos + Vector2(50.0 * d, 2.0),    # frente baixo
+		pos + Vector2(-50.0 * d, 2.0),   # base
+	])
+	draw_polygon(body, PackedColorArray([steel, steel, steel, steel, steel, steel, steel]))
+	for i in range(body.size() - 1):
+		draw_line(body[i], body[i + 1], neon, 2.0, true)
+	draw_line(body[body.size() - 1], body[0], neon, 2.0, true)
+	# Linha de cintura (divisoria horizontal)
+	draw_line(pos + Vector2(-48.0 * d, -4.0), pos + Vector2(46.0 * d, -4.0), neon_dim, 1.0, true)
+	# Janela
+	var win := PackedVector2Array([
+		pos + Vector2(-12.0 * d, -6.0),
+		pos + Vector2(18.0 * d, -6.0),
+		pos + Vector2(16.0 * d, -13.0),
+		pos + Vector2(-10.0 * d, -13.0),
+	])
+	draw_polygon(win, PackedColorArray([Color(0.15, 0.25, 0.5, alpha * 0.3), Color(0.15, 0.25, 0.5, alpha * 0.3), Color(0.15, 0.25, 0.5, alpha * 0.3), Color(0.15, 0.25, 0.5, alpha * 0.3)]))
+	for i in win.size():
+		draw_line(win[i], win[(i + 1) % win.size()], neon_dim, 1.5, true)
+	# Porta gull-wing (levemente aberta)
+	var door_base := pos + Vector2(2.0 * d, -14.0)
+	var door_tip := pos + Vector2(4.0 * d, -22.0)
+	draw_line(door_base, door_tip, neon, 2.0, true)
+	draw_line(door_tip, pos + Vector2(-8.0 * d, -14.0), neon_dim, 1.5, true)
+	# Rodas
+	var wy := pos.y + 4.0
+	draw_circle(Vector2(pos.x - 32.0 * d, wy), 5.0, Color(0.03, 0.03, 0.06, alpha))
+	draw_arc(Vector2(pos.x - 32.0 * d, wy), 5.0, 0, TAU, 16, neon_dim, 1.5, true)
+	draw_circle(Vector2(pos.x + 30.0 * d, wy), 5.0, Color(0.03, 0.03, 0.06, alpha))
+	draw_arc(Vector2(pos.x + 30.0 * d, wy), 5.0, 0, TAU, 16, neon_dim, 1.5, true)
+	# Farois
+	draw_circle(pos + Vector2(51.0 * d, -1.0), 2.5, Color(1.0, 1.0, 0.8, alpha * 0.6))
+	draw_circle(pos + Vector2(51.0 * d, -1.0), 1.0, Color(1.0, 1.0, 1.0, alpha))
+	# Luz traseira vermelha
+	draw_circle(pos + Vector2(-51.0 * d, -3.0), 2.0, Color(1.0, 0.1, 0.1, alpha * 0.6))
+	# Trilhas de fogo azul (atras do carro)
+	for ti in 8:
+		var trail_t := fmod(nyan_anim * 3.5 + float(ti) * 0.4, 3.0)
+		var trail_x := pos.x - (52.0 + trail_t * 25.0) * d
+		var trail_y := pos.y - 1.0 + sin(nyan_anim * 10.0 + float(ti) * 1.2) * 2.5
+		var trail_alpha := (1.0 - trail_t / 3.0) * alpha * 0.7
+		if trail_alpha < 0.02:
+			continue
+		var trail_r := 3.5 - trail_t * 0.6
+		draw_circle(Vector2(trail_x, trail_y), trail_r, Color(fire.r, fire.g, fire.b, trail_alpha))
+		draw_circle(Vector2(trail_x, trail_y), trail_r * 2.0, Color(fire.r, fire.g, fire.b, trail_alpha * 0.2))
+	# Glow azul
+	draw_circle(pos + Vector2(-50.0 * d, 0.0), 30.0, Color(0.2, 0.5, 1.0, alpha * 0.06))
 
 # --- HORIZONTE ---
 

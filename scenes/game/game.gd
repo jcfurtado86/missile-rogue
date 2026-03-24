@@ -266,6 +266,7 @@ func _update_target_lock_preview(pos: Vector2) -> void:
 			closest_battery = battery
 	if not closest_battery:
 		target_lock_layer.alpha = 0.0
+		target_lock_layer.queue_redraw()
 		return
 	var radius: float = 30.0 * stats.explosion_radius_mult
 	var intercept := Vector2.ZERO
