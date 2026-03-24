@@ -40,6 +40,9 @@ var freeze_ready := false
 # Early warning
 var warning_indicators: Array[Dictionary] = []
 
+# Combo
+var combo := 0
+
 # Screen effects
 var shake_intensity := 0.0
 var shake_timer := 0.0
@@ -338,6 +341,7 @@ func _spawn_player_missile(battery: Node2D, target: Vector2) -> void:
 	missile.homing_strength = stats.homing_strength
 	missile.critical_mass_chance = stats.critical_mass_chance
 	missile.pull_force = stats.pull_force
+	missile.exploded.connect(_on_missile_exploded)
 	add_child(missile)
 
 func _handle_spawning(delta: float) -> void:
@@ -462,6 +466,8 @@ func _on_boss_defeated() -> void:
 func _on_enemy_destroyed(_enemy: Area2D, drop_currency: String = "credits", drop_amount: int = 1) -> void:
 	get_node("/root/SoundManager").intercept()
 	threat.register_kill()
+	combo += 1
+	hud.update_combo(combo)
 	if drop_currency != "" and drop_amount > 0:
 		var bonus: int = stats.credits_bonus if drop_currency == "credits" else (stats.crystals_bonus if drop_currency == "crystals" else stats.void_bonus)
 		var amount: int = (drop_amount + bonus) * stats.all_currencies_mult
@@ -475,6 +481,8 @@ func _connect_fragments() -> void:
 
 func _on_fragment_destroyed(_frag: Area2D) -> void:
 	threat.register_kill()
+	combo += 1
+	hud.update_combo(combo)
 	var void_amount: int = (1 + stats.void_bonus) * stats.all_currencies_mult
 	currency.add("void", void_amount)
 	run_earnings["void"] += void_amount
@@ -556,6 +564,7 @@ func _handle_auto_turret(delta: float) -> void:
 		missile.explosion_radius = 30.0 * stats.explosion_radius_mult * 0.7
 		missile.homing_strength = maxf(stats.homing_strength, 0.3)  # auto turret sempre tem leve homing
 		missile.pull_force = stats.pull_force
+		missile.exploded.connect(_on_missile_exploded)
 		add_child(missile)
 
 # --- Game over & revive ---
@@ -631,7 +640,14 @@ func decline_double() -> void:
 
 # --- Phoenix protocol ---
 
+func _on_missile_exploded(hits: int) -> void:
+	if hits == 0:
+		combo = 0
+		hud.update_combo(combo)
+
 func _on_city_destroyed(city: Node2D) -> void:
+	combo = 0
+	hud.update_combo(combo)
 	destroyed_order.append(city)
 	get_node("/root/SoundManager").city_nuked()
 	flash_alpha = 0.7

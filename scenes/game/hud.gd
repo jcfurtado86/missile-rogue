@@ -32,6 +32,11 @@ const BASE_HEIGHT := 1920.0
 var ui_scale := 1.0
 
 var pause_button: Button
+var combo_label: Label
+var combo_tween: Tween
+var combo_value := 0
+var combo_time := 0.0
+var combo_base_top := 0.0
 
 # Popup system
 var dimmer: ColorRect
@@ -70,6 +75,21 @@ func _ready() -> void:
 	_setup_pause_button()
 	_apply_neon_style()
 	_reposition_for_screen()
+	# Combo label — centro-topo
+	combo_label = Label.new()
+	combo_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	combo_label.add_theme_font_size_override("font_size", _sf(96))
+	combo_label.add_theme_color_override("font_color", Color(0.0, 1.0, 1.0))
+	combo_label.add_theme_color_override("font_outline_color", Color(0.0, 0.3, 0.4))
+	combo_label.add_theme_constant_override("outline_size", _sf(4))
+	var scr_combo := get_viewport().get_visible_rect().size
+	combo_label.offset_left = 0
+	combo_label.offset_right = scr_combo.x
+	combo_label.offset_top = _s(70)
+	combo_base_top = _s(70)
+	combo_label.visible = false
+	combo_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(combo_label)
 	# Dimmer (escurece a tela atras do popup)
 	dimmer = ColorRect.new()
 	dimmer.color = Color(0.0, 0.0, 0.0, 0.6)
@@ -367,6 +387,53 @@ func _draw_freeze_icon(ctrl: Control, center: Vector2, color: Color) -> void:
 # ============================================================
 # CURRENCIES HUD
 # ============================================================
+
+func _process(delta: float) -> void:
+	if not combo_label.visible:
+		return
+	combo_time += delta
+	# Intensidade baseada no combo (0.0 a 1.0, satura em ~30)
+	var intensity := clampf(float(combo_value - 2) / 28.0, 0.0, 1.0)
+	# Wiggle — angulo e velocidade crescem com combo
+	var wiggle_speed := 5.0 + intensity * 15.0
+	var wiggle_angle := (2.0 + intensity * 5.0) * sin(combo_time * wiggle_speed)
+	combo_label.rotation = deg_to_rad(wiggle_angle)
+	# Shake — offset aleatorio proporcional a intensidade
+	var shake := intensity * 4.0
+	combo_label.offset_top = combo_base_top + randf_range(-shake, shake)
+	# Cor — ciano → amarelo → rosa/vermelho
+	var col: Color
+	if combo_value < 6:
+		col = Color(0.0, 1.0, 1.0)  # ciano
+	elif combo_value < 12:
+		var t := float(combo_value - 6) / 6.0
+		col = Color(0.0, 1.0, 1.0).lerp(Color(1.0, 1.0, 0.0), t)  # ciano → amarelo
+	elif combo_value < 18:
+		var t := float(combo_value - 12) / 6.0
+		col = Color(1.0, 1.0, 0.0).lerp(Color(1.0, 0.0, 0.6), t)  # amarelo → rosa
+	else:
+		# Pisca entre rosa e branco
+		var flash := 0.5 + 0.5 * sin(combo_time * 12.0)
+		col = Color(1.0, 0.0, 0.6).lerp(Color(1.0, 1.0, 1.0), flash * 0.4)
+	combo_label.add_theme_color_override("font_color", col)
+	combo_label.add_theme_color_override("font_outline_color", Color(col.r * 0.3, col.g * 0.3, col.b * 0.3))
+
+func update_combo(value: int) -> void:
+	combo_value = value
+	if value < 2:
+		combo_label.visible = false
+		combo_label.rotation = 0.0
+		combo_label.offset_top = combo_base_top
+		return
+	combo_label.text = "x%d" % value
+	combo_label.visible = true
+	# Scale punch animation
+	if combo_tween and combo_tween.is_valid():
+		combo_tween.kill()
+	combo_label.pivot_offset = Vector2(combo_label.size.x / 2.0, combo_label.size.y / 2.0)
+	combo_label.scale = Vector2(1.3, 1.3)
+	combo_tween = create_tween()
+	combo_tween.tween_property(combo_label, "scale", Vector2.ONE, 0.15).set_ease(Tween.EASE_OUT)
 
 func update_threat(level: float) -> void:
 	threat_bar.value = level

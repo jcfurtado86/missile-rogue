@@ -1,5 +1,7 @@
 extends Area2D
 
+signal exploded(hits: int)
+
 @export var speed := 400.0
 @export var explosion_radius := 30.0
 @export var explosion_duration := 0.4
@@ -7,6 +9,7 @@ extends Area2D
 var target := Vector2.ZERO
 var arrived := false
 var explosion_time := 0.0
+var hit_count := 0
 
 # Upgrade effects
 var homing_strength := 0.0
@@ -26,6 +29,11 @@ const EXPLOSION_COLORS: Array[Color] = [
 
 func _ready() -> void:
 	collision.disabled = true
+	area_entered.connect(_on_area_hit)
+
+func _on_area_hit(area: Area2D) -> void:
+	if area.is_in_group("enemy") or area.is_in_group("fragment"):
+		hit_count += 1
 
 func _draw() -> void:
 	if not arrived:
@@ -155,4 +163,5 @@ func _explode() -> void:
 	get_tree().create_timer(explosion_duration).timeout.connect(_on_explosion_end)
 
 func _on_explosion_end() -> void:
+	exploded.emit(hit_count)
 	queue_free()
