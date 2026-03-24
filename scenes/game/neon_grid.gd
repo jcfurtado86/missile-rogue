@@ -28,7 +28,7 @@ var mountains_front: Array[Dictionary] = []
 var anim_time := 0.0
 
 # Flyby (OVNI, Nyan Cat ou Papai Noel)
-enum FlybyType { UFO, NYAN, SANTA, INVADER }
+enum FlybyType { UFO, NYAN, SANTA, INVADER, DOGFIGHT }
 var flyby_active := false
 var flyby_type: FlybyType = FlybyType.UFO
 var flyby_x := 0.0
@@ -39,6 +39,16 @@ var flyby_timer := 0.0
 var flyby_next_time := 0.0
 var nyan_anim := 0.0  # animacao das patas
 var invader_color := Color(0.0, 1.0, 0.0)  # cor neon aleatoria do invader
+
+# Dogfight (caca vs disco voador)
+enum DogfightPhase { CHASE1, OFFSCREEN, CHASE2, SHOOT, FALLING, DONE }
+var dogfight_phase: DogfightPhase = DogfightPhase.CHASE1
+var dogfight_timer := 0.0
+var dogfight_jet_x := 0.0  # posicao do caca (atras do ufo)
+var dogfight_ufo_vy := 0.0  # velocidade vertical do ufo caindo
+var dogfight_ufo_y := 0.0   # y do ufo durante queda
+var dogfight_ufo_scale := 1.0  # escala diminuindo na queda
+var dogfight_explosion_timer := 0.0
 
 # Batalha distante no horizonte
 var distant_battle := DistantBattle.new()
@@ -56,7 +66,7 @@ func _ready() -> void:
 	else:
 		_generate_mountains(run_seed)
 
-	flyby_next_time = randf_range(2.0, 4.0)  # DEBUG: tempo curto
+	flyby_next_time = randf_range(15.0, 40.0)
 
 # ============================================================
 # GERACAO
@@ -434,35 +444,118 @@ func _draw_distant_battle() -> void:
 
 func _update_flyby(delta: float) -> void:
 	if flyby_active:
-		flyby_x += flyby_speed * flyby_direction * delta
 		nyan_anim += delta
+		if flyby_type == FlybyType.DOGFIGHT:
+			_update_dogfight(delta)
+			return
+		flyby_x += flyby_speed * flyby_direction * delta
 		# Saiu da tela — desativar
 		var exit_margin := 300.0 if flyby_type == FlybyType.NYAN else 50.0
 		if flyby_direction > 0 and flyby_x > screen_size.x + MARGIN + exit_margin:
 			flyby_active = false
-			flyby_next_time = randf_range(2.0, 4.0)  # DEBUG
+			flyby_next_time = randf_range(20.0, 50.0)
 			flyby_timer = 0.0
 		elif flyby_direction < 0 and flyby_x < -MARGIN - exit_margin:
 			flyby_active = false
-			flyby_next_time = randf_range(2.0, 4.0)  # DEBUG
+			flyby_next_time = randf_range(20.0, 50.0)
 			flyby_timer = 0.0
 	else:
 		flyby_timer += delta
 		if flyby_timer >= flyby_next_time:
 			_spawn_flyby()
 
+func _update_dogfight(delta: float) -> void:
+	dogfight_timer += delta
+	var d := flyby_direction
+	match dogfight_phase:
+		DogfightPhase.CHASE1:
+			# Primeira passada — UFO foge, caca persegue vindo de fora da tela
+			flyby_x += flyby_speed * d * delta
+			# Caca um pouco mais rapido pra ir se aproximando
+			dogfight_jet_x += flyby_speed * 1.15 * d * delta
+			var exit_x := screen_size.x + MARGIN + 100
+			if (d > 0 and flyby_x > exit_x) or (d < 0 and flyby_x < -MARGIN - 100):
+				dogfight_phase = DogfightPhase.OFFSCREEN
+				dogfight_timer = 0.0
+		DogfightPhase.OFFSCREEN:
+			# Breve pausa fora da tela, inverte direcao
+			if dogfight_timer > 0.8:
+				flyby_direction = -d
+				var new_d := flyby_direction
+				# UFO na frente, caca bem atras (~150px = 3-4 cacas de distancia)
+				flyby_x = (screen_size.x + MARGIN + 80) if new_d < 0 else (-MARGIN - 80)
+				dogfight_jet_x = flyby_x - 150.0 * new_d  # caca 150px atras do UFO
+				dogfight_phase = DogfightPhase.CHASE2
+				dogfight_timer = 0.0
+		DogfightPhase.CHASE2:
+			# Segunda passada — voltam mantendo distancia
+			var new_d := flyby_direction
+			flyby_x += flyby_speed * new_d * delta
+			# Caca acompanha na mesma velocidade (mantem distancia ~150px)
+			dogfight_jet_x += flyby_speed * new_d * delta
+			# Quando UFO chega no meio da tela, dispara
+			var mid := screen_size.x * 0.5
+			if (new_d > 0 and flyby_x > mid) or (new_d < 0 and flyby_x < mid):
+				dogfight_phase = DogfightPhase.SHOOT
+				dogfight_timer = 0.0
+				dogfight_ufo_y = flyby_y
+				dogfight_ufo_vy = 0.0
+				dogfight_ufo_scale = 1.0
+				dogfight_explosion_timer = 0.4
+		DogfightPhase.SHOOT:
+			# Flash de explosão + UFO começa a cair, caca acelera
+			var new_d := flyby_direction
+			# Caca mantem velocidade normal ate explosao acabar, depois acelera
+			var jet_mult := 1.0 if dogfight_explosion_timer > 0.0 else 1.6
+			dogfight_jet_x += flyby_speed * jet_mult * new_d * delta
+			dogfight_explosion_timer -= delta
+			dogfight_ufo_vy += 60.0 * delta  # gravidade
+			dogfight_ufo_y += dogfight_ufo_vy * delta
+			# Deriva lateral na direcao que estava indo
+			flyby_x += flyby_speed * 0.6 * new_d * delta
+			dogfight_ufo_scale = maxf(dogfight_ufo_scale - 0.08 * delta, 0.15)
+			# Quando o ufo passa do horizonte
+			if dogfight_ufo_y > horizon_y:
+				dogfight_phase = DogfightPhase.FALLING
+				dogfight_timer = 0.0
+		DogfightPhase.FALLING:
+			# Caca acelera pra sair da tela, UFO sumiu
+			var new_d := flyby_direction
+			dogfight_jet_x += flyby_speed * 2.5 * new_d * delta
+			var exit_x := screen_size.x + MARGIN + 100
+			if (new_d > 0 and dogfight_jet_x > exit_x) or (new_d < 0 and dogfight_jet_x < -MARGIN - 100):
+				dogfight_phase = DogfightPhase.DONE
+				flyby_active = false
+				flyby_next_time = randf_range(20.0, 50.0)
+				flyby_timer = 0.0
+		DogfightPhase.DONE:
+			flyby_active = false
+
 func _spawn_flyby() -> void:
 	flyby_active = true
 	flyby_y = randf_range(horizon_y * 0.15, horizon_y * 0.55)
 	nyan_anim = 0.0
-	# DEBUG: 100% invader
-	flyby_type = FlybyType.INVADER
-	flyby_speed = randf_range(40.0, 90.0)
-	var neon_colors := [
-		Color(0.0, 1.0, 1.0), Color(1.0, 0.0, 0.6), Color(0.2, 1.0, 0.2),
-		Color(1.0, 1.0, 0.0), Color(0.6, 0.0, 1.0), Color(1.0, 0.5, 0.0),
-	]
-	invader_color = neon_colors[randi() % neon_colors.size()]
+	# Probabilidades: 5% cada especial, 80% UFO
+	var roll := randf() * 100.0
+	if roll < 5.0:
+		flyby_type = FlybyType.NYAN
+	elif roll < 10.0:
+		flyby_type = FlybyType.SANTA
+	elif roll < 15.0:
+		flyby_type = FlybyType.INVADER
+	elif roll < 20.0:
+		flyby_type = FlybyType.DOGFIGHT
+	else:
+		flyby_type = FlybyType.UFO
+	flyby_speed = randf_range(80.0, 120.0)
+	if flyby_type == FlybyType.INVADER:
+		flyby_speed = randf_range(40.0, 90.0)
+		var neon_colors := [Color(1,0,0.3), Color(0,1,0.3), Color(0.3,0.5,1), Color(1,1,0), Color(1,0,1), Color(0,1,1)]
+		invader_color = neon_colors[randi() % neon_colors.size()]
+	if flyby_type == FlybyType.DOGFIGHT:
+		dogfight_phase = DogfightPhase.CHASE1
+		dogfight_timer = 0.0
+		dogfight_explosion_timer = 0.0
 	# Direcao aleatoria
 	if randf() > 0.5:
 		flyby_direction = 1.0
@@ -470,6 +563,9 @@ func _spawn_flyby() -> void:
 	else:
 		flyby_direction = -1.0
 		flyby_x = screen_size.x + MARGIN + 100
+	if flyby_type == FlybyType.DOGFIGHT:
+		# Caca comeca ~350px atras — entra na tela visivelmente depois do UFO
+		dogfight_jet_x = flyby_x - 350.0 * flyby_direction
 
 func _draw_flyby() -> void:
 	if not flyby_active:
@@ -482,51 +578,11 @@ func _draw_flyby() -> void:
 		_draw_santa()
 	elif flyby_type == FlybyType.INVADER:
 		_draw_invader()
+	elif flyby_type == FlybyType.DOGFIGHT:
+		_draw_dogfight()
 
 func _draw_ufo() -> void:
-	var pos := Vector2(flyby_x, flyby_y)
-	var neon := Color(0.5, 1.0, 0.8)
-	var alpha := 0.7
-	var fill := Color(0.02, 0.06, 0.05, alpha * 0.5)
-	# Glow externo
-	draw_circle(pos, 45.0, Color(neon.r, neon.g, neon.b, 0.04))
-	# Corpo — disco achatado
-	var body_rx := 35.0
-	var body_ry := 10.0
-	var pts := PackedVector2Array()
-	var cols := PackedColorArray()
-	for i in 16:
-		var angle := TAU * float(i) / 16
-		pts.append(pos + Vector2(cos(angle) * body_rx, sin(angle) * body_ry))
-		cols.append(fill)
-	draw_polygon(pts, cols)
-	for i in 16:
-		draw_line(pts[i], pts[(i + 1) % 16], Color(neon.r, neon.g, neon.b, alpha), 2.0, true)
-	# Cupula
-	var dome_pts := PackedVector2Array()
-	var dome_cols := PackedColorArray()
-	dome_pts.append(pos + Vector2(-16, 0))
-	dome_cols.append(fill)
-	for i in 9:
-		var angle := PI + PI * float(i) / 8
-		dome_pts.append(pos + Vector2(cos(angle) * 16, sin(angle) * 10 - 5))
-		dome_cols.append(fill)
-	dome_pts.append(pos + Vector2(16, 0))
-	dome_cols.append(fill)
-	draw_polygon(dome_pts, dome_cols)
-	for i in dome_pts.size() - 1:
-		draw_line(dome_pts[i], dome_pts[i + 1], Color(neon.r, neon.g, neon.b, alpha * 0.8), 1.0, true)
-	# Janelas — 3 pontos
-	for wi in 3:
-		var wx := -8.0 + wi * 8.0
-		draw_circle(pos + Vector2(wx, -6), 2.0, Color(neon.r, neon.g, neon.b, alpha * 0.7))
-	# Luzes pulsantes — 3 pontos
-	var light_pulse := (sin(anim_time * 2.5) + 1.0) * 0.5
-	var light_a := lerpf(0.2, 0.7, light_pulse)
-	for li in 3:
-		var lx := -14.0 + li * 14.0
-		draw_circle(pos + Vector2(lx, 8), 3.5, Color(neon.r, neon.g, neon.b, light_a))
-		draw_circle(pos + Vector2(lx, 8), 7.0, Color(neon.r, neon.g, neon.b, light_a * 0.25))
+	_draw_ufo_at(Vector2(flyby_x, flyby_y), 0.7, 1.0)
 
 func _draw_nyan() -> void:
 	var pos := Vector2(flyby_x, flyby_y)
@@ -808,6 +864,151 @@ func _draw_invader() -> void:
 				var px := pos.x + (col_idx * d) * s + offset_x * d
 				var py := pos.y + row * s + offset_y
 				draw_rect(Rect2(px - 0.5, py - 0.5, s * d + 1.0, s + 1.0), col_dim, false, 1.0)
+
+func _draw_jet(jpos: Vector2, d: float, alpha: float) -> void:
+	var s := 0.8  # escala do aviao
+	var neon := Color(0.3, 0.6, 1.0, alpha)
+	var neon_dim := Color(0.3, 0.6, 1.0, alpha * 0.4)
+	var fill := Color(0.02, 0.04, 0.1, alpha * 0.6)
+	var hot := Color(1.0, 0.5, 0.1, alpha * 0.6)
+	# Fuselagem lateral — perfil de caca F-16 style
+	var body := PackedVector2Array([
+		jpos + Vector2(28.0 * s * d, -1.0 * s),
+		jpos + Vector2(18.0 * s * d, -4.0 * s),
+		jpos + Vector2(4.0 * s * d, -5.0 * s),
+		jpos + Vector2(-6.0 * s * d, -4.0 * s),
+		jpos + Vector2(-22.0 * s * d, -5.0 * s),
+		jpos + Vector2(-26.0 * s * d, -4.0 * s),
+		jpos + Vector2(-26.0 * s * d, 3.0 * s),
+		jpos + Vector2(-14.0 * s * d, 4.0 * s),
+		jpos + Vector2(10.0 * s * d, 3.0 * s),
+		jpos + Vector2(22.0 * s * d, 1.0 * s),
+	])
+	draw_polygon(body, PackedColorArray([fill, fill, fill, fill, fill, fill, fill, fill, fill, fill]))
+	for i in body.size():
+		draw_line(body[i], body[(i + 1) % body.size()], neon, 1.5, true)
+	# Cockpit (bolha de vidro)
+	var cockpit := PackedVector2Array([
+		jpos + Vector2(10.0 * s * d, -5.0 * s),
+		jpos + Vector2(4.0 * s * d, -9.0 * s),
+		jpos + Vector2(-4.0 * s * d, -8.0 * s),
+		jpos + Vector2(-6.0 * s * d, -4.0 * s),
+	])
+	draw_polygon(cockpit, PackedColorArray([
+		Color(0.1, 0.3, 0.5, alpha * 0.4), Color(0.1, 0.3, 0.5, alpha * 0.4),
+		Color(0.1, 0.3, 0.5, alpha * 0.4), Color(0.1, 0.3, 0.5, alpha * 0.4)]))
+	for i in cockpit.size():
+		draw_line(cockpit[i], cockpit[(i + 1) % cockpit.size()], Color(0.5, 0.8, 1.0, alpha * 0.7), 1.0, true)
+	# Asa delta (vista lateral = triangulo fino abaixo da fuselagem)
+	var wing := PackedVector2Array([
+		jpos + Vector2(2.0 * s * d, 4.0 * s),
+		jpos + Vector2(-16.0 * s * d, 12.0 * s),
+		jpos + Vector2(-18.0 * s * d, 4.0 * s),
+	])
+	draw_polygon(wing, PackedColorArray([fill, fill, fill]))
+	for i in wing.size():
+		draw_line(wing[i], wing[(i + 1) % wing.size()], neon_dim, 1.0, true)
+	# Estabilizador vertical (cauda)
+	var stab := PackedVector2Array([
+		jpos + Vector2(-22.0 * s * d, -5.0 * s),
+		jpos + Vector2(-24.0 * s * d, -16.0 * s),
+		jpos + Vector2(-28.0 * s * d, -14.0 * s),
+		jpos + Vector2(-26.0 * s * d, -4.0 * s),
+	])
+	draw_polygon(stab, PackedColorArray([fill, fill, fill, fill]))
+	for i in stab.size():
+		draw_line(stab[i], stab[(i + 1) % stab.size()], neon, 1.0, true)
+	# Exaustão — glow laranja/azul atras
+	var exhaust := jpos + Vector2(-27.0 * s * d, 0.0)
+	var pulse := 0.5 + 0.5 * sin(nyan_anim * 15.0)
+	var flame_len := (8.0 + pulse * 6.0) * s
+	var flame_tip := exhaust + Vector2(-flame_len * d, 0.0)
+	draw_line(exhaust, flame_tip, Color(0.3, 0.6, 1.0, alpha * 0.5), 3.0, true)
+	draw_line(exhaust, flame_tip, hot, 5.0, true)
+	draw_circle(exhaust, 3.0 * s, Color(1.0, 0.8, 0.3, alpha * 0.6))
+
+func _draw_dogfight() -> void:
+	var d := flyby_direction
+	var alpha := 0.7
+	# Desenha UFO (exceto quando ja caiu)
+	if dogfight_phase != DogfightPhase.FALLING and dogfight_phase != DogfightPhase.DONE:
+		var ufo_pos := Vector2(flyby_x, flyby_y)
+		if dogfight_phase == DogfightPhase.SHOOT:
+			ufo_pos.y = dogfight_ufo_y
+			# UFO diminuindo — simular com offset e alpha
+			var sc := dogfight_ufo_scale
+			var ufo_alpha := alpha * sc
+			# Fumaca/explosao
+			if dogfight_explosion_timer > 0.0:
+				var flash_a := dogfight_explosion_timer * 2.0
+				draw_circle(ufo_pos, 30.0, Color(1.0, 0.6, 0.1, flash_a * 0.4))
+				draw_circle(ufo_pos, 15.0, Color(1.0, 0.9, 0.5, flash_a * 0.6))
+			# Trail de fumaca — sobe pra tras do UFO
+			for si in 8:
+				var st := fmod(nyan_anim * 1.5 + float(si) * 0.4, 3.0)
+				var sx := ufo_pos.x - st * 12.0 * d + sin(nyan_anim * 2.0 + float(si)) * 4.0
+				var sy := ufo_pos.y - st * 20.0
+				var sa := (1.0 - st / 3.0) * ufo_alpha * 0.5
+				var sr := 3.0 + st * 3.0  # fumaca expande conforme sobe
+				if sa > 0.02:
+					draw_circle(Vector2(sx, sy), sr, Color(0.4, 0.4, 0.4, sa))
+					draw_circle(Vector2(sx, sy), sr * 0.5, Color(0.6, 0.3, 0.1, sa * 0.3))
+			# UFO menor (simulado desenhando o UFO normal com escala visual reduzida)
+			_draw_ufo_at(ufo_pos, ufo_alpha, sc)
+		else:
+			_draw_ufo_at(ufo_pos, alpha, 1.0)
+	# Desenha caca
+	var jet_pos := Vector2(dogfight_jet_x, flyby_y)
+	var jet_alpha := alpha
+	if dogfight_phase == DogfightPhase.SHOOT and dogfight_explosion_timer > 0.1:
+		# Laser/traco do tiro
+		var shot_start := jet_pos + Vector2(22.0 * d, 0.0)
+		var shot_end := Vector2(flyby_x, dogfight_ufo_y)
+		draw_line(shot_start, shot_end, Color(1.0, 0.3, 0.1, 0.8), 2.0, true)
+		draw_line(shot_start, shot_end, Color(1.0, 0.8, 0.3, 0.3), 4.0, true)
+	_draw_jet(jet_pos, d, jet_alpha)
+
+func _draw_ufo_at(pos: Vector2, alpha: float, sc: float) -> void:
+	var neon := Color(0.5, 1.0, 0.8)
+	var fill := Color(0.02, 0.06, 0.05, alpha * 0.5)
+	# Glow externo
+	draw_circle(pos, 45.0 * sc, Color(neon.r, neon.g, neon.b, 0.04 * alpha))
+	# Corpo — disco achatado
+	var body_rx := 35.0 * sc
+	var body_ry := 10.0 * sc
+	var pts := PackedVector2Array()
+	var cols := PackedColorArray()
+	for i in 16:
+		var angle := TAU * float(i) / 16
+		pts.append(pos + Vector2(cos(angle) * body_rx, sin(angle) * body_ry))
+		cols.append(fill)
+	draw_polygon(pts, cols)
+	for i in 16:
+		draw_line(pts[i], pts[(i + 1) % 16], Color(neon.r, neon.g, neon.b, alpha), 2.0 * sc, true)
+	# Cupula
+	var dome_pts := PackedVector2Array()
+	var dome_cols := PackedColorArray()
+	dome_pts.append(pos + Vector2(-16 * sc, 0))
+	dome_cols.append(fill)
+	for i in 9:
+		var angle := PI + PI * float(i) / 8
+		dome_pts.append(pos + Vector2(cos(angle) * 16 * sc, sin(angle) * 10 * sc - 5 * sc))
+		dome_cols.append(fill)
+	dome_pts.append(pos + Vector2(16 * sc, 0))
+	dome_cols.append(fill)
+	draw_polygon(dome_pts, dome_cols)
+	for i in dome_pts.size() - 1:
+		draw_line(dome_pts[i], dome_pts[i + 1], Color(neon.r, neon.g, neon.b, alpha * 0.8), 1.0 * sc, true)
+	# Janelas
+	for wi in 3:
+		var wx := -8.0 + wi * 8.0
+		draw_circle(pos + Vector2(wx * sc, -6 * sc), 2.0 * sc, Color(neon.r, neon.g, neon.b, alpha * 0.7))
+	# Luzes pulsantes
+	var light_pulse := (sin(anim_time * 2.5) + 1.0) * 0.5
+	var light_a := lerpf(0.2, 0.7, light_pulse) * alpha
+	for li in 3:
+		var lx := -14.0 + li * 14.0
+		draw_circle(pos + Vector2(lx * sc, 8 * sc), 3.5 * sc, Color(neon.r, neon.g, neon.b, light_a))
 
 # --- HORIZONTE ---
 
