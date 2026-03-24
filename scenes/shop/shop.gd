@@ -201,6 +201,8 @@ func _calc_positions(vp: Vector2) -> void:
 	var y_offset := row_gap * 0.8
 	var margin_x := NODE_RADIUS + 8.0
 	_layout_node("ammo_pack", margin_x, vp.x - margin_x, 0, row_gap, y_offset)
+	# Centraliza os nós visíveis no viewport
+	_center_visible_nodes(vp)
 
 func _get_max_depth(key: String, depth: int) -> int:
 	if not TREE_CHILDREN.has(key):
@@ -209,6 +211,18 @@ func _get_max_depth(key: String, depth: int) -> int:
 	for child in TREE_CHILDREN[key]:
 		max_d = maxi(max_d, _get_max_depth(child, depth + 1))
 	return max_d
+
+func _count_visible_leaves(key: String) -> int:
+	if not TREE_CHILDREN.has(key):
+		# Folha: conta 1 se visivel
+		return 1 if (key == "ammo_pack" or _is_visible(key)) else 0
+	var total := 0
+	for child in TREE_CHILDREN[key]:
+		total += _count_visible_leaves(child)
+	# Se nenhum filho visivel mas EU sou visivel, conto como 1
+	if total == 0 and (key == "ammo_pack" or _is_visible(key)):
+		return 1
+	return total
 
 func _count_leaves(key: String) -> int:
 	if not TREE_CHILDREN.has(key):
@@ -224,13 +238,48 @@ func _layout_node(key: String, x_start: float, x_end: float, depth: int, y_gap: 
 	if not TREE_CHILDREN.has(key):
 		return
 	var children: Array = TREE_CHILDREN[key]
-	var total_leaves := _count_leaves(key)
-	var current_x := x_start
+	# Só distribui espaço pra filhos com nós visíveis
+	var visible_children: Array = []
 	for child in children:
-		var child_leaves := _count_leaves(child)
+		if _count_visible_leaves(child) > 0:
+			visible_children.append(child)
+	if visible_children.is_empty():
+		return
+	var total_leaves := 0
+	for child in visible_children:
+		total_leaves += _count_visible_leaves(child)
+	var current_x := x_start
+	for child in visible_children:
+		var child_leaves := _count_visible_leaves(child)
 		var child_width := (x_end - x_start) * float(child_leaves) / float(total_leaves)
 		_layout_node(child, current_x, current_x + child_width, depth + 1, y_gap, y_offset)
 		current_x += child_width
+
+func _center_visible_nodes(vp: Vector2) -> void:
+	# Coleta posições dos nós visíveis
+	var visible_positions: Array[Vector2] = []
+	for key in node_screen_positions:
+		if key == "ammo_pack" or _is_visible(key):
+			visible_positions.append(node_screen_positions[key])
+	if visible_positions.is_empty():
+		return
+	# Bounding box dos nós visíveis
+	var min_x := visible_positions[0].x
+	var max_x := visible_positions[0].x
+	var min_y := visible_positions[0].y
+	var max_y := visible_positions[0].y
+	for pos in visible_positions:
+		min_x = minf(min_x, pos.x)
+		max_x = maxf(max_x, pos.x)
+		min_y = minf(min_y, pos.y)
+		max_y = maxf(max_y, pos.y)
+	# Offset pra centralizar no viewport
+	var center_x := (min_x + max_x) / 2.0
+	var center_y := (min_y + max_y) / 2.0
+	var offset := Vector2(vp.x / 2.0 - center_x, vp.y / 2.0 - center_y)
+	# Aplica offset em TODOS os nós (visíveis e invisíveis)
+	for key in node_screen_positions:
+		node_screen_positions[key] += offset
 
 # ============================================================
 # INPUT (TAP)
@@ -291,6 +340,9 @@ func _try_buy(key: String) -> void:
 		buy_flash_time = BUY_FLASH_DURATION
 		purchase_made.emit()
 		_update_header()
+		# Recalcula posições pra mostrar novos nós desbloqueados
+		if graph_canvas:
+			_calc_positions(graph_viewport.size)
 
 # ============================================================
 # GRAPH DRAWING
@@ -379,13 +431,13 @@ func _draw_node(key: String) -> void:
 
 	if is_bought and not is_maxed:
 		var badge_pos := center + Vector2(r * 0.6, r * 0.6)
-		graph_canvas.draw_circle(badge_pos, 13.0, Color(0.1, 0.1, 0.15, 0.9))
+		graph_canvas.draw_circle(badge_pos, 20.0, Color(0.1, 0.1, 0.15, 0.9))
 		var font := ThemeDB.fallback_font
-		graph_canvas.draw_string(font, badge_pos + Vector2(-5, 6), "%d" % level, HORIZONTAL_ALIGNMENT_CENTER, 16, 16, Color.WHITE)
+		graph_canvas.draw_string(font, badge_pos + Vector2(-16, 12), "%d" % level, HORIZONTAL_ALIGNMENT_CENTER, 32, 32, Color.WHITE)
 
 	if is_maxed:
 		var font := ThemeDB.fallback_font
-		graph_canvas.draw_string(font, center + Vector2(-20, r + 18), get_node("/root/Tr").t("MAX"), HORIZONTAL_ALIGNMENT_CENTER, 40, 18, Color(1.0, 0.85, 0.0))
+		graph_canvas.draw_string(font, center + Vector2(-40, r + 24), get_node("/root/Tr").t("MAX"), HORIZONTAL_ALIGNMENT_CENTER, 80, 28, Color(1.0, 0.85, 0.0))
 
 # ============================================================
 # ICONES PROCEDURAIS (escala 1.5x)

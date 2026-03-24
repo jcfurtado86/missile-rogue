@@ -82,7 +82,6 @@ func _ready() -> void:
 		battery.reload_time = stats.reload_time
 		battery.ammo_regen_rate = stats.ammo_regen
 		add_child(battery)
-		print("BATTERY DEBUG: magazine_size=%d magazine_ammo=%d max_magazines=%d magazines=%d" % [battery.magazine_size, battery.magazine_ammo, battery.max_magazines, battery.magazines])
 		batteries.append(battery)
 
 	var city_y := screen_height - CITY_Y_OFFSET
