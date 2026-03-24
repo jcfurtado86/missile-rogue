@@ -43,7 +43,7 @@ func from_dict(data: Dictionary, upgrade_system: UpgradeSystem, ascension: Ascen
 		if saved_unlocked[key]:
 			currency.unlocked[key] = true
 	upgrade_system.boss_cleared = data.get("boss_cleared", false)
-	var saved_locale: String = data.get("locale", "pt")
+	var saved_locale: String = data.get("locale", "en")
 	if saved_locale != "":
 		locale_loaded = saved_locale
 	music_volume = data.get("music_volume", 1.0)
