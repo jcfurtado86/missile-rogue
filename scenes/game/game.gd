@@ -442,10 +442,16 @@ func _spawn_boss() -> void:
 			b.move_direction = directions[i]
 		b.ground_y = screen_height - CITY_Y_OFFSET
 		b.boss_defeated.connect(_on_boss_defeated)
+		b.boss_hit.connect(_on_boss_hit)
 		add_child(b)
 		bosses.append(b)
 		if i == 0:
 			boss = b  # primeiro boss pra compatibilidade com HUD
+
+func _on_boss_hit(auto_turret: bool) -> void:
+	if not auto_turret:
+		combo += 1
+		hud.update_combo(combo)
 
 func _on_boss_defeated() -> void:
 	get_node("/root/SoundManager").boss_defeated()
@@ -666,13 +672,13 @@ func _on_missile_exploded(hits: int) -> void:
 	# So reseta combo quando todos os misseis do burst explodiram E nenhum acertou
 	if _pending_missiles <= 0:
 		if _burst_hits == 0:
+			hud.break_combo()
 			combo = 0
-			hud.update_combo(combo)
 		_burst_hits = 0
 
 func _on_city_destroyed(city: Node2D) -> void:
+	hud.break_combo()
 	combo = 0
-	hud.update_combo(combo)
 	destroyed_order.append(city)
 	get_node("/root/SoundManager").city_nuked()
 	flash_alpha = 0.7

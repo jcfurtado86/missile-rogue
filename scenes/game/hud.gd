@@ -46,6 +46,7 @@ var popup_icon_draw: Control
 var popup_earnings_draw: Control
 var popup_tween: Tween
 var cached_earnings: Dictionary = {}
+var _pause_theme_box: HBoxContainer
 
 func _s(val: float) -> float:
 	return val * ui_scale
@@ -235,12 +236,24 @@ func _on_pause_pressed() -> void:
 	scanline_toggle.toggled.connect(func(on: bool): main_node.set_scanlines(on))
 	scanline_box.add_child(scanline_toggle)
 
+	# Seletor de tema
+	var theme_box := HBoxContainer.new()
+	theme_box.offset_left = _s(60.0)
+	theme_box.offset_top = _s(330.0)
+	theme_box.offset_right = _s(440.0)
+	theme_box.offset_bottom = _s(390.0)
+	theme_box.alignment = BoxContainer.ALIGNMENT_CENTER
+	theme_box.add_theme_constant_override("separation", _sf(8))
+	panel.add_child(theme_box)
+	_pause_theme_box = theme_box
+	_populate_pause_themes()
+
 	# Botoes
 	var btn_box := VBoxContainer.new()
 	btn_box.offset_left = _s(80.0)
-	btn_box.offset_top = _s(350.0)
+	btn_box.offset_top = _s(410.0)
 	btn_box.offset_right = _s(420.0)
-	btn_box.offset_bottom = _s(550.0)
+	btn_box.offset_bottom = _s(560.0)
 	btn_box.alignment = BoxContainer.ALIGNMENT_CENTER
 	btn_box.add_theme_constant_override("separation", _sf(20))
 	panel.add_child(btn_box)
@@ -269,6 +282,34 @@ func _on_pause_pressed() -> void:
 	btn_box.add_child(quit_btn)
 
 	_show_popup(panel)
+
+func _populate_pause_themes() -> void:
+	for child in _pause_theme_box.get_children():
+		child.queue_free()
+	var theme_label := Label.new()
+	theme_label.text = get_node("/root/Tr").t("THEMES_SECTION")
+	theme_label.add_theme_font_size_override("font_size", _sf(18))
+	theme_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
+	_pause_theme_box.add_child(theme_label)
+	for theme_id in ["neon", "gameboy", "ascii"]:
+		if not Themes.is_unlocked(theme_id):
+			continue
+		var is_current: bool = Themes.current_theme == theme_id
+		var tbtn := Button.new()
+		tbtn.text = get_node("/root/Tr").t("THEME_" + theme_id)
+		tbtn.add_theme_font_size_override("font_size", _sf(16))
+		tbtn.custom_minimum_size = Vector2(_s(100), _s(45))
+		var tcol: Color = Themes.ui("primary") if is_current else Color(0.5, 0.5, 0.5)
+		_style_popup_button(tbtn, tcol)
+		if is_current:
+			tbtn.disabled = true
+		else:
+			var tid: String = theme_id
+			tbtn.pressed.connect(func():
+				Themes.set_theme_id(tid)
+				_populate_pause_themes()
+			)
+		_pause_theme_box.add_child(tbtn)
 
 func _reposition_for_screen() -> void:
 	var screen := get_viewport().get_visible_rect().size
@@ -421,6 +462,26 @@ func _process(delta: float) -> void:
 		col = c_hot.lerp(Themes.ui("text_primary"), flash * 0.4)
 	combo_label.add_theme_color_override("font_color", col)
 	combo_label.add_theme_color_override("font_outline_color", Color(col.r * 0.3, col.g * 0.3, col.b * 0.3))
+
+func break_combo() -> void:
+	if combo_value < 2:
+		return
+	get_node("/root/SoundManager").combo_break()
+	# Animacao de quebra — encolhe, rotaciona e some
+	if combo_tween and combo_tween.is_valid():
+		combo_tween.kill()
+	combo_tween = create_tween().set_parallel(true)
+	combo_label.add_theme_color_override("font_color", Themes.ui("text_warning"))
+	combo_tween.tween_property(combo_label, "scale", Vector2(0.3, 0.3), 0.3).set_ease(Tween.EASE_IN)
+	combo_tween.tween_property(combo_label, "rotation", randf_range(-0.3, 0.3), 0.3)
+	combo_tween.tween_property(combo_label, "modulate:a", 0.0, 0.3)
+	combo_tween.chain().tween_callback(func():
+		combo_label.visible = false
+		combo_label.rotation = 0.0
+		combo_label.scale = Vector2.ONE
+		combo_label.modulate.a = 1.0
+		combo_label.add_theme_color_override("font_color", Themes.ui("hud_combo"))
+	)
 
 func update_combo(value: int) -> void:
 	combo_value = value

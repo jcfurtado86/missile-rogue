@@ -161,7 +161,7 @@ func _ready() -> void:
 		graph_viewport.visible = true
 		scroll_container.visible = false
 		_setup_graph()
-		_build_theme_selector()
+		pass
 
 	_update_header()
 
@@ -716,8 +716,8 @@ func _build_theme_section() -> void:
 	section_label.add_theme_color_override("font_color", eter_col)
 	section_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	item_container.add_child(section_label)
-	# Temas
-	for theme_id in ["neon", "gameboy", "ascii"]:
+	# Temas (neon ja vem desbloqueado, nao precisa aparecer)
+	for theme_id in ["gameboy", "ascii"]:
 		var item = _create_theme_item(theme_id)
 		item_container.add_child(item)
 

@@ -16,6 +16,7 @@ var stream_ui_click: AudioStreamWAV
 var stream_purchase: AudioStreamWAV
 var stream_boss_spawn: AudioStreamWAV
 var stream_boss_defeated: AudioStreamWAV
+var stream_combo_break: AudioStreamWAV
 
 # Referencia da musica para controle de pitch
 var music_player: AudioStreamPlayer = null
@@ -51,6 +52,7 @@ func _ready() -> void:
 	stream_purchase = _gen_purchase()
 	stream_boss_spawn = _gen_boss_spawn()
 	stream_boss_defeated = _gen_boss_defeated()
+	stream_combo_break = _gen_combo_break()
 	_start_music()
 
 func _start_music() -> void:
@@ -119,13 +121,17 @@ func purchase() -> void:
 
 func _on_node_added(node: Node) -> void:
 	if node is Button and not node.has_meta("no_click_sfx"):
-		node.ready.connect(func():
-			if not node.has_meta("no_click_sfx"):
-				node.pressed.connect(ui_click)
-		)
+		node.ready.connect(_connect_button_click.bind(node))
+
+func _connect_button_click(node: Node) -> void:
+	if is_instance_valid(node) and not node.has_meta("no_click_sfx"):
+		node.pressed.connect(ui_click)
 
 func intercept(pitch_variation := 0.15) -> void:
 	_play(stream_intercept, -7.0, randf_range(1.0 - pitch_variation, 1.0 + pitch_variation))
+
+func combo_break() -> void:
+	_play(stream_combo_break, -5.0, 1.0)
 
 func boss_spawn() -> void:
 	_play(stream_boss_spawn, -2.0, 1.0)
@@ -442,6 +448,33 @@ func _gen_boss_defeated() -> AudioStreamWAV:
 		var echo := (randf() * 2.0 - 1.0) * 0.3 * echo_env + sin(TAU * 60.0 * t) * 0.3 * echo_env
 		var sample := (sub + shockwave + noise + debris + rumble + triumph + echo + impact1 + impact2 + impact3) * env
 		var s16 := clampi(int(sample * 20000.0), -32768, 32767)
+		data[i * 2] = s16 & 0xFF
+		data[i * 2 + 1] = (s16 >> 8) & 0xFF
+	var wav := AudioStreamWAV.new()
+	wav.format = AudioStreamWAV.FORMAT_16_BITS
+	wav.mix_rate = sample_rate
+	wav.data = data
+	return wav
+
+func _gen_combo_break() -> AudioStreamWAV:
+	# Combo quebrado: sweep descendente rapido + ruido de vidro
+	var sample_rate := 22050
+	var duration := 0.35
+	var num_samples := int(sample_rate * duration)
+	var data := PackedByteArray()
+	data.resize(num_samples * 2)
+	for i in num_samples:
+		var t := float(i) / sample_rate
+		var env := clampf(1.0 - t / duration, 0.0, 1.0)
+		env = pow(env, 1.5)
+		# Sweep descendente (800Hz -> 80Hz)
+		var sweep := sin(TAU * lerpf(800.0, 80.0, t / duration) * t) * 0.4
+		# Ruido de vidro quebrando (curto)
+		var glass := (randf() * 2.0 - 1.0) * 0.5 * clampf(1.0 - t / 0.08, 0.0, 1.0)
+		# Tom dissonante
+		var dissonant := sin(TAU * 150.0 * t + sin(TAU * 47.0 * t) * 8.0) * 0.2
+		var sample := (sweep + glass + dissonant) * env
+		var s16 := clampi(int(sample * 22000.0), -32768, 32767)
 		data[i * 2] = s16 & 0xFF
 		data[i * 2 + 1] = (s16 >> 8) & 0xFF
 	var wav := AudioStreamWAV.new()

@@ -2,6 +2,7 @@ extends Area2D
 
 signal destroyed(enemy: Area2D, auto_turret: bool)
 signal boss_defeated
+signal boss_hit(auto_turret: bool)
 
 var data := EnemyData.new(EnemyData.Type.BOSS)
 
@@ -218,10 +219,11 @@ func _fire_burst() -> void:
 
 func _on_area_entered(area: Area2D) -> void:
 	if area.collision_layer == 1:
+		var auto: bool = area.get("is_auto_turret") == true
 		data.take_damage(1)
 		queue_redraw()
+		boss_hit.emit(auto)
 		if data.is_dead():
-			var auto: bool = area.get("is_auto_turret") == true
 			_spawn_boss_explosion()
 			boss_defeated.emit()
 			destroyed.emit(self, auto)
