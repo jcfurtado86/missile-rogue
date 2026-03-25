@@ -156,7 +156,7 @@ const STRINGS := {
 	# ===== TEMAS =====
 	"THEMES_SECTION": { "pt": "— TEMAS —", "en": "— THEMES —", "es": "— TEMAS —", "fr": "— THÈMES —", "zh": "— 主题 —" },
 	"THEME_neon": { "pt": "Neon Retro", "en": "Neon Retro", "es": "Neon Retro", "fr": "Néon Rétro", "zh": "霓虹复古" },
-	"THEME_gameboy": { "pt": "GameBoy Classic", "en": "GameBoy Classic", "es": "GameBoy Clásico", "fr": "GameBoy Classique", "zh": "GameBoy经典" },
+	"THEME_gameboy": { "pt": "Pocket Classic", "en": "Pocket Classic", "es": "Pocket Classic", "fr": "Pocket Classic", "zh": "Pocket Classic" },
 	"THEME_ascii": { "pt": "ASCII Terminal", "en": "ASCII Terminal", "es": "ASCII Terminal", "fr": "Terminal ASCII", "zh": "ASCII终端" },
 	"THEME_DESC_neon": { "pt": "Visual neon cyberpunk", "en": "Cyberpunk neon look", "es": "Visual neón cyberpunk", "fr": "Style néon cyberpunk", "zh": "赛博朋克霓虹风格" },
 	"THEME_DESC_gameboy": { "pt": "4 tons de verde, pixels gigantes", "en": "4 shades of green, giant pixels", "es": "4 tonos de verde, píxeles gigantes", "fr": "4 tons de vert, pixels géants", "zh": "4种绿色，巨型像素" },

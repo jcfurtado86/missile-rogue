@@ -226,7 +226,12 @@ func _on_pause_pressed() -> void:
 	var main_node = get_node("/root/Main")
 	scanline_toggle.button_pressed = main_node.save_system.scanlines_enabled
 	scanline_toggle.toggled.connect(func(on: bool): main_node.set_scanlines(on))
-	scanline_row.add_child(scanline_toggle)
+	var toggle_wrap := Control.new()
+	var sc := 2.5
+	toggle_wrap.custom_minimum_size = Vector2(_s(60) * sc, _s(30) * sc)
+	scanline_toggle.scale = Vector2(sc, sc)
+	toggle_wrap.add_child(scanline_toggle)
+	scanline_row.add_child(toggle_wrap)
 
 	# Tema (so mostra se tiver mais de 1 desbloqueado)
 	var unlocked_themes: Array[String] = []
@@ -260,6 +265,7 @@ func _on_pause_pressed() -> void:
 			var sel_tid: String = theme_dropdown.get_item_metadata(index)
 			Themes.set_theme_id(sel_tid)
 			_force_redraw_all()
+			get_node("/root/Main")._save_game()
 		)
 		var popup: PopupMenu = theme_dropdown.get_popup()
 		popup.add_theme_font_size_override("font_size", _sf(28))
