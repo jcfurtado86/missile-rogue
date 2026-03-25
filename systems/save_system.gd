@@ -24,6 +24,7 @@ func to_dict(upgrade_system: UpgradeSystem, ascension: AscensionSystem, currency
 		"ascension_count": ascension.get_ascension_count(),
 		"total_eter": ascension.get_total_eter(),
 		"unlocked_currencies": currency.unlocked.duplicate(),
+		"total_earned": currency.total_earned,
 		"boss_cleared": upgrade_system.boss_cleared,
 		"locale": locale_loaded,
 		"music_volume": music_volume,
@@ -46,6 +47,7 @@ func from_dict(data: Dictionary, upgrade_system: UpgradeSystem, ascension: Ascen
 	for key in saved_unlocked:
 		if saved_unlocked[key]:
 			currency.unlocked[key] = true
+	currency.total_earned = data.get("total_earned", 0)
 	upgrade_system.boss_cleared = data.get("boss_cleared", false)
 	var saved_locale: String = data.get("locale", "en")
 	if saved_locale != "":

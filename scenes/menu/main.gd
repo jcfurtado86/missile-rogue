@@ -93,7 +93,7 @@ func _open_ascension() -> void:
 	current_scene = ascension
 
 func _on_ascension_confirmed() -> void:
-	var eter_gained = ascension_system.calculate_eter(upgrade_system)
+	var eter_gained = ascension_system.calculate_eter(currency)
 	ascension_system.total_eter += eter_gained
 	currency.add("eter", eter_gained)
 	ascension_system.ascension_count += 1
@@ -104,7 +104,7 @@ func _on_ascension_confirmed() -> void:
 		upgrade_system.reset_tiers(1, 3)
 	if not keep_currencies:
 		currency.reset_run_currencies()
-	upgrade_system.total_invested = 0
+	currency.total_earned = 0
 	_save_game()
 	_open_eter_shop()
 

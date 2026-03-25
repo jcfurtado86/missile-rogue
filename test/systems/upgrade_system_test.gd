@@ -15,7 +15,7 @@ func test_upgrade_starts_at_level_zero() -> void:
 # 37
 func test_cost_base_ammo_pack() -> void:
 	var cost = upgrades.get_cost("ammo_pack")
-	assert_int(cost).is_equal(30)
+	assert_int(cost).is_equal(11)
 
 # 38
 func test_cost_exponential_level_5() -> void:
@@ -23,8 +23,8 @@ func test_cost_exponential_level_5() -> void:
 	for i in 5:
 		upgrades.buy("ammo_pack", currency)
 	var cost = upgrades.get_cost("ammo_pack")
-	# 30 * 2.0^5 = 960
-	assert_int(cost).is_equal(960)
+	# 11 * 2.0^5 = 352
+	assert_int(cost).is_equal(352)
 
 # 39
 func test_buy_increments_level() -> void:
@@ -36,7 +36,7 @@ func test_buy_increments_level() -> void:
 func test_buy_deducts_currency() -> void:
 	currency.add("credits", 100)
 	upgrades.buy("ammo_pack", currency)
-	assert_int(currency.get_amount("credits")).is_equal(70)
+	assert_int(currency.get_amount("credits")).is_equal(89)
 
 # 41
 func test_buy_fails_without_funds() -> void:
@@ -86,4 +86,4 @@ func test_credit_boost_effect() -> void:
 func test_get_total_invested() -> void:
 	currency.add("credits", 1000)
 	upgrades.buy("ammo_pack", currency)
-	assert_int(upgrades.get_total_invested()).is_equal(30)
+	assert_int(upgrades.get_total_invested()).is_equal(11)

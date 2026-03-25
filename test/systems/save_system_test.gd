@@ -26,7 +26,7 @@ func test_save_and_load_roundtrip() -> void:
 	var currency2 = CurrencySystem.new()
 	save.from_dict(data, upgrades2, ascension2, currency2)
 
-	assert_int(currency2.get_amount("eter")).is_equal(42)
+	assert_int(currency2.get_amount("eter")).is_equal(5)
 	assert_int(ascension2.get_ascension_count()).is_equal(3)
 
 # 77

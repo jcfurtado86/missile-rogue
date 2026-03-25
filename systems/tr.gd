@@ -86,7 +86,7 @@ const STRINGS := {
 	"ASC_CONFIRM": { "pt": "ASCENDER", "en": "ASCEND", "es": "ASCENDER", "fr": "ASCENSION", "zh": "飞升" },
 	"ETER_GAINED": { "pt": "ÉTER GANHO", "en": "ETHER GAINED", "es": "ÉTER GANADO", "fr": "ÉTHER GAGNÉ", "zh": "获得以太" },
 	"ETER_TOTAL_FMT": { "pt": "ÉTER TOTAL: %d → %d", "en": "TOTAL ETHER: %d → %d", "es": "ÉTER TOTAL: %d → %d", "fr": "ÉTHER TOTAL: %d → %d", "zh": "以太总量：%d → %d" },
-	"INVESTED_FMT": { "pt": "INVESTIDO: %d / %d", "en": "INVESTED: %d / %d", "es": "INVERTIDO: %d / %d", "fr": "INVESTI: %d / %d", "zh": "已投资：%d / %d" },
+	"EARNED_FMT": { "pt": "GANHO: %d / %d", "en": "EARNED: %d / %d", "es": "GANADO: %d / %d", "fr": "GAGNÉ: %d / %d", "zh": "已获得：%d / %d" },
 	"ASC_COUNT_FMT": { "pt": "ASCENSÕES: %d", "en": "ASCENSIONS: %d", "es": "ASCENSIONES: %d", "fr": "ASCENSIONS: %d", "zh": "飞升次数：%d" },
 
 	# ===== NOMES DE UPGRADE =====

@@ -13,23 +13,16 @@ func before_test() -> void:
 # 69
 func test_eter_calculation() -> void:
 	currency.add("credits", 500)
-	upgrades.buy("ammo_pack", currency)  # costs 30
-	upgrades.buy("ammo_pack", currency)  # costs 60
-	upgrades.buy("ammo_pack", currency)  # costs 120
-	# Total invested = 30 + 60 + 120 = 210
-	var eter = ascension.calculate_eter(upgrades)
-	assert_int(eter).is_equal(int(upgrades.get_total_invested() / 200.0))
+	# total_earned = 500
+	var eter = ascension.calculate_eter(currency)
+	assert_int(eter).is_equal(int(currency.get_total_earned() / 200.0))
 
 # 70
 func test_eter_calculation_large() -> void:
 	currency.add("credits", 100000)
-	for i in 8:
-		upgrades.buy("ammo_pack", currency)
-	upgrades.buy("warhead", currency)
-	for i in 5:
-		upgrades.buy("hyper_drive", currency)
-	var eter = ascension.calculate_eter(upgrades)
-	assert_int(eter).is_equal(int(upgrades.get_total_invested() / 200.0))
+	# total_earned = 100000, eter = 100000 / 200 = 500
+	var eter = ascension.calculate_eter(currency)
+	assert_int(eter).is_equal(500)
 
 # 71
 func test_ascension_resets_tiers_1_2_3() -> void:
@@ -50,15 +43,11 @@ func test_ascension_resets_run_currencies() -> void:
 # 73
 func test_eter_accumulates_across_ascensions() -> void:
 	currency.add("credits", 100000)
-	for i in 4:
-		upgrades.buy("ammo_pack", currency)
-	var first_eter = ascension.calculate_eter(upgrades)
+	var first_eter = ascension.calculate_eter(currency)
 	assert_int(first_eter).is_greater(0)
 	ascension.perform_ascension(upgrades, currency)
 
 	currency.add("credits", 100000)
-	for i in 4:
-		upgrades.buy("ammo_pack", currency)
 	ascension.perform_ascension(upgrades, currency)
 
 	assert_int(ascension.get_total_eter()).is_greater(first_eter)

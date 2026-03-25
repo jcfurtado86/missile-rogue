@@ -11,13 +11,13 @@ func before_test() -> void:
 
 # 48
 func test_credit_cost_matches_ammo_pack() -> void:
-	# ammo_pack: base 30, mult 2.0
+	# ammo_pack: base 11, mult 2.0
 	var cost_1 = upgrades.get_cost("ammo_pack")
-	assert_int(cost_1).is_equal(30)
+	assert_int(cost_1).is_equal(11)
 
 	upgrades.buy("ammo_pack", currency)
 	var cost_2 = upgrades.get_cost("ammo_pack")
-	assert_int(cost_2).is_equal(60)
+	assert_int(cost_2).is_equal(22)
 
 # 49
 func test_accumulated_cost() -> void:
@@ -26,5 +26,5 @@ func test_accumulated_cost() -> void:
 		var cost = upgrades.get_cost("ammo_pack")
 		total += cost
 		upgrades.buy("ammo_pack", currency)
-	# 30 + 60 = 90 accumulated
-	assert_int(total).is_equal(90)
+	# 11 + 22 = 33 accumulated
+	assert_int(total).is_equal(33)

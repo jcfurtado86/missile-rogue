@@ -8,6 +8,8 @@ var wallet: Dictionary = {
 	"eter": 0,
 }
 
+var total_earned: int = 0
+
 var unlocked: Dictionary = {
 	"credits": true,
 	"crystals": false,
@@ -19,6 +21,8 @@ func add(type: String, amount: int) -> void:
 	wallet[type] += amount
 	if amount > 0 and not unlocked.get(type, false):
 		unlocked[type] = true
+	if amount > 0 and type in ["credits", "crystals", "void"]:
+		total_earned += amount
 
 func is_unlocked(type: String) -> bool:
 	return unlocked.get(type, false)
@@ -31,6 +35,9 @@ func spend(type: String, amount: int) -> bool:
 
 func get_amount(type: String) -> int:
 	return wallet[type]
+
+func get_total_earned() -> int:
+	return total_earned
 
 func reset_run_currencies() -> void:
 	wallet["credits"] = 0

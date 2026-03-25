@@ -5,12 +5,12 @@ var ascension_count: int = 0
 var total_eter: int = 0
 var conversion_factor: int = 200
 
-func calculate_eter(upgrade_system: UpgradeSystem) -> int:
+func calculate_eter(currency: CurrencySystem) -> int:
 	@warning_ignore("integer_division")
-	return upgrade_system.get_total_invested() / conversion_factor
+	return currency.get_total_earned() / conversion_factor
 
 func perform_ascension(upgrade_system: UpgradeSystem, currency: CurrencySystem) -> void:
-	var eter_gained = calculate_eter(upgrade_system)
+	var eter_gained = calculate_eter(currency)
 	total_eter += eter_gained
 	currency.add("eter", eter_gained)
 	var keep_upgrades := upgrade_system.get_effect("eternal_knowledge") > 0
@@ -19,7 +19,7 @@ func perform_ascension(upgrade_system: UpgradeSystem, currency: CurrencySystem) 
 		upgrade_system.reset_tiers(1, 3)
 	if not keep_currencies:
 		currency.reset_run_currencies()
-	upgrade_system.total_invested = 0
+	currency.total_earned = 0
 	ascension_count += 1
 
 func get_ascension_count() -> int:

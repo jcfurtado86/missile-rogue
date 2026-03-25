@@ -14,7 +14,7 @@ var icon_draw: Control
 var eter_draw: Control
 var eter_gain := 0
 var eter_old := 0
-var total_invested := 0
+var total_earned := 0
 
 const ETER_COL := Color(1.0, 0.5, 0.0)
 const GEM_COL := Color(1.0, 0.5, 0.0)
@@ -254,9 +254,9 @@ func _draw_eter_info(c: Control) -> void:
 	var w := c.size.x
 	var y := 10.0
 
-	eter_gain = ascension_system.calculate_eter(upgrade_system)
+	eter_gain = ascension_system.calculate_eter(currency)
 	eter_old = ascension_system.get_total_eter()
-	total_invested = upgrade_system.get_total_invested()
+	total_earned = currency.get_total_earned()
 
 	# Eter ganho
 	var gain_text = tr_node.t("ETER_GAINED")
@@ -286,7 +286,7 @@ func _draw_eter_info(c: Control) -> void:
 	y += 32
 
 	# Invested
-	var inv_text = tr_node.t("INVESTED_FMT") % [total_invested, ascension_system.conversion_factor]
+	var inv_text = tr_node.t("EARNED_FMT") % [total_earned, ascension_system.conversion_factor]
 	var inv_tw := font.get_string_size(inv_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 18).x
 	c.draw_string(font, Vector2((w - inv_tw) / 2.0, y + 15), inv_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color(0.5, 0.5, 0.5))
 	y += 28
