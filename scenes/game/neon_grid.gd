@@ -4,13 +4,17 @@ var screen_size: Vector2
 var horizon_y: float
 const MARGIN := 200.0  # margem extra pra cobrir qualquer tela
 
-# Cores do gradiente do ceu
-const SKY_TOP := Color(0.02, 0.01, 0.08)
-const SKY_MID := Color(0.08, 0.01, 0.15)
-const SKY_HORIZON := Color(0.4, 0.0, 0.35)
+# Cores do gradiente do ceu (via tema)
+var SKY_TOP: Color:
+	get: return Themes.c("sky_top")
+var SKY_MID: Color:
+	get: return Themes.c("sky_mid")
+var SKY_HORIZON: Color:
+	get: return Themes.c("sky_horizon")
 
-# Cores do grid
-const FLOOR_DARK := Color(0.06, 0.0, 0.1)
+# Cores do grid (via tema)
+var FLOOR_DARK: Color:
+	get: return Themes.c("floor_dark")
 
 # Cenario
 enum Scenery { CITY, MOUNTAINS }
@@ -256,6 +260,9 @@ func _draw() -> void:
 # --- CEU ---
 
 func _draw_sky() -> void:
+	if Themes.mode == ThemeSystem.Mode.ASCII:
+		_draw_ascii_sky()
+		return
 	var steps := 80
 	var band_h := horizon_y / steps
 	for i in steps:
@@ -272,8 +279,11 @@ func _draw_sky() -> void:
 # --- CIDADE ---
 
 func _draw_city() -> void:
-	_draw_building_layer(skyline_back, Color(0.04, 0.01, 0.07), Color(0.6, 0.0, 0.8, 0.15), Color(0.6, 0.0, 0.8, 0.08))
-	_draw_building_layer(skyline_front, Color(0.015, 0.005, 0.025), Color(1.0, 0.0, 0.6, 0.3), Color(1.0, 0.0, 0.6, 0.12))
+	if Themes.mode == ThemeSystem.Mode.ASCII:
+		_draw_ascii_city()
+		return
+	_draw_building_layer(skyline_back, Themes.c("building_back_fill"), Themes.c("building_back_outline"), Themes.c("building_back_window"))
+	_draw_building_layer(skyline_front, Themes.c("building_front_fill"), Themes.c("building_front_outline"), Themes.c("building_front_window"))
 
 func _draw_building_layer(buildings: Array[Dictionary], fill_color: Color, outline_color: Color, window_color: Color) -> void:
 	for b in buildings:
@@ -322,9 +332,9 @@ func _draw_building_layer(buildings: Array[Dictionary], fill_color: Color, outli
 			var blink_phase := fmod(absf(bx * 0.13 + bw * 0.3), TAU)
 			var blink_val := sin(anim_time / blink_period + blink_phase)
 			var light_alpha := 1.0 if blink_val > 0.3 else 0.15
-			draw_circle(Vector2(mid_x, antenna_top), 8.0, Color(1.0, 0.0, 0.3, light_alpha * 0.12))
-			draw_circle(Vector2(mid_x, antenna_top), 4.0, Color(1.0, 0.0, 0.3, light_alpha * 0.5))
-			draw_circle(Vector2(mid_x, antenna_top), 2.0, Color(1.0, 0.3, 0.5, light_alpha))
+			draw_circle(Vector2(mid_x, antenna_top), 8.0, Themes.glow("warning", light_alpha * 0.12))
+			draw_circle(Vector2(mid_x, antenna_top), 4.0, Themes.c("warning", light_alpha * 0.5))
+			draw_circle(Vector2(mid_x, antenna_top), 2.0, Themes.c("warning", light_alpha))
 
 		var num_win: int = b["num_windows"]
 		if num_win >= 2:
@@ -344,17 +354,20 @@ func _draw_building_layer(buildings: Array[Dictionary], fill_color: Color, outli
 # --- MONTANHAS ---
 
 func _draw_mountains() -> void:
+	if Themes.mode == ThemeSystem.Mode.ASCII:
+		_draw_ascii_mountains()
+		return
 	var pulse := (sin(anim_time * 0.5) + 1.0) * 0.5
 
 	# Camada de fundo — picos altos, roxo distante
 	var back_outline_alpha := lerpf(0.2, 0.5, pulse)
 	var back_glow_alpha := lerpf(0.05, 0.2, pulse)
-	_draw_mountain_ridge(mountains_back, Color(0.6, 0.0, 0.8), back_outline_alpha, back_glow_alpha, 0.6)
+	_draw_mountain_ridge(mountains_back, Themes.c("mountain_back"), back_outline_alpha, back_glow_alpha, 0.6)
 
 	# Camada da frente — picos menores, magenta proxima
 	var front_outline_alpha := lerpf(0.3, 0.8, pulse)
 	var front_glow_alpha := lerpf(0.08, 0.35, pulse)
-	_draw_mountain_ridge(mountains_front, Color(1.0, 0.0, 0.6), front_outline_alpha, front_glow_alpha, 1.0)
+	_draw_mountain_ridge(mountains_front, Themes.c("mountain_front"), front_outline_alpha, front_glow_alpha, 1.0)
 
 func _draw_mountain_ridge(layer: Array[Dictionary], base_color: Color, outline_alpha: float, glow_alpha: float, shade_mult: float) -> void:
 	for entry in layer:
@@ -1013,20 +1026,24 @@ func _draw_ufo_at(pos: Vector2, alpha: float, sc: float) -> void:
 # --- HORIZONTE ---
 
 func _draw_horizon() -> void:
+	if Themes.mode == ThemeSystem.Mode.ASCII:
+		_draw_ascii_horizon()
+		return
 	var left := -MARGIN
 	var right := screen_size.x + MARGIN
+	var h_col := Themes.c("horizon_line")
 	for i in range(40, 0, -1):
 		var alpha := 0.02 * (1.0 - float(i) / 40.0)
 		var spread := float(i) * 3.0
-		draw_line(Vector2(left, horizon_y - spread), Vector2(right, horizon_y - spread), Color(1.0, 0.0, 0.5, alpha), 2.0, true)
+		draw_line(Vector2(left, horizon_y - spread), Vector2(right, horizon_y - spread), Color(h_col.r, h_col.g, h_col.b, alpha), 2.0, true)
 
 	for i in range(20, 0, -1):
 		var alpha := 0.03 * (1.0 - float(i) / 20.0)
 		var spread := float(i) * 2.0
-		draw_line(Vector2(left, horizon_y + spread), Vector2(right, horizon_y + spread), Color(1.0, 0.0, 0.5, alpha), 2.0, true)
+		draw_line(Vector2(left, horizon_y + spread), Vector2(right, horizon_y + spread), Color(h_col.r, h_col.g, h_col.b, alpha), 2.0, true)
 
-	draw_line(Vector2(left, horizon_y), Vector2(right, horizon_y), Color(1.0, 0.3, 0.8, 0.9), 3.0, true)
-	draw_line(Vector2(left, horizon_y), Vector2(right, horizon_y), Color(1.0, 0.8, 1.0, 0.5), 1.5, true)
+	draw_line(Vector2(left, horizon_y), Vector2(right, horizon_y), Color(h_col.r, h_col.g, h_col.b, 0.9), 3.0, true)
+	draw_line(Vector2(left, horizon_y), Vector2(right, horizon_y), Color(minf(h_col.r + 0.3, 1.0), minf(h_col.g + 0.3, 1.0), minf(h_col.b + 0.3, 1.0), 0.5), 1.5, true)
 
 # --- CHAO E GRID ---
 
@@ -1034,18 +1051,22 @@ func _draw_floor() -> void:
 	draw_rect(Rect2(-MARGIN, horizon_y, screen_size.x + MARGIN * 2, screen_size.y - horizon_y + MARGIN), FLOOR_DARK)
 
 func _draw_perspective_grid() -> void:
+	if Themes.mode == ThemeSystem.Mode.ASCII:
+		_draw_ascii_grid()
+		return
 	var vanish := Vector2(screen_size.x / 2.0, horizon_y)
 	var floor_h := screen_size.y - horizon_y
 	var bottom := screen_size.y
 
+	var g_col := Themes.c("horizon_line")
 	var num_lines := 6
 	var extra_lines := 4  # linhas extras fora da tela pra cobrir todo o chao
 	for i in range(-num_lines - extra_lines, num_lines + extra_lines + 1):
 		var bottom_x := vanish.x + (float(i) / num_lines) * screen_size.x * 1.2
 		var alpha := lerpf(0.7, 0.15, clampf(absf(float(i) / num_lines), 0.0, 1.0))
 		var width := 1.5 if i == 0 else 1.0
-		draw_line(vanish, Vector2(bottom_x, bottom), Color(1.0, 0.0, 0.8, alpha * 0.15), width + 4.0, true)
-		draw_line(vanish, Vector2(bottom_x, bottom), Color(1.0, 0.0, 0.8, alpha), width, true)
+		draw_line(vanish, Vector2(bottom_x, bottom), Color(g_col.r, g_col.g, g_col.b, alpha * 0.15), width + 4.0, true)
+		draw_line(vanish, Vector2(bottom_x, bottom), Color(g_col.r, g_col.g, g_col.b, alpha), width, true)
 
 	var num_h_lines := 6
 	for i in range(1, num_h_lines + 1):
@@ -1054,5 +1075,82 @@ func _draw_perspective_grid() -> void:
 		var y := horizon_y + perspective_t * floor_h
 		var alpha := lerpf(0.15, 0.6, t)
 		var width := lerpf(0.5, 1.5, t)
-		draw_line(Vector2(-MARGIN, y), Vector2(screen_size.x + MARGIN, y), Color(1.0, 0.0, 0.8, alpha * 0.2), width + 3.0, true)
-		draw_line(Vector2(-MARGIN, y), Vector2(screen_size.x + MARGIN, y), Color(1.0, 0.0, 0.8, alpha), width, true)
+		draw_line(Vector2(-MARGIN, y), Vector2(screen_size.x + MARGIN, y), Color(g_col.r, g_col.g, g_col.b, alpha * 0.2), width + 3.0, true)
+		draw_line(Vector2(-MARGIN, y), Vector2(screen_size.x + MARGIN, y), Color(g_col.r, g_col.g, g_col.b, alpha), width, true)
+
+# ============================================================
+# ASCII DRAWING MODES
+# ============================================================
+
+func _draw_ascii_sky() -> void:
+	var font := ThemeDB.fallback_font
+	# Fill sky with solid color
+	draw_rect(Rect2(-MARGIN, 0, screen_size.x + MARGIN * 2, horizon_y), Themes.c("sky_top"))
+	# Scattered "." as stars using anim_time seeded positions
+	var star_col := Themes.c("primary", 0.1)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = int(anim_time * 0.1) * 1000 + 42
+	var num_stars := 60
+	for i in num_stars:
+		var sx := rng.randf_range(0.0, screen_size.x)
+		var sy := rng.randf_range(20.0, horizon_y - 20.0)
+		draw_string(font, Vector2(sx, sy), ".", HORIZONTAL_ALIGNMENT_LEFT, -1, 20, star_col)
+
+func _draw_ascii_city() -> void:
+	var font := ThemeDB.fallback_font
+	var col := Themes.c("building_front_outline")
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 7777
+	var x := 0.0
+	while x < screen_size.x:
+		var bw := rng.randf_range(30.0, 70.0)
+		var bh := rng.randf_range(3, 8)
+		var gap := rng.randf_range(5.0, 15.0)
+		# Draw building as stacked "#" columns
+		for row in bh:
+			var y := horizon_y - float(row) * 16.0
+			var num_chars := int(bw / 14.0)
+			for c_i in num_chars:
+				draw_string(font, Vector2(x + float(c_i) * 14.0, y), "#", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, col)
+		x += bw + gap
+
+func _draw_ascii_mountains() -> void:
+	var font := ThemeDB.fallback_font
+	var col := Themes.c("mountain_front")
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 8888
+	var x := 0.0
+	while x < screen_size.x:
+		var peak_w := rng.randf_range(60.0, 140.0)
+		var peak_h := rng.randf_range(3, 7)
+		var center_x := x + peak_w / 2.0
+		# Draw /\ mountain shape
+		for row in peak_h:
+			var y := horizon_y - float(peak_h - row) * 16.0
+			var half := row + 1
+			# Left slope "/"
+			draw_string(font, Vector2(center_x - float(half) * 10.0, y), "/", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, col)
+			# Right slope "\"
+			draw_string(font, Vector2(center_x + float(half) * 10.0 - 10.0, y), "\\", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, col)
+		x += peak_w
+
+func _draw_ascii_horizon() -> void:
+	var font := ThemeDB.fallback_font
+	var col := Themes.c("horizon_line")
+	var char_w := font.get_string_size("=", HORIZONTAL_ALIGNMENT_LEFT, -1, 16).x
+	var x := -MARGIN
+	while x < screen_size.x + MARGIN:
+		draw_string(font, Vector2(x, horizon_y + 4.0), "=", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, col)
+		x += char_w
+
+func _draw_ascii_grid() -> void:
+	var font := ThemeDB.fallback_font
+	var col := Themes.c("horizon_line", 0.2)
+	var floor_h := screen_size.y - horizon_y
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 9999
+	var num_dots := 40
+	for i in num_dots:
+		var dx := rng.randf_range(0.0, screen_size.x)
+		var dy := horizon_y + rng.randf_range(10.0, floor_h - 10.0)
+		draw_string(font, Vector2(dx, dy), ".", HORIZONTAL_ALIGNMENT_LEFT, -1, 20, col)

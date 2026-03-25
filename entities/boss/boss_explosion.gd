@@ -3,13 +3,8 @@ extends Node2D
 var lifetime := 4.0
 var elapsed := 0.0
 
-const RING_COLORS: Array[Color] = [
-	Color(1.0, 0.0, 0.3),
-	Color(1.0, 0.4, 0.0),
-	Color(1.0, 1.0, 0.0),
-	Color(1.0, 0.0, 0.6),
-	Color(0.7, 0.0, 1.0),
-]
+var RING_COLORS: Array[Color]:
+	get: return Themes.get_explosion_colors()
 
 # Destrocos grandes (estilhacos angulares)
 var debris: Array[Dictionary] = []
@@ -65,6 +60,9 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 func _draw() -> void:
+	if Themes.mode == ThemeSystem.Mode.ASCII:
+		_draw_ascii()
+		return
 	var t := elapsed / lifetime
 
 	# Flash inicial branco — maior
@@ -142,3 +140,30 @@ func _draw() -> void:
 		draw_circle(pos, sz, Color(col.r, col.g, col.b, spark_alpha))
 		# Centro branco
 		draw_circle(pos, sz * 0.4, Color(1.0, 1.0, 1.0, spark_alpha * 0.5))
+
+func _draw_ascii() -> void:
+	var font := ThemeDB.fallback_font
+	var t := elapsed / lifetime
+	# Debris as scattered "#" chars
+	var debris_alpha := clampf(1.0 - (t - 0.2) / 0.8, 0.0, 1.0)
+	for d in debris:
+		var pos: Vector2 = d["vel"] * elapsed
+		var col: Color = d["color"]
+		var draw_col := Color(col.r, col.g, col.b, debris_alpha * 0.8)
+		var text_size := font.get_string_size("#", HORIZONTAL_ALIGNMENT_CENTER, -1, 24)
+		draw_string(font, pos - Vector2(text_size.x / 2.0, -text_size.y / 4.0), "#", HORIZONTAL_ALIGNMENT_CENTER, -1, 24, draw_col)
+	# Sparks as scattered "*" chars
+	for s in sparks:
+		var spark_elapsed := elapsed - float(s["delay"])
+		if spark_elapsed < 0.0:
+			continue
+		var spark_life := 2.5
+		if spark_elapsed > spark_life:
+			continue
+		var st := spark_elapsed / spark_life
+		var spark_alpha := (1.0 - st) * 0.9
+		var pos: Vector2 = s["vel"] * spark_elapsed
+		var col: Color = s["color"]
+		var draw_col := Color(col.r, col.g, col.b, spark_alpha)
+		var text_size := font.get_string_size("*", HORIZONTAL_ALIGNMENT_CENTER, -1, 20)
+		draw_string(font, pos - Vector2(text_size.x / 2.0, -text_size.y / 4.0), "*", HORIZONTAL_ALIGNMENT_CENTER, -1, 20, draw_col)

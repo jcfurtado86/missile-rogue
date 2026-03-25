@@ -10,7 +10,8 @@ const GRAVITY := 400.0
 var invuln_timer := 0.2
 var ground_y := 1950.0
 
-const BASE_COLOR := Color(0.7, 0.0, 1.0)
+var BASE_COLOR: Color:
+	get: return Themes.c("enemy_cluster")
 const TRAIL_LENGTH := 20
 const TRAIL_MIN_DIST := 12.0
 const MISSILE_RADIUS := 7.0
@@ -24,7 +25,23 @@ func _ready() -> void:
 	area_entered.connect(_on_area_entered)
 	velocity = direction * speed
 
+func _draw_ascii() -> void:
+	var font := ThemeDB.fallback_font
+	var color := Themes.c("enemy_cluster")
+	# Trail
+	var inv := global_transform.affine_inverse()
+	for i in trail.size():
+		var t := 1.0 - float(i) / trail.size()
+		var local_pos: Vector2 = inv * trail[i]
+		var c := Color(color.r, color.g, color.b, 0.4 * t)
+		draw_string(font, local_pos - Vector2(4, -4), ".", HORIZONTAL_ALIGNMENT_CENTER, -1, 28, c)
+	# Fragment character
+	draw_string(font, Vector2(-7, 10), "o", HORIZONTAL_ALIGNMENT_CENTER, -1, 28, color)
+
 func _draw() -> void:
+	if Themes.mode == ThemeSystem.Mode.ASCII:
+		_draw_ascii()
+		return
 	# Trail
 	if trail.size() >= 2:
 		var pts := PackedVector2Array()
@@ -38,7 +55,7 @@ func _draw() -> void:
 			colors.append(Color(BASE_COLOR.r, BASE_COLOR.g, BASE_COLOR.b, 0.4 * t))
 		draw_polyline_colors(pts, colors, MISSILE_RADIUS * 2.0)
 		draw_polyline_colors(pts, colors, MISSILE_RADIUS * 0.5)
-	var fill := Color(0.08, 0.0, 0.12)
+	var fill := Themes.c("fill_entity")
 	# Estilhaco angular — losango irregular
 	var shard := PackedVector2Array([
 		Vector2(0, 8),
@@ -47,7 +64,7 @@ func _draw() -> void:
 		Vector2(3, -6),
 		Vector2(6, 1),
 	])
-	draw_circle(Vector2.ZERO, 10.0, Color(BASE_COLOR.r, BASE_COLOR.g, BASE_COLOR.b, 0.06))
+	draw_circle(Vector2.ZERO, 10.0, Themes.glow("enemy_cluster", 0.06))
 	draw_polygon(shard, PackedColorArray([fill, fill, fill, fill, fill]))
 	for i in shard.size():
 		draw_line(shard[i], shard[(i + 1) % shard.size()], Color(BASE_COLOR.r, BASE_COLOR.g, BASE_COLOR.b, 0.85), 1.5, true)

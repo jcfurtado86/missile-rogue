@@ -12,6 +12,9 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 func _draw() -> void:
+	if Themes.mode == ThemeSystem.Mode.ASCII:
+		_draw_ascii()
+		return
 	var t := elapsed / lifetime
 	var alpha := (1.0 - t)
 
@@ -45,6 +48,21 @@ func _draw() -> void:
 	# Segundo anel externo
 	var ring2_r := ring_r * 1.5
 	_draw_ellipse(Vector2(0, 0), ring2_r, ring2_r * 0.3, Color(color.r, color.g, color.b, alpha * 0.12))
+
+func _draw_ascii() -> void:
+	var font := ThemeDB.fallback_font
+	var t := elapsed / lifetime
+	var alpha := 1.0 - t
+	var col := Color(color.r, color.g, color.b, alpha)
+	var stem_h := lerpf(15.0, 120.0, minf(t * 3.0, 1.0))
+	# Cap
+	var cap_text := "***"
+	var cap_size := font.get_string_size(cap_text, HORIZONTAL_ALIGNMENT_CENTER, -1, 24)
+	draw_string(font, Vector2(-cap_size.x / 2.0, -stem_h + cap_size.y / 4.0), cap_text, HORIZONTAL_ALIGNMENT_CENTER, -1, 24, col)
+	# Stem
+	var stem_text := "|"
+	var stem_size := font.get_string_size(stem_text, HORIZONTAL_ALIGNMENT_CENTER, -1, 24)
+	draw_string(font, Vector2(-stem_size.x / 2.0, -stem_h + cap_size.y / 4.0 + stem_size.y), stem_text, HORIZONTAL_ALIGNMENT_CENTER, -1, 24, col)
 
 func _draw_ellipse(center: Vector2, rx: float, ry: float, col: Color) -> void:
 	if rx < 1.0 or ry < 1.0:

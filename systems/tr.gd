@@ -152,6 +152,18 @@ const STRINGS := {
 	"UPG_DESC_target_lock": { "pt": "Segure para ver mira e trajetória", "en": "Hold to see aim and trajectory", "es": "Mantén para ver mira y trayectoria", "fr": "Maintenez pour voir viseur et trajectoire", "zh": "按住查看瞄准和弹道" },
 	"UPG_DESC_future_sight": { "pt": "Segure para prever interceptação", "en": "Hold to predict interception", "es": "Mantén para predecir intercepción", "fr": "Maintenez pour prédire l'interception", "zh": "按住预测拦截点" },
 	"UPG_DESC_omega_protocol": { "pt": "+50% drops, 3x dificuldade, 2 bosses", "en": "+50% drops, 3x difficulty, 2 bosses", "es": "+50% drops, 3x dificultad, 2 jefes", "fr": "+50% drops, 3x difficulté, 2 boss", "zh": "+50%掉落，3倍难度，2个Boss" },
+
+	# ===== TEMAS =====
+	"THEMES_SECTION": { "pt": "— TEMAS —", "en": "— THEMES —", "es": "— TEMAS —", "fr": "— THÈMES —", "zh": "— 主题 —" },
+	"THEME_neon": { "pt": "Neon Retro", "en": "Neon Retro", "es": "Neon Retro", "fr": "Néon Rétro", "zh": "霓虹复古" },
+	"THEME_gameboy": { "pt": "GameBoy Classic", "en": "GameBoy Classic", "es": "GameBoy Clásico", "fr": "GameBoy Classique", "zh": "GameBoy经典" },
+	"THEME_ascii": { "pt": "ASCII Terminal", "en": "ASCII Terminal", "es": "ASCII Terminal", "fr": "Terminal ASCII", "zh": "ASCII终端" },
+	"THEME_DESC_neon": { "pt": "Visual neon cyberpunk", "en": "Cyberpunk neon look", "es": "Visual neón cyberpunk", "fr": "Style néon cyberpunk", "zh": "赛博朋克霓虹风格" },
+	"THEME_DESC_gameboy": { "pt": "4 tons de verde, pixels gigantes", "en": "4 shades of green, giant pixels", "es": "4 tonos de verde, píxeles gigantes", "fr": "4 tons de vert, pixels géants", "zh": "4种绿色，巨型像素" },
+	"THEME_DESC_ascii": { "pt": "Terminal verde, caracteres ASCII", "en": "Green terminal, ASCII characters", "es": "Terminal verde, caracteres ASCII", "fr": "Terminal vert, caractères ASCII", "zh": "绿色终端，ASCII字符" },
+	"EQUIPPED": { "pt": "EQUIPADO", "en": "EQUIPPED", "es": "EQUIPADO", "fr": "ÉQUIPÉ", "zh": "已装备" },
+	"EQUIP": { "pt": "EQUIPAR", "en": "EQUIP", "es": "EQUIPAR", "fr": "ÉQUIPER", "zh": "装备" },
+	"LOCKED": { "pt": "BLOQUEADO", "en": "LOCKED", "es": "BLOQUEADO", "fr": "VERROUILLÉ", "zh": "已锁定" },
 }
 
 func t(key: String) -> String:

@@ -29,10 +29,35 @@ func _ready() -> void:
 	position.y = boss_y
 	queue_redraw()
 
-func _draw() -> void:
+func _draw_ascii() -> void:
+	var font := ThemeDB.fallback_font
 	var is_rage := data.is_rage_mode()
-	var fill := Color(0.08, 0.0, 0.02)
-	var neon := Color(1.0, 0.0, 0.3, 0.9) if not is_rage else Color(1.0, 0.0, 0.1, 1.0)
+	var face_text: String
+	var face_color: Color
+	if is_rage:
+		face_text = ">>X<<"
+		face_color = Themes.c("enemy_boss_rage")
+	else:
+		face_text = ">=<"
+		face_color = Themes.c("enemy_boss", 0.9)
+	var face_size := font.get_string_size(face_text, HORIZONTAL_ALIGNMENT_CENTER, -1, 36)
+	draw_string(font, Vector2(-face_size.x / 2.0, face_size.y / 4.0), face_text, HORIZONTAL_ALIGNMENT_CENTER, -1, 36, face_color)
+	# HP bar
+	var hp_ratio := get_hp_ratio()
+	var bar_total := 8
+	var bar_filled := int(round(hp_ratio * bar_total))
+	var bar_empty := bar_total - bar_filled
+	var hp_text := "[" + "|".repeat(bar_filled) + ".".repeat(bar_empty) + "]"
+	var hp_size := font.get_string_size(hp_text, HORIZONTAL_ALIGNMENT_CENTER, -1, 28)
+	draw_string(font, Vector2(-hp_size.x / 2.0, face_size.y / 4.0 + 30), hp_text, HORIZONTAL_ALIGNMENT_CENTER, -1, 28, face_color)
+
+func _draw() -> void:
+	if Themes.mode == ThemeSystem.Mode.ASCII:
+		_draw_ascii()
+		return
+	var is_rage := data.is_rage_mode()
+	var fill := Themes.c("fill_entity")
+	var neon := Themes.c("enemy_boss", 0.9) if not is_rage else Themes.c("enemy_boss_rage")
 	var neon_dim := Color(neon.r, neon.g, neon.b, 0.4)
 
 	# --- Rage glow pulsante ---
@@ -40,18 +65,18 @@ func _draw() -> void:
 		var pulse := (sin(anim_time * 4.0) + 1.0) * 0.5
 		var rage_a := lerpf(0.12, 0.4, pulse)
 		var rage_r := lerpf(170.0, 216.0, pulse)
-		draw_circle(Vector2.ZERO, rage_r, Color(1.0, 0.0, 0.0, rage_a))
-		draw_circle(Vector2.ZERO, 144.0, Color(1.0, 0.0, 0.0, rage_a * 0.6))
+		draw_circle(Vector2.ZERO, rage_r, Themes.glow("enemy_boss_rage", rage_a))
+		draw_circle(Vector2.ZERO, 144.0, Themes.glow("enemy_boss_rage", rage_a * 0.6))
 		# Raios de energia
 		for i in 8:
 			var ra := TAU * float(i) / 8 + anim_time * 1.5
 			var rl := lerpf(108.0, 144.0, pulse)
 			var re := Vector2(cos(ra) * rl, sin(ra) * rl)
-			draw_line(Vector2.ZERO, re, Color(1.0, 0.0, 0.2, 0.25 * pulse), 3.0, true)
-			draw_line(Vector2.ZERO, re, Color(1.0, 0.0, 0.2, 0.08 * pulse), 10.0, true)
+			draw_line(Vector2.ZERO, re, Themes.glow("enemy_boss", 0.25 * pulse), 3.0, true)
+			draw_line(Vector2.ZERO, re, Themes.glow("enemy_boss", 0.08 * pulse), 10.0, true)
 	else:
 		# Glow suave normal
-		draw_circle(Vector2.ZERO, 153.0, Color(1.0, 0.0, 0.2, 0.1))
+		draw_circle(Vector2.ZERO, 153.0, Themes.glow("enemy_boss", 0.1))
 
 	# --- Casco principal — hexagono largo (nave mae) ---
 	var hull := PackedVector2Array([
@@ -79,7 +104,7 @@ func _draw() -> void:
 	])
 	var panel_fill := PackedColorArray()
 	for _i in 4:
-		panel_fill.append(Color(0.05, 0.0, 0.01))
+		panel_fill.append(Themes.c("fill_dark"))
 	draw_polygon(panel_l, panel_fill)
 	draw_polygon(panel_r, panel_fill)
 	for i in panel_l.size():
@@ -93,7 +118,7 @@ func _draw() -> void:
 	])
 	var bridge_fill := PackedColorArray()
 	for _i in bridge.size():
-		bridge_fill.append(Color(0.06, 0.0, 0.015))
+		bridge_fill.append(Themes.c("fill_dark"))
 	draw_polygon(bridge, bridge_fill)
 	for i in bridge.size():
 		draw_line(bridge[i], bridge[(i + 1) % bridge.size()], neon, 2.0, true)
@@ -127,8 +152,8 @@ func _draw() -> void:
 			Vector2(0, -29), Vector2(-14, -22), Vector2(0, -14), Vector2(14, -22),
 		])
 		draw_polygon(eye, PackedColorArray([
-			Color(1.0, 0.0, 0.0, eye_a), Color(1.0, 0.0, 0.0, eye_a),
-			Color(1.0, 0.0, 0.0, eye_a), Color(1.0, 0.0, 0.0, eye_a),
+			Themes.c("enemy_boss_rage", eye_a), Themes.c("enemy_boss_rage", eye_a),
+			Themes.c("enemy_boss_rage", eye_a), Themes.c("enemy_boss_rage", eye_a),
 		]))
 		draw_circle(Vector2(0, -22), 5.0, Color(1.0, 0.5, 0.3, eye_a))
 	else:

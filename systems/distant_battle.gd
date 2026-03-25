@@ -47,7 +47,7 @@ func update(delta: float, screen_size: Vector2, horizon_y: float) -> void:
 				"x": m["x"], "y": m["y"], "time": 0.0,
 				"max_time": randf_range(0.4, 0.8),
 				"radius": randf_range(12.0, 30.0),
-				"color": Color(1.0, 0.3, 0.2),
+				"color": Themes.c("enemy_basic"),
 			})
 			mushrooms.append({
 				"x": m["x"], "y": m["y"], "time": 0.0,
@@ -79,7 +79,7 @@ func update(delta: float, screen_size: Vector2, horizon_y: float) -> void:
 				"x": exp_x, "y": exp_y, "time": 0.0,
 				"max_time": randf_range(0.3, 0.6),
 				"radius": exp_r,
-				"color": Color(0.0, 0.8, 1.0),
+				"color": Themes.c("primary"),
 			})
 			var mi := 0
 			while mi < missiles.size():
@@ -90,7 +90,7 @@ func update(delta: float, screen_size: Vector2, horizon_y: float) -> void:
 						"x": m["x"], "y": m["y"], "time": 0.0,
 						"max_time": randf_range(0.2, 0.4),
 						"radius": randf_range(9.0, 18.0),
-						"color": Color(1.0, 0.5, 0.2),
+						"color": Themes.c("enemy_basic", 0.8),
 					})
 					missiles.remove_at(mi)
 				else:
@@ -118,6 +118,8 @@ func update(delta: float, screen_size: Vector2, horizon_y: float) -> void:
 			i += 1
 
 func draw(c: CanvasItem) -> void:
+	var enemy_col := Themes.c("enemy_basic")
+	var defense_col := Themes.c("primary")
 	for m in missiles:
 		var mx: float = m["x"]
 		var my: float = m["y"]
@@ -125,16 +127,16 @@ func draw(c: CanvasItem) -> void:
 		var fade := clampf(progress * 3.0, 0.0, 1.0)
 		var dir := Vector2(m["tx"] - mx, m["ty"] - my).normalized()
 		var tail := Vector2(mx - dir.x * 45.0, my - dir.y * 45.0)
-		c.draw_line(Vector2(mx, my), tail, Color(1.0, 0.2, 0.4, 0.3 * fade), 2.25, true)
-		c.draw_circle(Vector2(mx, my), 3.4, Color(1.0, 0.3, 0.5, 0.5 * fade))
+		c.draw_line(Vector2(mx, my), tail, Color(enemy_col.r, enemy_col.g, enemy_col.b, 0.3 * fade), 2.25, true)
+		c.draw_circle(Vector2(mx, my), 3.4, Color(enemy_col.r, enemy_col.g, enemy_col.b, 0.5 * fade))
 
 	for d in defenses:
 		var dx: float = d["x"]
 		var dy: float = d["y"]
 		var dir := Vector2(d["tx"] - dx, d["ty"] - dy).normalized()
 		var tail := Vector2(dx - dir.x * 33.75, dy - dir.y * 33.75)
-		c.draw_line(Vector2(dx, dy), tail, Color(0.0, 0.8, 1.0, 0.25), 2.25, true)
-		c.draw_circle(Vector2(dx, dy), 2.25, Color(0.0, 1.0, 1.0, 0.5))
+		c.draw_line(Vector2(dx, dy), tail, Color(defense_col.r, defense_col.g, defense_col.b, 0.25), 2.25, true)
+		c.draw_circle(Vector2(dx, dy), 2.25, Color(defense_col.r, defense_col.g, defense_col.b, 0.5))
 
 	for e in explosions:
 		var ex: float = e["x"]
@@ -157,9 +159,10 @@ func draw(c: CanvasItem) -> void:
 		var cap: float = mu["cap_r"] * grow
 		var stem_w := cap * 0.3
 		# Stem
-		c.draw_rect(Rect2(mx - stem_w, my - h, stem_w * 2.0, h), Color(1.0, 0.4, 0.15, alpha * 0.5))
+		var mc := Themes.c("enemy_basic")
+		c.draw_rect(Rect2(mx - stem_w, my - h, stem_w * 2.0, h), Color(mc.r, mc.g, mc.b, alpha * 0.5))
 		# Cap (mushroom top)
 		var cap_y := my - h
-		c.draw_circle(Vector2(mx, cap_y), cap, Color(1.0, 0.3, 0.1, alpha * 0.6))
-		c.draw_circle(Vector2(mx, cap_y), cap * 1.4, Color(1.0, 0.2, 0.05, alpha * 0.2))
-		c.draw_circle(Vector2(mx, cap_y), cap * 0.5, Color(1.0, 0.7, 0.3, alpha * 0.4))
+		c.draw_circle(Vector2(mx, cap_y), cap, Color(mc.r, mc.g, mc.b, alpha * 0.6))
+		c.draw_circle(Vector2(mx, cap_y), cap * 1.4, Color(mc.r, mc.g, mc.b, alpha * 0.2))
+		c.draw_circle(Vector2(mx, cap_y), cap * 0.5, Color(1.0, 1.0, 1.0, alpha * 0.4))

@@ -24,6 +24,9 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 func _draw() -> void:
+	if Themes.mode == ThemeSystem.Mode.ASCII:
+		_draw_ascii()
+		return
 	var t := elapsed / lifetime
 	var alpha := 1.0 - t
 	for p in particles:
@@ -33,3 +36,12 @@ func _draw() -> void:
 		draw_circle(pos, sz * 3.0, Color(color.r, color.g, color.b, alpha * 0.2))
 		# Core
 		draw_circle(pos, sz, Color(color.r, color.g, color.b, alpha))
+
+func _draw_ascii() -> void:
+	var font := ThemeDB.fallback_font
+	var alpha := 1.0 - elapsed / lifetime
+	var col := Color(color.r, color.g, color.b, alpha)
+	for p in particles:
+		var pos: Vector2 = p["vel"] * elapsed
+		var text_size := font.get_string_size("*", HORIZONTAL_ALIGNMENT_CENTER, -1, 20)
+		draw_string(font, pos - Vector2(text_size.x / 2.0, -text_size.y / 4.0), "*", HORIZONTAL_ALIGNMENT_CENTER, -1, 20, col)

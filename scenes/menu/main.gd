@@ -54,6 +54,7 @@ func _on_reset_save() -> void:
 
 func _start_game() -> void:
 	_clear_current()
+	Themes.enter_run()
 	ad_system.reset_run()
 	var stats = PlayerStats.new(upgrade_system)
 	var game = preload("res://scenes/game/game.tscn").instantiate()
@@ -66,6 +67,7 @@ func _start_game() -> void:
 	current_scene = game
 
 func _on_game_over() -> void:
+	Themes.exit_run()
 	_save_game()
 	_open_shop()
 
@@ -127,6 +129,8 @@ func _save_game() -> void:
 	var sm = get_node("/root/SoundManager")
 	save_system.music_volume = sm.get_music_volume_linear()
 	save_system.sfx_volume = sm.get_sfx_volume_linear()
+	save_system.theme_id = Themes.current_theme
+	save_system.unlocked_themes = Themes.unlocked_themes.duplicate()
 	var data = save_system.to_dict(upgrade_system, ascension_system, currency)
 	save_system.save_to_file(SAVE_PATH, data)
 
@@ -138,6 +142,8 @@ func _load_game() -> void:
 	var sm = get_node("/root/SoundManager")
 	sm.set_music_volume(save_system.music_volume)
 	sm.set_sfx_volume(save_system.sfx_volume)
+	Themes.unlocked_themes = save_system.unlocked_themes.duplicate()
+	Themes.set_theme_id(save_system.theme_id)
 
 func _setup_scanlines() -> void:
 	var layer := CanvasLayer.new()

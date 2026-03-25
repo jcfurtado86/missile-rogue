@@ -84,14 +84,34 @@ func _draw() -> void:
 	else:
 		_draw_empty()
 
+func _draw_ascii_armed() -> void:
+	var font := ThemeDB.fallback_font
+	var color := Themes.c("battery_neon")
+	var text := "[=]"
+	var text_size := font.get_string_size(text, HORIZONTAL_ALIGNMENT_CENTER, -1, 28)
+	draw_string(font, Vector2(-text_size.x / 2.0, 12), text, HORIZONTAL_ALIGNMENT_CENTER, -1, 28, color)
+	var dots := ".".repeat(magazine_ammo)
+	var dots_size := font.get_string_size(dots, HORIZONTAL_ALIGNMENT_CENTER, -1, 20)
+	draw_string(font, Vector2(-dots_size.x / 2.0, 12 + 22), dots, HORIZONTAL_ALIGNMENT_CENTER, -1, 20, color)
+
+func _draw_ascii_empty() -> void:
+	var font := ThemeDB.fallback_font
+	var color := Themes.c("battery_neon", 0.3)
+	var text := "[x]"
+	var text_size := font.get_string_size(text, HORIZONTAL_ALIGNMENT_CENTER, -1, 28)
+	draw_string(font, Vector2(-text_size.x / 2.0, 12), text, HORIZONTAL_ALIGNMENT_CENTER, -1, 28, color)
+
 func _draw_armed() -> void:
-	var neon := Color(0.0, 1.0, 1.0, 0.9)
-	var fill := Color(0.0, 0.08, 0.12)
+	if Themes.mode == ThemeSystem.Mode.ASCII:
+		_draw_ascii_armed()
+		return
+	var neon := Themes.c("battery_neon", 0.9)
+	var fill := Themes.c("battery_fill")
 	var top_y := SILO_CY - SILO_H / 2.0
 	var bot_y := SILO_CY + SILO_H / 2.0
 
 	# Glow sutil
-	draw_circle(_persp(Vector2(0, SILO_CY)), 35.0, Color(0.0, 1.0, 1.0, 0.04))
+	draw_circle(_persp(Vector2(0, SILO_CY)), 35.0, Themes.glow("battery_neon", 0.04))
 
 	# Abertura central
 	var gap := 3.0
@@ -99,7 +119,8 @@ func _draw_armed() -> void:
 		_persp(Vector2(-gap, top_y)), _persp(Vector2(gap, top_y)),
 		_persp(Vector2(gap, bot_y)), _persp(Vector2(-gap, bot_y)),
 	])
-	draw_polygon(open_quad, PackedColorArray([Color(0.01, 0.01, 0.03), Color(0.01, 0.01, 0.03), Color(0.01, 0.01, 0.03), Color(0.01, 0.01, 0.03)]))
+	var open_fill := Themes.c("fill_entity")
+	draw_polygon(open_quad, PackedColorArray([open_fill, open_fill, open_fill, open_fill]))
 
 	# Tampa esquerda
 	var left_quad := PackedVector2Array([
@@ -120,8 +141,8 @@ func _draw_armed() -> void:
 	# Detalhes internos
 	for i in 2:
 		var ly := lerpf(top_y, bot_y, 0.33 * (i + 1))
-		draw_line(_persp(Vector2(-SILO_W + 3, ly)), _persp(Vector2(-gap - 2, ly)), Color(0.0, 0.8, 1.0, 0.2), 1.0, true)
-		draw_line(_persp(Vector2(gap + 2, ly)), _persp(Vector2(SILO_W - 3, ly)), Color(0.0, 0.8, 1.0, 0.2), 1.0, true)
+		draw_line(_persp(Vector2(-SILO_W + 3, ly)), _persp(Vector2(-gap - 2, ly)), Themes.c("battery_neon", 0.2), 1.0, true)
+		draw_line(_persp(Vector2(gap + 2, ly)), _persp(Vector2(SILO_W - 3, ly)), Themes.c("battery_neon", 0.2), 1.0, true)
 
 	# Barra de municao (pente atual)
 	var bar_y := bot_y + 6.0
@@ -132,10 +153,10 @@ func _draw_armed() -> void:
 	var bar_br := _persp(Vector2(SILO_W - 2, bar_y + bar_h))
 	# Glow
 	draw_polygon(PackedVector2Array([bar_tl + Vector2(-2, -2), bar_tr + Vector2(2, -2), bar_br + Vector2(2, 2), bar_bl + Vector2(-2, 2)]),
-		PackedColorArray([Color(0.0, 1.0, 1.0, 0.06), Color(0.0, 1.0, 1.0, 0.06), Color(0.0, 1.0, 1.0, 0.06), Color(0.0, 1.0, 1.0, 0.06)]))
+		PackedColorArray([Themes.glow("battery_neon", 0.06), Themes.glow("battery_neon", 0.06), Themes.glow("battery_neon", 0.06), Themes.glow("battery_neon", 0.06)]))
 	# Fundo
 	draw_polygon(PackedVector2Array([bar_tl, bar_tr, bar_br, bar_bl]),
-		PackedColorArray([Color(0.0, 0.2, 0.3, 0.25), Color(0.0, 0.2, 0.3, 0.25), Color(0.0, 0.2, 0.3, 0.25), Color(0.0, 0.2, 0.3, 0.25)]))
+		PackedColorArray([Themes.c("battery_neon", 0.25), Themes.c("battery_neon", 0.25), Themes.c("battery_neon", 0.25), Themes.c("battery_neon", 0.25)]))
 
 	if reloading:
 		# Progresso de recarga — barra laranja enchendo
@@ -161,7 +182,7 @@ func _draw_armed() -> void:
 			PackedColorArray([bar_color, bar_color, bar_color, bar_color]))
 
 	# Outline
-	_draw_quad_outline(PackedVector2Array([bar_tl, bar_tr, bar_br, bar_bl]), Color(0.0, 1.0, 1.0, 0.6), 2.0)
+	_draw_quad_outline(PackedVector2Array([bar_tl, bar_tr, bar_br, bar_bl]), Themes.c("battery_neon", 0.6), 2.0)
 
 	# Indicador de pentes restantes
 	var mag_y := bar_y + bar_h + 4.0
@@ -177,15 +198,18 @@ func _draw_armed() -> void:
 		# Total de pentes disponiveis = reserva + pente ativo (se tem municao ou esta recarregando)
 		var active_mags := magazines + (1 if (magazine_ammo > 0 or reloading) else 0)
 		if mi < active_mags:
-			mag_col = Color(0.0, 1.0, 1.0, 0.5)
+			mag_col = Themes.c("battery_neon", 0.5)
 		else:
-			mag_col = Color(0.0, 0.2, 0.3, 0.2)
+			mag_col = Themes.c("battery_neon", 0.2)
 		draw_polygon(PackedVector2Array([mtl, mtr, mbr, mbl]),
 			PackedColorArray([mag_col, mag_col, mag_col, mag_col]))
 
 func _draw_empty() -> void:
-	var dim := Color(0.0, 0.3, 0.4, 0.3)
-	var fill := Color(0.02, 0.03, 0.05)
+	if Themes.mode == ThemeSystem.Mode.ASCII:
+		_draw_ascii_empty()
+		return
+	var dim := Themes.c("battery_neon", 0.3)
+	var fill := Themes.c("fill_entity")
 	var top_y := SILO_CY - SILO_H / 2.0
 	var bot_y := SILO_CY + SILO_H / 2.0
 
@@ -200,8 +224,8 @@ func _draw_empty() -> void:
 	# Detalhes dim
 	for i in 2:
 		var ly := lerpf(top_y, bot_y, 0.33 * (i + 1))
-		draw_line(_persp(Vector2(-SILO_W + 3, ly)), _persp(Vector2(-2, ly)), Color(0.0, 0.3, 0.4, 0.1), 1.0, true)
-		draw_line(_persp(Vector2(2, ly)), _persp(Vector2(SILO_W - 3, ly)), Color(0.0, 0.3, 0.4, 0.1), 1.0, true)
+		draw_line(_persp(Vector2(-SILO_W + 3, ly)), _persp(Vector2(-2, ly)), Themes.c("battery_neon", 0.1), 1.0, true)
+		draw_line(_persp(Vector2(2, ly)), _persp(Vector2(SILO_W - 3, ly)), Themes.c("battery_neon", 0.1), 1.0, true)
 
 	# Barra vazia
 	var bar_y := bot_y + 6.0
@@ -211,8 +235,8 @@ func _draw_empty() -> void:
 	var bar_bl := _persp(Vector2(-SILO_W + 2, bar_y + bar_h))
 	var bar_br := _persp(Vector2(SILO_W - 2, bar_y + bar_h))
 	draw_polygon(PackedVector2Array([bar_tl, bar_tr, bar_br, bar_bl]),
-		PackedColorArray([Color(0.0, 0.2, 0.3, 0.15), Color(0.0, 0.2, 0.3, 0.15), Color(0.0, 0.2, 0.3, 0.15), Color(0.0, 0.2, 0.3, 0.15)]))
-	_draw_quad_outline(PackedVector2Array([bar_tl, bar_tr, bar_br, bar_bl]), Color(0.0, 0.3, 0.4, 0.25), 1.5)
+		PackedColorArray([Themes.c("battery_neon", 0.15), Themes.c("battery_neon", 0.15), Themes.c("battery_neon", 0.15), Themes.c("battery_neon", 0.15)]))
+	_draw_quad_outline(PackedVector2Array([bar_tl, bar_tr, bar_br, bar_bl]), Themes.c("battery_neon", 0.25), 1.5)
 
 	# Indicador de pentes (todos vazios)
 	var mag_y := bar_y + bar_h + 4.0
@@ -225,7 +249,7 @@ func _draw_empty() -> void:
 		var mbl := _persp(Vector2(mx, mag_y + 4.0))
 		var mbr := _persp(Vector2(mx + mw, mag_y + 4.0))
 		draw_polygon(PackedVector2Array([mtl, mtr, mbr, mbl]),
-			PackedColorArray([Color(0.0, 0.2, 0.3, 0.2), Color(0.0, 0.2, 0.3, 0.2), Color(0.0, 0.2, 0.3, 0.2), Color(0.0, 0.2, 0.3, 0.2)]))
+			PackedColorArray([Themes.c("battery_neon", 0.2), Themes.c("battery_neon", 0.2), Themes.c("battery_neon", 0.2), Themes.c("battery_neon", 0.2)]))
 
 	# Texto "EMPTY" pulsando
 	var pulse_alpha: float = 0.3 + 0.5 * abs(sin(empty_pulse_time * 2.5))
@@ -234,7 +258,7 @@ func _draw_empty() -> void:
 	var font_size := 32
 	var text_size := font.get_string_size(empty_text, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size)
 	var text_pos := _persp(Vector2(-text_size.x / 2.0, SILO_CY + 2.0))
-	draw_string(font, text_pos, empty_text, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size, Color(1.0, 0.3, 0.2, pulse_alpha))
+	draw_string(font, text_pos, empty_text, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size, Themes.c("text_warning", pulse_alpha))
 
 # ============================================================
 # INTERFACE PUBLICA

@@ -5,14 +5,8 @@ signal wave_finished
 const EXPAND_SPEED := 1800.0
 const MAX_RADIUS := 2800.0
 
-const WAVE_COLORS: Array[Color] = [
-	Color(0.0, 1.0, 1.0),   # cyan
-	Color(1.0, 0.0, 0.6),   # hot pink
-	Color(1.0, 1.0, 0.0),   # amarelo neon
-	Color(0.2, 1.0, 0.1),   # verde neon
-	Color(0.7, 0.0, 1.0),   # violeta
-	Color(1.0, 0.4, 0.0),   # laranja neon
-]
+var WAVE_COLORS: Array[Color]:
+	get: return Themes.get_explosion_colors()
 
 var current_radius := 0.0
 var time := 0.0
@@ -39,12 +33,26 @@ func _physics_process(delta: float) -> void:
 	queue_redraw()
 
 func _draw() -> void:
+	if Themes.mode == ThemeSystem.Mode.ASCII:
+		_draw_ascii()
+		return
 	var idx := int(time * 20.0) % WAVE_COLORS.size()
 	var c := WAVE_COLORS[idx]
 	# Anel externo grosso com glow
 	draw_arc(Vector2.ZERO, current_radius, 0, TAU, 96, Color(c.r, c.g, c.b, 0.08), current_radius * 0.4, true)
 	draw_arc(Vector2.ZERO, current_radius, 0, TAU, 96, Color(c.r, c.g, c.b, 0.5), 12.0, true)
 	draw_arc(Vector2.ZERO, current_radius, 0, TAU, 96, Color(1.0, 1.0, 1.0, 0.3), 4.0, true)
+
+func _draw_ascii() -> void:
+	var font := ThemeDB.fallback_font
+	var idx := int(time * 20.0) % WAVE_COLORS.size()
+	var c := WAVE_COLORS[idx]
+	var num_chars := 16
+	for i in num_chars:
+		var angle := TAU * float(i) / num_chars
+		var pos := Vector2(cos(angle) * current_radius, sin(angle) * current_radius)
+		var text_size := font.get_string_size("*", HORIZONTAL_ALIGNMENT_CENTER, -1, 20)
+		draw_string(font, pos - Vector2(text_size.x / 2.0, -text_size.y / 4.0), "*", HORIZONTAL_ALIGNMENT_CENTER, -1, 20, c)
 
 func _on_area_entered(area: Area2D) -> void:
 	var id := area.get_instance_id()

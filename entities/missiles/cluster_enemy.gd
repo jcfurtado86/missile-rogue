@@ -11,7 +11,8 @@ var reflected := false
 
 var ClusterFragmentScene := preload("res://entities/missiles/cluster_fragment.tscn")
 
-const BASE_COLOR := Color(0.7, 0.0, 1.0)
+var BASE_COLOR: Color:
+	get: return Themes.c("enemy_cluster")
 const TRAIL_LENGTH := 20
 const TRAIL_MIN_DIST := 20.0
 const MISSILE_RADIUS := 16.0
@@ -34,7 +35,23 @@ func _reflect() -> void:
 	reflected = true
 	trail.clear()
 
+func _draw_ascii() -> void:
+	var font := ThemeDB.fallback_font
+	var color := Themes.c("enemy_cluster")
+	# Trail
+	var inv := global_transform.affine_inverse()
+	for i in trail.size():
+		var t := 1.0 - float(i) / trail.size()
+		var local_pos: Vector2 = inv * trail[i]
+		var c := Color(color.r, color.g, color.b, 0.4 * t)
+		draw_string(font, local_pos - Vector2(4, -4), ".", HORIZONTAL_ALIGNMENT_CENTER, -1, 28, c)
+	# Missile character
+	draw_string(font, Vector2(-7, 10), "@", HORIZONTAL_ALIGNMENT_CENTER, -1, 28, color)
+
 func _draw() -> void:
+	if Themes.mode == ThemeSystem.Mode.ASCII:
+		_draw_ascii()
+		return
 	# Trail
 	if trail.size() >= 2:
 		var pts := PackedVector2Array()
@@ -48,7 +65,7 @@ func _draw() -> void:
 			colors.append(Color(BASE_COLOR.r, BASE_COLOR.g, BASE_COLOR.b, 0.35 * t))
 		draw_polyline_colors(pts, colors, MISSILE_RADIUS * 2.0)
 		draw_polyline_colors(pts, colors, MISSILE_RADIUS * 0.5)
-	var fill := Color(0.08, 0.0, 0.12)
+	var fill := Themes.c("fill_entity")
 	# Bomba grande — hexagonal arredondada apontando pra baixo
 	var body := PackedVector2Array([
 		Vector2(0, 18),      # ponta
@@ -63,7 +80,7 @@ func _draw() -> void:
 	var stab_l := PackedVector2Array([Vector2(-8, -10), Vector2(-18, -18), Vector2(-6, -14)])
 	var stab_r := PackedVector2Array([Vector2(8, -10), Vector2(18, -18), Vector2(6, -14)])
 	# Glow grande
-	draw_circle(Vector2.ZERO, 24.0, Color(BASE_COLOR.r, BASE_COLOR.g, BASE_COLOR.b, 0.1))
+	draw_circle(Vector2.ZERO, 24.0, Themes.glow("enemy_cluster", 0.1))
 	# Corpo
 	draw_polygon(body, PackedColorArray([fill, fill, fill, fill, fill, fill, fill]))
 	for i in body.size():

@@ -42,12 +42,13 @@ func _s(val: float) -> float:
 func _sf(val: int) -> int:
 	return int(val * ui_scale)
 
-const GEM_COLORS := {
-	"credits": Color(1.0, 0.0, 0.6),
-	"crystals": Color(0.2, 1.0, 0.1),
-	"void": Color(0.7, 0.0, 1.0),
-	"eter": Color(1.0, 0.5, 0.0),
-}
+var GEM_COLORS: Dictionary:
+	get: return {
+		"credits": Themes.c("gem_credits"),
+		"crystals": Themes.c("gem_crystals"),
+		"void": Themes.c("gem_void"),
+		"eter": Themes.c("gem_eter"),
+	}
 
 const NODE_RADIUS := 40.0
 
@@ -59,12 +60,13 @@ const CURRENCY_LABELS := {
 }
 
 # Cores baseadas nos inimigos que dropam cada moeda
-const TIER_COLORS := {
-	1: Color(1.0, 0.0, 0.6),   # credits — basic enemy (hot pink)
-	2: Color(0.2, 1.0, 0.1),   # crystals — fast enemy (neon green)
-	3: Color(0.7, 0.0, 1.0),   # void — cluster enemy (purple)
-	4: Color(1.0, 0.5, 0.0),   # eter — ascension (orange)
-}
+var TIER_COLORS: Dictionary:
+	get: return {
+		1: Themes.c("gem_credits"),
+		2: Themes.c("gem_crystals"),
+		3: Themes.c("gem_void"),
+		4: Themes.c("gem_eter"),
+	}
 
 # Estrutura da arvore — define filhos de cada no
 const TREE_CHILDREN := {
@@ -159,6 +161,7 @@ func _ready() -> void:
 		graph_viewport.visible = true
 		scroll_container.visible = false
 		_setup_graph()
+		_build_theme_selector()
 
 	_update_header()
 
@@ -670,7 +673,166 @@ func _build_eter_list() -> void:
 				continue
 			var item = _create_list_item(key, u)
 			item_container.add_child(item)
+	# Secao de temas
+	_build_theme_section()
 	_update_header()
+
+func _build_theme_section() -> void:
+	var tr_node = get_node("/root/Tr")
+	var eter_col := Themes.c("gem_eter")
+	# Separador
+	var sep = HSeparator.new()
+	sep.custom_minimum_size.y = 20
+	item_container.add_child(sep)
+	# Titulo da secao
+	var section_label = Label.new()
+	section_label.text = tr_node.t("THEMES_SECTION")
+	section_label.add_theme_font_size_override("font_size", _sf(28))
+	section_label.add_theme_color_override("font_color", eter_col)
+	section_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	item_container.add_child(section_label)
+	# Temas
+	for theme_id in ["neon", "gameboy", "ascii"]:
+		var item = _create_theme_item(theme_id)
+		item_container.add_child(item)
+
+func _create_theme_item(theme_id: String) -> PanelContainer:
+	var tr_node = get_node("/root/Tr")
+	var eter_col := Themes.c("gem_eter")
+	var is_current: bool = Themes.current_theme == theme_id
+	var is_unlocked: bool = Themes.is_unlocked(theme_id)
+	var cost := Themes.get_cost(theme_id)
+
+	var panel = PanelContainer.new()
+	var panel_style := StyleBoxFlat.new()
+	if is_current:
+		panel_style.bg_color = Color(eter_col.r * 0.15, eter_col.g * 0.15, eter_col.b * 0.15, 0.8)
+		panel_style.border_color = eter_col
+	else:
+		panel_style.bg_color = Color(0.05, 0.03, 0.01, 0.7)
+		panel_style.border_color = Color(eter_col.r * 0.5, eter_col.g * 0.5, eter_col.b * 0.5, 0.5)
+	panel_style.set_border_width_all(2 if is_current else 1)
+	panel_style.set_corner_radius_all(6)
+	panel_style.set_content_margin_all(12)
+	panel.add_theme_stylebox_override("panel", panel_style)
+
+	var row = HBoxContainer.new()
+	var info = VBoxContainer.new()
+	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var name_label = Label.new()
+	name_label.text = tr_node.t("THEME_" + theme_id)
+	name_label.add_theme_font_size_override("font_size", _sf(24))
+	name_label.add_theme_color_override("font_color", eter_col if is_unlocked else Color(0.5, 0.5, 0.5))
+	info.add_child(name_label)
+	var desc_label = Label.new()
+	desc_label.text = tr_node.t("THEME_DESC_" + theme_id)
+	desc_label.add_theme_font_size_override("font_size", _sf(18))
+	desc_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7) if is_unlocked else Color(0.4, 0.4, 0.4))
+	info.add_child(desc_label)
+	row.add_child(info)
+
+	var btn = Button.new()
+	btn.add_theme_font_size_override("font_size", _sf(22))
+	btn.custom_minimum_size = Vector2(140, 50)
+
+	if is_current:
+		btn.text = tr_node.t("EQUIPPED")
+		btn.disabled = true
+		_style_neon_button(btn, eter_col)
+	elif is_unlocked:
+		btn.text = tr_node.t("EQUIP")
+		btn.pressed.connect(_on_theme_equip.bind(theme_id))
+		_style_neon_button(btn, eter_col)
+	elif cost > 0:
+		# Botao de compra com custo + icone gem
+		btn.pressed.connect(_on_theme_buy.bind(theme_id))
+		_style_neon_button(btn, eter_col)
+		var btn_content = HBoxContainer.new()
+		btn_content.alignment = BoxContainer.ALIGNMENT_CENTER
+		btn_content.add_theme_constant_override("separation", 4)
+		btn_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		btn_content.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+		btn_content.grow_horizontal = Control.GROW_DIRECTION_BOTH
+		btn_content.grow_vertical = Control.GROW_DIRECTION_BOTH
+		btn.add_child(btn_content)
+		var cost_lbl = Label.new()
+		cost_lbl.text = "%d" % cost
+		cost_lbl.add_theme_font_size_override("font_size", _sf(22))
+		cost_lbl.add_theme_color_override("font_color", eter_col)
+		cost_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		btn_content.add_child(cost_lbl)
+		var gem_icon = Control.new()
+		gem_icon.custom_minimum_size = Vector2(18, 22)
+		gem_icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		gem_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		gem_icon.draw.connect(_draw_gem_on.bind(gem_icon, Vector2(9, 11), eter_col))
+		btn_content.add_child(gem_icon)
+		btn.disabled = currency.get_amount("eter") < cost
+	else:
+		btn.text = tr_node.t("EQUIP")
+		btn.pressed.connect(_on_theme_equip.bind(theme_id))
+		_style_neon_button(btn, eter_col)
+
+	row.add_child(btn)
+	panel.add_child(row)
+	return panel
+
+func _on_theme_buy(theme_id: String) -> void:
+	var cost := Themes.get_cost(theme_id)
+	if currency.get_amount("eter") < cost:
+		return
+	currency.spend("eter", cost)
+	Themes.unlock(theme_id)
+	Themes.set_theme_id(theme_id)
+	get_node("/root/SoundManager").purchase()
+	_build_eter_list()
+	purchase_made.emit()
+
+func _on_theme_equip(theme_id: String) -> void:
+	Themes.set_theme_id(theme_id)
+	if eter_mode:
+		_build_eter_list()
+	else:
+		_rebuild_theme_selector()
+
+# --- Seletor de tema na lateral esquerda (shop normal) ---
+
+var _theme_buttons: VBoxContainer
+
+func _build_theme_selector() -> void:
+	_theme_buttons = VBoxContainer.new()
+	_theme_buttons.add_theme_constant_override("separation", _sf(8))
+	_theme_buttons.offset_left = _s(10.0)
+	_theme_buttons.offset_top = _s(400.0)
+	_theme_buttons.offset_right = _s(80.0)
+	_theme_buttons.offset_bottom = _s(900.0)
+	add_child(_theme_buttons)
+	_populate_theme_buttons()
+
+func _rebuild_theme_selector() -> void:
+	if not _theme_buttons:
+		return
+	_populate_theme_buttons()
+
+func _populate_theme_buttons() -> void:
+	for child in _theme_buttons.get_children():
+		child.queue_free()
+	var tr_node = get_node("/root/Tr")
+	for theme_id in ["neon", "gameboy", "ascii"]:
+		if not Themes.is_unlocked(theme_id):
+			continue
+		var is_current: bool = Themes.current_theme == theme_id
+		var btn := Button.new()
+		btn.text = tr_node.t("THEME_" + theme_id)
+		btn.add_theme_font_size_override("font_size", _sf(16))
+		btn.custom_minimum_size = Vector2(_s(70), _s(50))
+		var col := Themes.c("primary") if is_current else Color(0.5, 0.5, 0.5)
+		_style_neon_button(btn, col)
+		if is_current:
+			btn.disabled = true
+		else:
+			btn.pressed.connect(_on_theme_equip.bind(theme_id))
+		_theme_buttons.add_child(btn)
 
 func _create_list_item(key: String, u: Dictionary) -> PanelContainer:
 	var tr_node = get_node("/root/Tr")

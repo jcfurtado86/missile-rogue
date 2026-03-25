@@ -226,14 +226,37 @@ func _draw() -> void:
 	else:
 		_draw_dead()
 
+func _draw_ascii_alive() -> void:
+	var font := ThemeDB.fallback_font
+	var center := (chip_tl + chip_tr + chip_br + chip_bl) / 4.0
+	var color := Themes.c("city_neon")
+	var text := "[#]"
+	var text_size := font.get_string_size(text, HORIZONTAL_ALIGNMENT_CENTER, -1, 28)
+	draw_string(font, center + Vector2(-text_size.x / 2.0, text_size.y / 4.0), text, HORIZONTAL_ALIGNMENT_CENTER, -1, 28, color)
+	if shield_active:
+		var shield_text := "(S)"
+		var shield_size := font.get_string_size(shield_text, HORIZONTAL_ALIGNMENT_CENTER, -1, 28)
+		draw_string(font, center + Vector2(-shield_size.x / 2.0, -text_size.y * 0.6), shield_text, HORIZONTAL_ALIGNMENT_CENTER, -1, 28, Themes.c("shield", 0.7))
+
+func _draw_ascii_dead() -> void:
+	var font := ThemeDB.fallback_font
+	var center := (chip_tl + chip_tr + chip_br + chip_bl) / 4.0
+	var color := Themes.c("city_dead")
+	var text := "[.]"
+	var text_size := font.get_string_size(text, HORIZONTAL_ALIGNMENT_CENTER, -1, 28)
+	draw_string(font, center + Vector2(-text_size.x / 2.0, text_size.y / 4.0), text, HORIZONTAL_ALIGNMENT_CENTER, -1, 28, color)
+
 func _draw_alive() -> void:
-	var fill := Color(0.02, 0.03, 0.06)
+	if Themes.mode == ThemeSystem.Mode.ASCII:
+		_draw_ascii_alive()
+		return
+	var fill := Themes.c("city_fill")
 	var line_pulse := (sin(anim_time * 1.2) + 1.0) * 0.5
 	var neon_alpha := lerpf(0.5, 0.9, line_pulse)
-	var neon := Color(0.0, 0.8, 1.0, neon_alpha)
+	var neon := Themes.c("city_neon", neon_alpha)
 	var neon_glow_w := lerpf(2.0, 4.0, line_pulse)
-	var trace_col := Color(0.0, 0.8, 1.0, lerpf(0.15, 0.35, line_pulse))
-	var pin_col := Color(0.0, 1.0, 1.0, lerpf(0.35, 0.7, line_pulse))
+	var trace_col := Themes.c("city_neon", lerpf(0.15, 0.35, line_pulse))
+	var pin_col := Themes.c("shield", lerpf(0.35, 0.7, line_pulse))
 
 	# Trilhas (atras de tudo)
 	for tpts in traces:
@@ -242,7 +265,7 @@ func _draw_alive() -> void:
 			continue
 		for i in pts.size() - 1:
 			draw_line(pts[i], pts[i + 1], trace_col, 1.5, true)
-		draw_circle(pts[-1], 2.5, Color(0.0, 1.0, 1.0, 0.3))
+		draw_circle(pts[-1], 2.5, Themes.glow("shield", 0.3))
 
 	# Pins
 	for i in range(0, pin_positions.size(), 2):
@@ -250,8 +273,8 @@ func _draw_alive() -> void:
 
 	# Face lateral do chip (espessura/volume)
 	var chip := _chip_quad()
-	var side_fill := Color(0.01, 0.015, 0.03)
-	var side_neon := Color(0.0, 0.6, 0.8, 0.5)
+	var side_fill := Themes.c("city_fill")
+	var side_neon := Themes.c("city_neon", 0.5)
 	var front_face := PackedVector2Array([
 		chip[3], chip[2],
 		Vector2(chip[2].x, chip[2].y + CHIP_DEPTH),
@@ -297,8 +320,9 @@ func _draw_alive() -> void:
 
 	# Die interno
 	var die := _die_quad(0.25)
-	draw_polygon(die, PackedColorArray([Color(0.0, 0.8, 1.0, 0.08), Color(0.0, 0.8, 1.0, 0.08), Color(0.0, 0.8, 1.0, 0.08), Color(0.0, 0.8, 1.0, 0.08)]))
-	_draw_quad_outline(die, Color(0.0, 0.8, 1.0, 0.4), 1.0)
+	var die_fill := Themes.glow("city_neon", 0.08)
+	draw_polygon(die, PackedColorArray([die_fill, die_fill, die_fill, die_fill]))
+	_draw_quad_outline(die, Themes.c("city_neon", 0.4), 1.0)
 
 	# Linhas internas do die
 	var die_cx := (die[0].x + die[1].x + die[2].x + die[3].x) / 4.0
@@ -307,16 +331,16 @@ func _draw_alive() -> void:
 	var die_bot_mid := (die[2] + die[3]) / 2.0
 	var die_left_mid := (die[0] + die[3]) / 2.0
 	var die_right_mid := (die[1] + die[2]) / 2.0
-	draw_line(die_top_mid, die_bot_mid, Color(0.0, 0.8, 1.0, 0.15), 1.0, true)
-	draw_line(die_left_mid, die_right_mid, Color(0.0, 0.8, 1.0, 0.15), 1.0, true)
+	draw_line(die_top_mid, die_bot_mid, Themes.glow("city_neon", 0.15), 1.0, true)
+	draw_line(die_left_mid, die_right_mid, Themes.glow("city_neon", 0.15), 1.0, true)
 
 	# Core pulsante
 	var pulse := (sin(anim_time * 2.5) + 1.0) * 0.5
 	var core_alpha := lerpf(0.5, 1.0, pulse)
 	var core_pos := Vector2(die_cx, die_cy)
-	draw_circle(core_pos, 14.0, Color(0.0, 1.0, 1.0, core_alpha * 0.1))
-	draw_circle(core_pos, 8.0, Color(0.0, 1.0, 1.0, core_alpha * 0.4))
-	draw_circle(core_pos, 4.0, Color(0.0, 1.0, 1.0, core_alpha))
+	draw_circle(core_pos, 14.0, Themes.glow("shield", core_alpha * 0.1))
+	draw_circle(core_pos, 8.0, Themes.glow("shield", core_alpha * 0.4))
+	draw_circle(core_pos, 4.0, Themes.c("shield", core_alpha))
 	draw_circle(core_pos, 2.0, Color(0.8, 1.0, 1.0, core_alpha))
 
 	# Pulsos de energia nas trilhas (ida e volta)
@@ -338,8 +362,8 @@ func _draw_alive() -> void:
 			if accum + seg_len >= target_len and seg_len > 0:
 				var seg_t := (target_len - accum) / seg_len
 				var pulse_pos := pts[i].lerp(pts[i + 1], seg_t)
-				draw_circle(pulse_pos, 3.0, Color(0.0, 1.0, 1.0, 0.6))
-				draw_circle(pulse_pos, 6.0, Color(0.0, 1.0, 1.0, 0.15))
+				draw_circle(pulse_pos, 3.0, Themes.c("shield", 0.6))
+				draw_circle(pulse_pos, 6.0, Themes.glow("shield", 0.15))
 				break
 			accum += seg_len
 
@@ -380,7 +404,7 @@ func _draw_shield_dome(active: bool) -> void:
 				continue
 			var alpha := lerpf(0.12, 0.25, pulse) * sin(angle)
 			draw_line(Vector2(cx - slice_rx, slice_y), Vector2(cx + slice_rx, slice_y),
-				Color(0.0, 0.9, 1.0, alpha), 1.0, true)
+				Themes.glow("shield", alpha), 1.0, true)
 
 		# Scan line horizontal animada
 		var scan_angle := scan * PI
@@ -388,10 +412,10 @@ func _draw_shield_dome(active: bool) -> void:
 		var scan_rx := absf(cos(scan_angle)) * rx
 		if scan_rx > 4.0:
 			draw_line(Vector2(cx - scan_rx, scan_y), Vector2(cx + scan_rx, scan_y),
-				Color(0.0, 1.0, 1.0, 0.45), 2.0, true)
+				Themes.c("shield", 0.45), 2.0, true)
 
 		# Contorno — semicirculo (arco de PI, da direita pra esquerda passando pelo topo)
-		var outline_col := Color(0.0, 1.0, 1.0, lerpf(0.7, 1.0, pulse))
+		var outline_col := Themes.c("shield", lerpf(0.7, 1.0, pulse))
 		var arc_pts := PackedVector2Array()
 		for i in segments + 1:
 			var angle := PI * float(i) / segments  # 0..PI
@@ -402,7 +426,7 @@ func _draw_shield_dome(active: bool) -> void:
 			draw_line(arc_pts[i], arc_pts[i + 1], outline_col, 2.0, true)
 
 		# Base — elipse perspectivada (metade visivel, parte da frente)
-		var base_col := Color(0.0, 1.0, 1.0, lerpf(0.5, 0.8, pulse))
+		var base_col := Themes.c("shield", lerpf(0.5, 0.8, pulse))
 		var base_pts := PackedVector2Array()
 		for i in segments + 1:
 			var angle := PI + PI * float(i) / segments  # PI..TAU (metade de baixo)
@@ -410,7 +434,7 @@ func _draw_shield_dome(active: bool) -> void:
 			var by := base_y + sin(angle) * ry_base
 			base_pts.append(Vector2(bx, by))
 		for i in base_pts.size() - 1:
-			draw_line(base_pts[i], base_pts[i + 1], Color(0.0, 1.0, 1.0, 0.15), 1.0, true)
+			draw_line(base_pts[i], base_pts[i + 1], Themes.glow("shield", 0.15), 1.0, true)
 		# Metade da frente (visivel, mais forte)
 		var front_pts := PackedVector2Array()
 		for i in segments + 1:
@@ -439,12 +463,12 @@ func _draw_shield_dome(active: bool) -> void:
 				var py := base_y - sin(angle) * merid_h
 				merid_pts.append(Vector2(mx, py))
 			for i in merid_pts.size() - 1:
-				draw_line(merid_pts[i], merid_pts[i + 1], Color(0.0, 1.0, 1.0, 0.15), 1.0, true)
+				draw_line(merid_pts[i], merid_pts[i + 1], Themes.glow("shield", 0.15), 1.0, true)
 
 		# Hexagono no topo
 		var hex_r := rx * 0.15
 		var hex_y := base_y - dome_height
-		var hex_col := Color(0.0, 1.0, 1.0, lerpf(0.25, 0.5, pulse))
+		var hex_col := Themes.c("shield", lerpf(0.25, 0.5, pulse))
 		for i in 6:
 			var a1 := TAU * i / 6.0
 			var a2 := TAU * (i + 1) / 6.0
@@ -455,8 +479,8 @@ func _draw_shield_dome(active: bool) -> void:
 	else:
 		# Recarregando — arco dim com progresso
 		var progress := 1.0 - (shield_timer / shield_cooldown)
-		var dim := Color(0.0, 0.6, 0.8, 0.15)
-		var lit := Color(0.0, 1.0, 1.0, 0.4)
+		var dim := Themes.c("city_neon", 0.15)
+		var lit := Themes.c("shield", 0.4)
 		var fill_segs := int(segments * progress)
 
 		var arc_pts := PackedVector2Array()
@@ -480,9 +504,12 @@ func _draw_shield_dome(active: bool) -> void:
 			draw_line(base_pts[i], base_pts[i + 1], dim, 1.0, true)
 
 func _draw_dead() -> void:
-	var dead := Color(0.0, 0.6, 1.0, 0.2)
-	var dead_dim := Color(0.0, 0.4, 0.6, 0.1)
-	var fill := Color(0.02, 0.03, 0.06)
+	if Themes.mode == ThemeSystem.Mode.ASCII:
+		_draw_ascii_dead()
+		return
+	var dead := Themes.c("city_dead")
+	var dead_dim := Themes.c("city_dead", 0.1)
+	var fill := Themes.c("city_fill")
 
 	# Trilhas mortas
 	for tpts in traces:
@@ -494,11 +521,11 @@ func _draw_dead() -> void:
 
 	# Pins dim
 	for i in range(0, pin_positions.size(), 2):
-		draw_line(pin_positions[i], pin_positions[i + 1], Color(0.0, 0.3, 0.4, 0.2), 1.5, true)
+		draw_line(pin_positions[i], pin_positions[i + 1], Themes.c("city_dead", 0.2), 1.5, true)
 
 	# Chip quebrado — com volume
 	var chip := _chip_quad()
-	var side_dead := Color(0.0, 0.4, 0.6, 0.12)
+	var side_dead := Themes.c("city_dead", 0.12)
 	var front_face := PackedVector2Array([
 		chip[3], chip[2],
 		Vector2(chip[2].x, chip[2].y + CHIP_DEPTH),

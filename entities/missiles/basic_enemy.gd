@@ -10,7 +10,8 @@ var reflected := false
 var boss_origin: Vector2 = Vector2.ZERO  # se != ZERO, invulneravel dentro do glow
 const BOSS_GLOW_RADIUS := 160.0
 
-const BASE_COLOR := Color(1.0, 0.0, 0.6)
+var BASE_COLOR: Color:
+	get: return Themes.c("enemy_basic")
 const TRAIL_LENGTH := 25
 const TRAIL_MIN_DIST := 18.0
 const MISSILE_RADIUS := 10.0
@@ -33,7 +34,23 @@ func _reflect() -> void:
 	reflected = true
 	trail.clear()
 
+func _draw_ascii() -> void:
+	var font := ThemeDB.fallback_font
+	var color := Themes.c("enemy_basic")
+	# Trail
+	var inv := global_transform.affine_inverse()
+	for i in trail.size():
+		var t := 1.0 - float(i) / trail.size()
+		var local_pos: Vector2 = inv * trail[i]
+		var c := Color(color.r, color.g, color.b, 0.4 * t)
+		draw_string(font, local_pos - Vector2(4, -4), ".", HORIZONTAL_ALIGNMENT_CENTER, -1, 28, c)
+	# Missile character
+	draw_string(font, Vector2(-7, 10), "V", HORIZONTAL_ALIGNMENT_CENTER, -1, 28, color)
+
 func _draw() -> void:
+	if Themes.mode == ThemeSystem.Mode.ASCII:
+		_draw_ascii()
+		return
 	# Trail
 	if trail.size() >= 2:
 		var pts := PackedVector2Array()
@@ -47,7 +64,7 @@ func _draw() -> void:
 			colors.append(Color(BASE_COLOR.r, BASE_COLOR.g, BASE_COLOR.b, 0.4 * t))
 		draw_polyline_colors(pts, colors, MISSILE_RADIUS * 2.0)
 		draw_polyline_colors(pts, colors, MISSILE_RADIUS * 0.5)
-	var fill := Color(0.15, 0.0, 0.06)
+	var fill := Themes.c("fill_entity")
 	# Warhead apontando pra baixo
 	var body := PackedVector2Array([
 		Vector2(0, 14),     # ponta
@@ -59,7 +76,7 @@ func _draw() -> void:
 	var fin_l := PackedVector2Array([Vector2(-6, -8), Vector2(-12, -14), Vector2(-5, -12)])
 	var fin_r := PackedVector2Array([Vector2(6, -8), Vector2(12, -14), Vector2(5, -12)])
 	# Glow
-	draw_circle(Vector2.ZERO, 16.0, Color(BASE_COLOR.r, BASE_COLOR.g, BASE_COLOR.b, 0.08))
+	draw_circle(Vector2.ZERO, 16.0, Themes.glow("enemy_basic", 0.08))
 	# Corpo
 	draw_polygon(body, PackedColorArray([fill, fill, fill, fill, fill]))
 	for i in body.size():

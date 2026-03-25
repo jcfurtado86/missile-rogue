@@ -16,14 +16,8 @@ var homing_strength := 0.0
 var critical_mass_chance := 0.0
 var pull_force := 0.0
 
-const EXPLOSION_COLORS: Array[Color] = [
-	Color(0.0, 1.0, 1.0),   # cyan
-	Color(1.0, 0.0, 0.6),   # hot pink
-	Color(1.0, 1.0, 0.0),   # amarelo neon
-	Color(0.2, 1.0, 0.1),   # verde neon
-	Color(0.7, 0.0, 1.0),   # violeta
-	Color(1.0, 0.4, 0.0),   # laranja neon
-]
+var EXPLOSION_COLORS: Array[Color]:
+	get: return Themes.get_explosion_colors()
 
 @onready var collision: CollisionShape2D = $CollisionShape2D
 
@@ -36,9 +30,12 @@ func _on_area_hit(area: Area2D) -> void:
 		hit_count += 1
 
 func _draw() -> void:
+	if Themes.mode == ThemeSystem.Mode.ASCII:
+		_draw_ascii()
+		return
 	if not arrived:
-		var neon := Color(0.0, 1.0, 1.0)
-		var fill := Color(0.0, 0.1, 0.15)
+		var neon := Themes.c("primary")
+		var fill := Themes.c("fill_entity")
 		# Forma de flecha/diamante apontando pra cima
 		var body := PackedVector2Array([
 			Vector2(0, -14),   # ponta
@@ -51,7 +48,7 @@ func _draw() -> void:
 		var fin_l := PackedVector2Array([Vector2(-4, 8), Vector2(-10, 14), Vector2(-3, 12)])
 		var fin_r := PackedVector2Array([Vector2(4, 8), Vector2(10, 14), Vector2(3, 12)])
 		# Glow
-		draw_circle(Vector2(0, 0), 16.0, Color(neon.r, neon.g, neon.b, 0.08))
+		draw_circle(Vector2(0, 0), 16.0, Themes.glow("primary", 0.08))
 		# Corpo
 		draw_polygon(body, PackedColorArray([fill, fill, fill, fill, fill]))
 		for i in body.size():
@@ -71,6 +68,28 @@ func _draw() -> void:
 		draw_circle(Vector2.ZERO, explosion_radius * 1.3, Color(c.r, c.g, c.b, 0.12))
 		draw_circle(Vector2.ZERO, explosion_radius, Color(c.r, c.g, c.b, 0.35))
 		draw_circle(Vector2.ZERO, explosion_radius * 0.6, Color(1.0, 1.0, 1.0, 0.5))
+
+func _draw_ascii() -> void:
+	var font := ThemeDB.fallback_font
+	var fs := 32
+	var char_w := font.get_string_size("^", HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+	var offset_x := -char_w / 2.0
+	if not arrived:
+		var c := Themes.c("primary")
+		font.draw_string(get_canvas_item(), Vector2(offset_x, fs / 4.0), "^", HORIZONTAL_ALIGNMENT_LEFT, -1, fs, c)
+	else:
+		var colors := Themes.get_explosion_colors()
+		var progress := explosion_time / explosion_duration
+		var count := int(lerp(3.0, 8.0, progress))
+		var star_w := font.get_string_size("*", HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+		var star_offset_x := -star_w / 2.0
+		for i in count:
+			var angle := float(i) / count * TAU + explosion_time * 5.0
+			var dist := explosion_radius * progress * (0.5 + 0.5 * sin(float(i) * 1.7))
+			var pos := Vector2(cos(angle), sin(angle)) * dist
+			var idx := (i + int(explosion_time * 20.0)) % colors.size()
+			var c := colors[idx]
+			font.draw_string(get_canvas_item(), pos + Vector2(star_offset_x, fs / 4.0), "*", HORIZONTAL_ALIGNMENT_LEFT, -1, fs, c)
 
 func _physics_process(delta: float) -> void:
 	if arrived:

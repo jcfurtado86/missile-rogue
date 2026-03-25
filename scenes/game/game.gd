@@ -322,7 +322,7 @@ func _show_no_ammo(pos: Vector2) -> void:
 	var lbl := Label.new()
 	lbl.text = get_node("/root/Tr").t("NO_AMMO")
 	lbl.add_theme_font_size_override("font_size", 36)
-	lbl.add_theme_color_override("font_color", Color(1.0, 0.3, 0.2))
+	lbl.add_theme_color_override("font_color", Themes.c("text_warning"))
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	lbl.position = pos - Vector2(100, 20)
 	add_child(lbl)
@@ -667,7 +667,7 @@ func _on_city_destroyed(city: Node2D) -> void:
 
 func _draw() -> void:
 	if flash_alpha > 0.0:
-		draw_rect(Rect2(-screen_width, -screen_height, screen_width * 3, screen_height * 3), Color(1.0, 0.3, 0.2, flash_alpha))
+		draw_rect(Rect2(-screen_width, -screen_height, screen_width * 3, screen_height * 3), Themes.c("text_warning", flash_alpha))
 
 
 class WarningLayer extends Node2D:
@@ -690,11 +690,11 @@ class WarningLayer extends Node2D:
 				continue
 			var target_pos: Vector2 = indicator["pos"]
 			var local_pos := target_pos - game.global_position
-			var col := Color(1.0, 0.0, 0.3, 0.6)
+			var col := Themes.c("warning", 0.6)
 			draw_line(local_pos + Vector2(-50, 0), local_pos + Vector2(50, 0), col, 3.0, true)
 			draw_line(local_pos + Vector2(0, -50), local_pos + Vector2(0, 50), col, 3.0, true)
 			draw_arc(local_pos, 40.0, 0, TAU, 32, col, 2.5, true)
-			draw_arc(local_pos, 20.0, 0, TAU, 24, Color(1.0, 0.0, 0.3, 0.3), 1.5, true)
+			draw_arc(local_pos, 20.0, 0, TAU, 24, Themes.c("warning", 0.3), 1.5, true)
 		for i in range(to_remove.size() - 1, -1, -1):
 			game.warning_indicators.remove_at(to_remove[i])
 
@@ -725,8 +725,8 @@ class TargetLockLayer extends Node2D:
 	func _draw() -> void:
 		if alpha <= 0.0:
 			return
-		var col := Color(1.0, 0.2, 0.2, 0.6 * alpha)
-		var col_dim := Color(1.0, 0.2, 0.2, 0.3 * alpha)
+		var col := Themes.c("target_lock", 0.6 * alpha)
+		var col_dim := Themes.c("target_lock", 0.3 * alpha)
 		# Linha tracejada da bateria ate o alvo
 		var dir := (target_pos - battery_pos)
 		var dist := dir.length()
@@ -751,11 +751,11 @@ class TargetLockLayer extends Node2D:
 			var icol: Color
 			var icol_dim: Color
 			if overlapping:
-				icol = Color(0.2, 1.0, 0.2, 0.7 * alpha)
-				icol_dim = Color(0.2, 1.0, 0.2, 0.3 * alpha)
+				icol = Themes.c("intercept_valid", 0.7 * alpha)
+				icol_dim = Themes.c("intercept_valid", 0.3 * alpha)
 			else:
-				icol = Color(1.0, 0.8, 0.0, 0.7 * alpha)
-				icol_dim = Color(1.0, 0.8, 0.0, 0.3 * alpha)
+				icol = Themes.c("intercept_invalid", 0.7 * alpha)
+				icol_dim = Themes.c("intercept_invalid", 0.3 * alpha)
 			# X no ponto de interceptacao
 			var ix := 10.0
 			draw_line(intercept_pos + Vector2(-ix, -ix), intercept_pos + Vector2(ix, ix), icol, 4.0, true)

@@ -6,6 +6,8 @@ var locale_loaded := "en"
 var music_volume := 1.0
 var sfx_volume := 1.0
 var scanlines_enabled := false
+var theme_id := "neon"
+var unlocked_themes := {"neon": true, "gameboy": false, "ascii": false}
 
 func to_dict(upgrade_system: UpgradeSystem, ascension: AscensionSystem, currency: CurrencySystem) -> Dictionary:
 	var upgrade_levels := {}
@@ -27,6 +29,8 @@ func to_dict(upgrade_system: UpgradeSystem, ascension: AscensionSystem, currency
 		"music_volume": music_volume,
 		"sfx_volume": sfx_volume,
 		"scanlines": scanlines_enabled,
+		"theme": theme_id,
+		"unlocked_themes": unlocked_themes.duplicate(),
 	}
 
 func from_dict(data: Dictionary, upgrade_system: UpgradeSystem, ascension: AscensionSystem, currency: CurrencySystem) -> void:
@@ -49,6 +53,11 @@ func from_dict(data: Dictionary, upgrade_system: UpgradeSystem, ascension: Ascen
 	music_volume = data.get("music_volume", 1.0)
 	sfx_volume = data.get("sfx_volume", 1.0)
 	scanlines_enabled = data.get("scanlines", false)
+	theme_id = data.get("theme", "neon")
+	var saved_themes = data.get("unlocked_themes", {})
+	for key in saved_themes:
+		if saved_themes[key]:
+			unlocked_themes[key] = true
 	var levels = data.get("upgrades", {})
 	for name in levels:
 		if upgrade_system.upgrades.has(name):
