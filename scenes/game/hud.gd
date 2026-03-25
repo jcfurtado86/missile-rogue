@@ -38,6 +38,7 @@ var combo_tween: Tween
 var combo_value := 0
 var combo_time := 0.0
 var combo_base_top := 0.0
+var _combo_breaking := false
 
 # Popup system
 var dimmer: ColorRect
@@ -283,6 +284,21 @@ func _on_pause_pressed() -> void:
 
 	_show_popup(panel)
 
+func _force_redraw_all() -> void:
+	var game = get_parent()
+	if not game:
+		return
+	for node in game.get_tree().get_nodes_in_group("enemy"):
+		if is_instance_valid(node):
+			node.queue_redraw()
+	for node in game.get_tree().get_nodes_in_group("fragment"):
+		if is_instance_valid(node):
+			node.queue_redraw()
+	# Neon grid
+	for child in game.get_children():
+		if child.has_method("queue_redraw"):
+			child.queue_redraw()
+
 func _populate_pause_themes() -> void:
 	for child in _pause_theme_box.get_children():
 		child.queue_free()
@@ -308,6 +324,7 @@ func _populate_pause_themes() -> void:
 			tbtn.pressed.connect(func():
 				Themes.set_theme_id(tid)
 				_populate_pause_themes()
+				_force_redraw_all()
 			)
 		_pause_theme_box.add_child(tbtn)
 
@@ -466,6 +483,7 @@ func _process(delta: float) -> void:
 func break_combo() -> void:
 	if combo_value < 2:
 		return
+	_combo_breaking = true
 	get_node("/root/SoundManager").combo_break()
 	# Animacao de quebra — encolhe, rotaciona e some
 	if combo_tween and combo_tween.is_valid():
@@ -481,14 +499,16 @@ func break_combo() -> void:
 		combo_label.scale = Vector2.ONE
 		combo_label.modulate.a = 1.0
 		combo_label.add_theme_color_override("font_color", Themes.ui("hud_combo"))
+		_combo_breaking = false
 	)
 
 func update_combo(value: int) -> void:
 	combo_value = value
 	if value < 2:
-		combo_label.visible = false
-		combo_label.rotation = 0.0
-		combo_label.offset_top = combo_base_top
+		if not _combo_breaking:
+			combo_label.visible = false
+			combo_label.rotation = 0.0
+			combo_label.offset_top = combo_base_top
 		return
 	combo_label.text = "x%d" % value
 	combo_label.visible = true

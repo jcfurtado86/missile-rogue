@@ -71,4 +71,6 @@ func _on_area_entered(area: Area2D) -> void:
 	elif area.is_in_group("enemy") or area.is_in_group("fragment"):
 		if area.has_signal("destroyed"):
 			area.destroyed.emit(area, false)
-		area.queue_free()
+		if area.has_method("_spawn_death_particles"):
+			area.call_deferred("_spawn_death_particles")
+		area.call_deferred("queue_free")
