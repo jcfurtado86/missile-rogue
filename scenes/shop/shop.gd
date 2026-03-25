@@ -601,6 +601,31 @@ func _draw_icon(key: String, center: Vector2, col: Color) -> void:
 			c.draw_arc(center, 13.0 * s, 0, TAU, 16, col, 2.5, true)
 			c.draw_line(center + Vector2(-7, -7) * s, center + Vector2(0, 9) * s, col, 3.0, true)
 			c.draw_line(center + Vector2(7, -7) * s, center + Vector2(0, 9) * s, col, 3.0, true)
+		"target_lock":
+			# Mira — circulo + cruz
+			c.draw_arc(center, 12.0 * s, 0, TAU, 16, col, 2.5, true)
+			c.draw_line(center + Vector2(0, -15) * s, center + Vector2(0, 15) * s, col, 2.0, true)
+			c.draw_line(center + Vector2(-15, 0) * s, center + Vector2(15, 0) * s, col, 2.0, true)
+			c.draw_circle(center, 3.0 * s, col)
+		"future_sight":
+			# Olho — elipse + pupila + raios de previsao
+			c.draw_arc(center, 13.0 * s, -0.5, 0.5, 8, col, 2.5, true)
+			c.draw_arc(center, 13.0 * s, PI - 0.5, PI + 0.5, 8, col, 2.5, true)
+			# Palpebras (arcos superior e inferior)
+			var eye_pts_top: PackedVector2Array = []
+			var eye_pts_bot: PackedVector2Array = []
+			for i in 9:
+				var t := float(i) / 8.0
+				var x := lerpf(-13, 13, t) * s
+				var curve := sin(t * PI) * 9.0 * s
+				eye_pts_top.append(center + Vector2(x, -curve))
+				eye_pts_bot.append(center + Vector2(x, curve))
+			for i in eye_pts_top.size() - 1:
+				c.draw_line(eye_pts_top[i], eye_pts_top[i + 1], col, 2.5, true)
+				c.draw_line(eye_pts_bot[i], eye_pts_bot[i + 1], col, 2.5, true)
+			# Iris + pupila
+			c.draw_arc(center, 6.0 * s, 0, TAU, 12, col, 2.0, true)
+			c.draw_circle(center, 3.0 * s, col)
 		_:
 			c.draw_circle(center, 8.0 * s, col)
 

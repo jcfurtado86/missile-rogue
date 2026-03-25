@@ -42,6 +42,8 @@ var warning_indicators: Array[Dictionary] = []
 
 # Combo
 var combo := 0
+var _pending_missiles := 0  # misseis em voo que ainda nao explodiram
+var _burst_hits := 0  # total de hits no burst atual
 
 # Screen effects
 var shake_intensity := 0.0
@@ -76,6 +78,9 @@ func _ready() -> void:
 	hud.quit_to_menu.connect(func(): game_over.emit())
 
 	screen_width = get_viewport().get_visible_rect().size.x
+	if not stats:
+		push_error("game.gd: stats is null — scene must be launched via main.tscn")
+		return
 	var battery_y := screen_height - BATTERY_Y_OFFSET
 	var battery_scene := preload("res://entities/battery/battery.tscn")
 	for ratio in stats.get_battery_ratios():
@@ -285,6 +290,8 @@ func _calc_intercept(battery_pos: Vector2, aim_pos: Vector2) -> Vector2:
 	for enemy in get_tree().get_nodes_in_group("enemy"):
 		if not is_instance_valid(enemy) or not enemy.is_inside_tree():
 			continue
+		if not "target_position" in enemy:
+			continue
 		var e_pos: Vector2 = enemy.global_position
 		var e_target: Vector2 = enemy.target_position
 		var e_speed: float = enemy.speed
@@ -342,6 +349,7 @@ func _spawn_player_missile(battery: Node2D, target: Vector2) -> void:
 	missile.critical_mass_chance = stats.critical_mass_chance
 	missile.pull_force = stats.pull_force
 	missile.exploded.connect(_on_missile_exploded)
+	_pending_missiles += 1
 	add_child(missile)
 
 func _handle_spawning(delta: float) -> void:
@@ -456,7 +464,9 @@ func _on_boss_defeated() -> void:
 		for city in cities:
 			city.set_deferred("monitorable", false)
 			city.set_deferred("monitoring", false)
-		get_tree().create_timer(2.5).timeout.connect(func():
+		var tw := create_tween()
+		tw.tween_interval(2.5)
+		tw.tween_callback(func():
 			is_game_over = true
 			hud.set_earnings(run_earnings)
 			hud.hide_boss_hp()
@@ -515,14 +525,18 @@ func _freeze_enemies(duration: float) -> void:
 	for enemy in get_tree().get_nodes_in_group("enemy"):
 		if is_instance_valid(enemy) and not enemy.is_in_group("boss"):
 			enemy.set_physics_process(false)
-			get_tree().create_timer(duration).timeout.connect(func():
+			var tw := create_tween()
+			tw.tween_interval(duration)
+			tw.tween_callback(func():
 				if is_instance_valid(enemy):
 					enemy.set_physics_process(true)
 			)
 	for frag in get_tree().get_nodes_in_group("fragment"):
 		if is_instance_valid(frag):
 			frag.set_physics_process(false)
-			get_tree().create_timer(duration).timeout.connect(func():
+			var tw := create_tween()
+			tw.tween_interval(duration)
+			tw.tween_callback(func():
 				if is_instance_valid(frag):
 					frag.set_physics_process(true)
 			)
@@ -564,8 +578,11 @@ func _handle_auto_turret(delta: float) -> void:
 		missile.explosion_radius = 30.0 * stats.explosion_radius_mult * 0.7
 		missile.homing_strength = maxf(stats.homing_strength, 0.3)  # auto turret sempre tem leve homing
 		missile.pull_force = stats.pull_force
-		missile.exploded.connect(_on_missile_exploded)
+		missile.exploded.connect(_on_auto_turret_exploded)
 		add_child(missile)
+
+func _on_auto_turret_exploded(_hits: int) -> void:
+	pass  # auto turret nao afeta combo
 
 # --- Game over & revive ---
 
@@ -641,9 +658,14 @@ func decline_double() -> void:
 # --- Phoenix protocol ---
 
 func _on_missile_exploded(hits: int) -> void:
-	if hits == 0:
-		combo = 0
-		hud.update_combo(combo)
+	_pending_missiles = maxi(_pending_missiles - 1, 0)
+	_burst_hits += hits
+	# So reseta combo quando todos os misseis do burst explodiram E nenhum acertou
+	if _pending_missiles <= 0:
+		if _burst_hits == 0:
+			combo = 0
+			hud.update_combo(combo)
+		_burst_hits = 0
 
 func _on_city_destroyed(city: Node2D) -> void:
 	combo = 0
@@ -656,7 +678,9 @@ func _on_city_destroyed(city: Node2D) -> void:
 	# Phoenix protocol — revive automatico
 	if phoenix_revives_remaining > 0:
 		phoenix_revives_remaining -= 1
-		get_tree().create_timer(1.5).timeout.connect(func():
+		var tw := create_tween()
+		tw.tween_interval(1.5)
+		tw.tween_callback(func():
 			if is_instance_valid(city) and not city.is_alive():
 				city.revive()
 				if stats.shield_cooldown > 0.0:
