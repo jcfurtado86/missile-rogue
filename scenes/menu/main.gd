@@ -46,7 +46,9 @@ func _on_reset_save() -> void:
 	currency = CurrencySystem.new()
 	upgrade_system = UpgradeSystem.new()
 	ascension_system = AscensionSystem.new()
-	_save_game()
+	save_system = SaveSystem.new()
+	Themes.unlocked_themes = {"neon": true, "gameboy": false, "ascii": false}
+	Themes.set_theme_id("neon")
 	var dir := DirAccess.open("user://")
 	if dir and dir.file_exists("save.json"):
 		dir.remove("save.json")

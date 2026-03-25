@@ -66,9 +66,9 @@ func _on_area_entered(area: Area2D) -> void:
 			if area.has_method("_spawn_boss_explosion"):
 				area._spawn_boss_explosion()
 			area.boss_defeated.emit()
-			area.destroyed.emit(area)
+			area.destroyed.emit(area, false)
 			area.call_deferred("queue_free")
 	elif area.is_in_group("enemy") or area.is_in_group("fragment"):
 		if area.has_signal("destroyed"):
-			area.destroyed.emit(area)
+			area.destroyed.emit(area, false)
 		area.queue_free()

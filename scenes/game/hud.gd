@@ -8,10 +8,10 @@ var hud_currencies: Array = []
 
 var GEM_COLORS: Dictionary:
 	get: return {
-		"credits": Themes.c("gem_credits"),
-		"crystals": Themes.c("gem_crystals"),
-		"void": Themes.c("gem_void"),
-		"eter": Themes.c("gem_eter"),
+		"credits": Themes.ui("gem_credits"),
+		"crystals": Themes.ui("gem_crystals"),
+		"void": Themes.ui("gem_void"),
+		"eter": Themes.ui("gem_eter"),
 	}
 const GEM_SHORT := {
 	"credits": "CR",
@@ -80,8 +80,8 @@ func _ready() -> void:
 	combo_label = Label.new()
 	combo_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	combo_label.add_theme_font_size_override("font_size", _sf(96))
-	combo_label.add_theme_color_override("font_color", Themes.c("hud_combo"))
-	combo_label.add_theme_color_override("font_outline_color", Themes.c("hud_combo", 0.4))
+	combo_label.add_theme_color_override("font_color", Themes.ui("hud_combo"))
+	combo_label.add_theme_color_override("font_outline_color", Themes.ui("hud_combo", 0.4))
 	combo_label.add_theme_constant_override("outline_size", _sf(4))
 	var scr_combo := get_viewport().get_visible_rect().size
 	combo_label.offset_left = 0
@@ -107,39 +107,39 @@ func _apply_neon_style() -> void:
 	boss_label.add_theme_font_size_override("font_size", _sf(28))
 	nova_button.add_theme_font_size_override("font_size", _sf(24))
 	freeze_button.add_theme_font_size_override("font_size", _sf(24))
-	threat_label.add_theme_color_override("font_color", Themes.c("hud_threat"))
-	credits_label.add_theme_color_override("font_color", Themes.c("primary"))
-	boss_label.add_theme_color_override("font_color", Themes.c("hud_boss"))
+	threat_label.add_theme_color_override("font_color", Themes.ui("hud_threat"))
+	credits_label.add_theme_color_override("font_color", Themes.ui("primary"))
+	boss_label.add_theme_color_override("font_color", Themes.ui("hud_boss"))
 	var threat_style := StyleBoxFlat.new()
-	threat_style.bg_color = Themes.c("hud_threat", 0.8)
+	threat_style.bg_color = Themes.ui("hud_threat", 0.8)
 	threat_bar.add_theme_stylebox_override("fill", threat_style)
 	var threat_bg := StyleBoxFlat.new()
-	threat_bg.bg_color = Themes.c("fill_dark")
-	threat_bg.border_color = Themes.c("hud_threat", 0.3)
+	threat_bg.bg_color = Themes.ui("fill_dark")
+	threat_bg.border_color = Themes.ui("hud_threat", 0.3)
 	threat_bg.set_border_width_all(1)
 	threat_bar.add_theme_stylebox_override("background", threat_bg)
 	var special_style := StyleBoxFlat.new()
-	special_style.bg_color = Themes.c("hud_special", 0.8)
+	special_style.bg_color = Themes.ui("hud_special", 0.8)
 	special_bar.add_theme_stylebox_override("fill", special_style)
 	var special_bg := StyleBoxFlat.new()
-	special_bg.bg_color = Themes.c("fill_dark")
-	special_bg.border_color = Themes.c("hud_special", 0.3)
+	special_bg.bg_color = Themes.ui("fill_dark")
+	special_bg.border_color = Themes.ui("hud_special", 0.3)
 	special_bg.set_border_width_all(1)
 	special_bar.add_theme_stylebox_override("background", special_bg)
 	var freeze_style := StyleBoxFlat.new()
-	freeze_style.bg_color = Themes.c("hud_freeze", 0.8)
+	freeze_style.bg_color = Themes.ui("hud_freeze", 0.8)
 	freeze_bar.add_theme_stylebox_override("fill", freeze_style)
 	var freeze_bg := StyleBoxFlat.new()
-	freeze_bg.bg_color = Themes.c("fill_dark")
-	freeze_bg.border_color = Themes.c("hud_freeze", 0.3)
+	freeze_bg.bg_color = Themes.ui("fill_dark")
+	freeze_bg.border_color = Themes.ui("hud_freeze", 0.3)
 	freeze_bg.set_border_width_all(1)
 	freeze_bar.add_theme_stylebox_override("background", freeze_bg)
 	var boss_style := StyleBoxFlat.new()
-	boss_style.bg_color = Themes.c("hud_boss", 0.8)
+	boss_style.bg_color = Themes.ui("hud_boss", 0.8)
 	boss_bar.add_theme_stylebox_override("fill", boss_style)
 	var boss_bg := StyleBoxFlat.new()
-	boss_bg.bg_color = Themes.c("fill_dark")
-	boss_bg.border_color = Themes.c("hud_boss", 0.3)
+	boss_bg.bg_color = Themes.ui("fill_dark")
+	boss_bg.border_color = Themes.ui("hud_boss", 0.3)
 	boss_bg.set_border_width_all(1)
 	boss_bar.add_theme_stylebox_override("background", boss_bg)
 	_reposition_for_screen()
@@ -153,7 +153,7 @@ func _setup_pause_button() -> void:
 	pause_button.offset_top = _s(15.0)
 	pause_button.offset_right = _s(95.0)
 	pause_button.offset_bottom = _s(80.0)
-	_style_popup_button(pause_button, Themes.c("hud_threat"))
+	_style_popup_button(pause_button, Themes.ui("hud_threat"))
 	pause_button.pressed.connect(_on_pause_pressed)
 	add_child(pause_button)
 
@@ -249,7 +249,7 @@ func _on_pause_pressed() -> void:
 	resume_btn.text = get_node("/root/Tr").t("RESUME")
 	resume_btn.custom_minimum_size = Vector2(_s(300), _s(65))
 	resume_btn.add_theme_font_size_override("font_size", _sf(28))
-	_style_popup_button(resume_btn, Themes.c("primary"))
+	_style_popup_button(resume_btn, Themes.ui("primary"))
 	resume_btn.pressed.connect(func():
 		get_tree().paused = false
 		_dismiss_popup()
@@ -260,7 +260,7 @@ func _on_pause_pressed() -> void:
 	quit_btn.text = get_node("/root/Tr").t("GIVE_UP")
 	quit_btn.custom_minimum_size = Vector2(_s(300), _s(65))
 	quit_btn.add_theme_font_size_override("font_size", _sf(28))
-	_style_popup_button(quit_btn, Themes.c("text_warning"))
+	_style_popup_button(quit_btn, Themes.ui("text_warning"))
 	quit_btn.pressed.connect(func():
 		get_tree().paused = false
 		_dismiss_popup()
@@ -283,9 +283,9 @@ func _reposition_for_screen() -> void:
 	var radius := _s(90.0)
 	var margin := radius + _s(5.0)
 	_create_circle_button("nova", Vector2(margin, center_y),
-		Themes.c("hud_special"), _on_nova_pressed)
+		Themes.ui("hud_special"), _on_nova_pressed)
 	_create_circle_button("freeze", Vector2(screen_w - margin, center_y),
-		Themes.c("hud_freeze"), _on_freeze_pressed)
+		Themes.ui("hud_freeze"), _on_freeze_pressed)
 
 var nova_circle: Control
 var freeze_circle: Control
@@ -325,6 +325,7 @@ func _create_circle_button(id: String, pos: Vector2, color: Color, callback: Cal
 	var _id := id
 	var _self := self
 	draw_ctrl.draw.connect(func():
+		if not is_instance_valid(_self): return
 		var charge := _self.nova_charge if _id == "nova" else _self.freeze_charge_val
 		var is_ready := _self.nova_ready if _id == "nova" else _self.freeze_ready_val
 		var alpha := 0.6 if is_ready else 0.25
@@ -404,9 +405,9 @@ func _process(delta: float) -> void:
 	combo_label.offset_top = combo_base_top + randf_range(-shake, shake)
 	# Cor — ciano → amarelo → rosa/vermelho (adapta ao tema)
 	var col: Color
-	var c_primary := Themes.c("hud_combo")
-	var c_mid := Themes.c("gem_eter")  # laranja/amarelo
-	var c_hot := Themes.c("enemy_basic")  # rosa/vermelho
+	var c_primary: Color = Themes.ui("hud_combo")
+	var c_mid: Color = Themes.ui("gem_eter")  # laranja/amarelo
+	var c_hot: Color = Themes.ui("enemy_basic")  # rosa/vermelho
 	if combo_value < 6:
 		col = c_primary
 	elif combo_value < 12:
@@ -417,7 +418,7 @@ func _process(delta: float) -> void:
 		col = c_mid.lerp(c_hot, t)
 	else:
 		var flash := 0.5 + 0.5 * sin(combo_time * 12.0)
-		col = c_hot.lerp(Themes.c("text_primary"), flash * 0.4)
+		col = c_hot.lerp(Themes.ui("text_primary"), flash * 0.4)
 	combo_label.add_theme_color_override("font_color", col)
 	combo_label.add_theme_color_override("font_outline_color", Color(col.r * 0.3, col.g * 0.3, col.b * 0.3))
 
@@ -571,7 +572,7 @@ func _create_popup_panel(border_col: Color, width := 600.0, height := 500.0) -> 
 	panel.pivot_offset = Vector2(w / 2.0, h / 2.0)
 	# Background
 	var bg := ColorRect.new()
-	bg.color = Themes.c("fill_entity", 0.92)
+	bg.color = Themes.ui("fill_entity", 0.92)
 	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.add_child(bg)
@@ -580,6 +581,7 @@ func _create_popup_panel(border_col: Color, width := 600.0, height := 500.0) -> 
 	border.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	border.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	border.draw.connect(func():
+		if not is_instance_valid(border): return
 		var s := border.size
 		# Glow externo
 		border.draw_rect(Rect2(-3, -3, s.x + 6, s.y + 6), Color(border_col.r, border_col.g, border_col.b, 0.15), false, 6.0)
@@ -737,7 +739,9 @@ func show_game_over() -> void:
 	popup_icon_draw.offset_bottom = _s(100.0)
 	popup_icon_draw.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var _icon := popup_icon_draw
-	popup_icon_draw.draw.connect(func(): _draw_skull(_icon, Vector2(_s(50), _s(35)), red))
+	popup_icon_draw.draw.connect(func():
+		if not is_instance_valid(_icon): return
+		_draw_skull(_icon, Vector2(_s(50), _s(35)), red))
 	panel.add_child(popup_icon_draw)
 	# Title
 	var title := Label.new()
@@ -758,7 +762,9 @@ func show_game_over() -> void:
 	sep.offset_right = _s(520.0)
 	sep.offset_bottom = _s(172.0)
 	sep.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	sep.draw.connect(func(): sep.draw_line(Vector2.ZERO, Vector2(sep.size.x, 0), Color(red.r, red.g, red.b, 0.3), _s(1.5)))
+	sep.draw.connect(func():
+		if not is_instance_valid(sep): return
+		sep.draw_line(Vector2.ZERO, Vector2(sep.size.x, 0), Color(red.r, red.g, red.b, 0.3), _s(1.5)))
 	panel.add_child(sep)
 	# Ganhos label
 	var ganhos_lbl := Label.new()
@@ -780,7 +786,9 @@ func show_game_over() -> void:
 	popup_earnings_draw.offset_bottom = _s(260.0)
 	popup_earnings_draw.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var _earn := popup_earnings_draw
-	popup_earnings_draw.draw.connect(func(): _draw_earnings(_earn))
+	popup_earnings_draw.draw.connect(func():
+		if not is_instance_valid(_earn): return
+		_draw_earnings(_earn))
 	panel.add_child(popup_earnings_draw)
 	# Buttons
 	var btn_container := HBoxContainer.new()
@@ -832,7 +840,9 @@ func show_victory() -> void:
 	popup_icon_draw.offset_bottom = _s(100.0)
 	popup_icon_draw.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var _icon := popup_icon_draw
-	popup_icon_draw.draw.connect(func(): _draw_trophy(_icon, Vector2(_s(50), _s(35)), green))
+	popup_icon_draw.draw.connect(func():
+		if not is_instance_valid(_icon): return
+		_draw_trophy(_icon, Vector2(_s(50), _s(35)), green))
 	panel.add_child(popup_icon_draw)
 	# Title
 	var title := Label.new()
@@ -853,7 +863,9 @@ func show_victory() -> void:
 	sep.offset_right = _s(520.0)
 	sep.offset_bottom = _s(172.0)
 	sep.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	sep.draw.connect(func(): sep.draw_line(Vector2.ZERO, Vector2(sep.size.x, 0), Color(green.r, green.g, green.b, 0.3), _s(1.5)))
+	sep.draw.connect(func():
+		if not is_instance_valid(sep): return
+		sep.draw_line(Vector2.ZERO, Vector2(sep.size.x, 0), Color(green.r, green.g, green.b, 0.3), _s(1.5)))
 	panel.add_child(sep)
 	# Ganhos label
 	var ganhos_lbl := Label.new()
@@ -875,7 +887,9 @@ func show_victory() -> void:
 	popup_earnings_draw.offset_bottom = _s(260.0)
 	popup_earnings_draw.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var _earn := popup_earnings_draw
-	popup_earnings_draw.draw.connect(func(): _draw_earnings(_earn))
+	popup_earnings_draw.draw.connect(func():
+		if not is_instance_valid(_earn): return
+		_draw_earnings(_earn))
 	panel.add_child(popup_earnings_draw)
 	# Buttons
 	var btn_container := HBoxContainer.new()
@@ -927,7 +941,9 @@ func show_revive_offer() -> void:
 	popup_icon_draw.offset_bottom = _s(95.0)
 	popup_icon_draw.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var _icon := popup_icon_draw
-	popup_icon_draw.draw.connect(func(): _draw_heart(_icon, Vector2(_s(50), _s(35)), cyan))
+	popup_icon_draw.draw.connect(func():
+		if not is_instance_valid(_icon): return
+		_draw_heart(_icon, Vector2(_s(50), _s(35)), cyan))
 	panel.add_child(popup_icon_draw)
 	# Title
 	var title := Label.new()
@@ -1008,7 +1024,9 @@ func show_double_offer(earnings: Dictionary) -> void:
 	sep.offset_right = _s(500.0)
 	sep.offset_bottom = _s(87.0)
 	sep.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	sep.draw.connect(func(): sep.draw_line(Vector2.ZERO, Vector2(sep.size.x, 0), Color(gold.r, gold.g, gold.b, 0.3), _s(1.5)))
+	sep.draw.connect(func():
+		if not is_instance_valid(sep): return
+		sep.draw_line(Vector2.ZERO, Vector2(sep.size.x, 0), Color(gold.r, gold.g, gold.b, 0.3), _s(1.5)))
 	panel.add_child(sep)
 	# Earnings draw
 	popup_earnings_draw = Control.new()
@@ -1018,7 +1036,9 @@ func show_double_offer(earnings: Dictionary) -> void:
 	popup_earnings_draw.offset_bottom = _s(150.0)
 	popup_earnings_draw.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var _earn := popup_earnings_draw
-	popup_earnings_draw.draw.connect(func(): _draw_earnings(_earn))
+	popup_earnings_draw.draw.connect(func():
+		if not is_instance_valid(_earn): return
+		_draw_earnings(_earn))
 	panel.add_child(popup_earnings_draw)
 	# Sub
 	var sub := Label.new()
@@ -1109,7 +1129,9 @@ func show_game_over_final() -> void:
 	popup_icon_draw.offset_bottom = _s(95.0)
 	popup_icon_draw.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var _icon := popup_icon_draw
-	popup_icon_draw.draw.connect(func(): _draw_skull(_icon, Vector2(_s(50), _s(35)), red))
+	popup_icon_draw.draw.connect(func():
+		if not is_instance_valid(_icon): return
+		_draw_skull(_icon, Vector2(_s(50), _s(35)), red))
 	panel.add_child(popup_icon_draw)
 	var title := Label.new()
 	title.text = get_node("/root/Tr").t("GAME_OVER")
@@ -1128,7 +1150,9 @@ func show_game_over_final() -> void:
 	sep.offset_right = _s(520.0)
 	sep.offset_bottom = _s(162.0)
 	sep.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	sep.draw.connect(func(): sep.draw_line(Vector2.ZERO, Vector2(sep.size.x, 0), Color(red.r, red.g, red.b, 0.3), _s(1.5)))
+	sep.draw.connect(func():
+		if not is_instance_valid(sep): return
+		sep.draw_line(Vector2.ZERO, Vector2(sep.size.x, 0), Color(red.r, red.g, red.b, 0.3), _s(1.5)))
 	panel.add_child(sep)
 	popup_earnings_draw = Control.new()
 	popup_earnings_draw.offset_left = _s(40.0)
@@ -1137,7 +1161,9 @@ func show_game_over_final() -> void:
 	popup_earnings_draw.offset_bottom = _s(225.0)
 	popup_earnings_draw.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var _earn := popup_earnings_draw
-	popup_earnings_draw.draw.connect(func(): _draw_earnings(_earn))
+	popup_earnings_draw.draw.connect(func():
+		if not is_instance_valid(_earn): return
+		_draw_earnings(_earn))
 	panel.add_child(popup_earnings_draw)
 	var btn_container := HBoxContainer.new()
 	btn_container.offset_left = _s(60.0)

@@ -15,6 +15,7 @@ var hit_count := 0
 var homing_strength := 0.0
 var critical_mass_chance := 0.0
 var pull_force := 0.0
+var is_auto_turret := false
 
 var EXPLOSION_COLORS: Array[Color]:
 	get: return Themes.get_explosion_colors()

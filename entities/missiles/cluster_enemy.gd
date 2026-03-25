@@ -1,6 +1,6 @@
 extends Area2D
 
-signal destroyed(enemy: Area2D)
+signal destroyed(enemy: Area2D, auto_turret: bool)
 
 @export var speed := 100.0
 
@@ -134,9 +134,10 @@ func _spawn_death_particles() -> void:
 
 func _on_area_entered(area: Area2D) -> void:
 	if area.collision_layer == 1:
+		var auto: bool = area.get("is_auto_turret") == true
 		call_deferred("_spawn_fragments")
 		call_deferred("_spawn_death_particles")
-		destroyed.emit(self)
+		destroyed.emit(self, auto)
 		call_deferred("queue_free")
 	elif area.collision_layer == 4:
 		if is_in_group("enemy") and mirror_chance > 0.0 and randf() < mirror_chance:

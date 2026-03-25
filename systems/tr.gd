@@ -162,6 +162,7 @@ const STRINGS := {
 	"THEME_DESC_gameboy": { "pt": "4 tons de verde, pixels gigantes", "en": "4 shades of green, giant pixels", "es": "4 tonos de verde, píxeles gigantes", "fr": "4 tons de vert, pixels géants", "zh": "4种绿色，巨型像素" },
 	"THEME_DESC_ascii": { "pt": "Terminal verde, caracteres ASCII", "en": "Green terminal, ASCII characters", "es": "Terminal verde, caracteres ASCII", "fr": "Terminal vert, caractères ASCII", "zh": "绿色终端，ASCII字符" },
 	"EQUIPPED": { "pt": "EQUIPADO", "en": "EQUIPPED", "es": "EQUIPADO", "fr": "ÉQUIPÉ", "zh": "已装备" },
+	"UNLOCKED": { "pt": "DESBLOQUEADO", "en": "UNLOCKED", "es": "DESBLOQUEADO", "fr": "DÉBLOQUÉ", "zh": "已解锁" },
 	"EQUIP": { "pt": "EQUIPAR", "en": "EQUIP", "es": "EQUIPAR", "fr": "ÉQUIPER", "zh": "装备" },
 	"LOCKED": { "pt": "BLOQUEADO", "en": "LOCKED", "es": "BLOQUEADO", "fr": "VERROUILLÉ", "zh": "已锁定" },
 }

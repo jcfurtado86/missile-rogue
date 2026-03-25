@@ -760,13 +760,9 @@ func _create_theme_item(theme_id: String) -> PanelContainer:
 	btn.add_theme_font_size_override("font_size", _sf(22))
 	btn.custom_minimum_size = Vector2(140, 50)
 
-	if is_current:
-		btn.text = tr_node.t("EQUIPPED")
+	if is_unlocked:
+		btn.text = tr_node.t("UNLOCKED")
 		btn.disabled = true
-		_style_neon_button(btn, eter_col)
-	elif is_unlocked:
-		btn.text = tr_node.t("EQUIP")
-		btn.pressed.connect(_on_theme_equip.bind(theme_id))
 		_style_neon_button(btn, eter_col)
 	elif cost > 0:
 		# Botao de compra com custo + icone gem
@@ -793,11 +789,6 @@ func _create_theme_item(theme_id: String) -> PanelContainer:
 		gem_icon.draw.connect(_draw_gem_on.bind(gem_icon, Vector2(9, 11), eter_col))
 		btn_content.add_child(gem_icon)
 		btn.disabled = currency.get_amount("eter") < cost
-	else:
-		btn.text = tr_node.t("EQUIP")
-		btn.pressed.connect(_on_theme_equip.bind(theme_id))
-		_style_neon_button(btn, eter_col)
-
 	row.add_child(btn)
 	panel.add_child(row)
 	return panel
@@ -808,7 +799,6 @@ func _on_theme_buy(theme_id: String) -> void:
 		return
 	currency.spend("eter", cost)
 	Themes.unlock(theme_id)
-	Themes.set_theme_id(theme_id)
 	get_node("/root/SoundManager").purchase()
 	_build_eter_list()
 	purchase_made.emit()

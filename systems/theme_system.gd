@@ -88,7 +88,7 @@ const PALETTE_GAMEBOY := {
 	"outline_width_mult": 1.5,
 	"sky_top": Color(0.06, 0.22, 0.06),
 	"sky_mid": Color(0.06, 0.22, 0.06),
-	"sky_horizon": Color(0.19, 0.38, 0.19),
+	"sky_horizon": Color(0.06, 0.22, 0.06),
 	"floor_dark": Color(0.06, 0.22, 0.06),
 	"fill_dark": Color(0.06, 0.22, 0.06),
 	"fill_entity": Color(0.06, 0.22, 0.06),
@@ -216,7 +216,7 @@ func _ready() -> void:
 
 func _setup_post_process() -> void:
 	_post_layer = CanvasLayer.new()
-	_post_layer.layer = 100
+	_post_layer.layer = 0  # abaixo do HUD (layer 1) para nao afetar botoes/popups
 	_post_rect = ColorRect.new()
 	_post_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_post_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -248,6 +248,12 @@ func _active_mode() -> Mode:
 func c(key: String, alpha_override := -1.0) -> Color:
 	var p := _active_palette()
 	var col: Color = p.get(key, Color.MAGENTA)
+	if alpha_override >= 0.0:
+		col.a = alpha_override
+	return col
+
+func ui(key: String, alpha_override := -1.0) -> Color:
+	var col: Color = PALETTE_NEON.get(key, Color.MAGENTA)
 	if alpha_override >= 0.0:
 		col.a = alpha_override
 	return col

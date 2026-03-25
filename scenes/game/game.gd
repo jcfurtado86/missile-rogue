@@ -473,11 +473,12 @@ func _on_boss_defeated() -> void:
 			hud.show_victory()
 		)
 
-func _on_enemy_destroyed(_enemy: Area2D, drop_currency: String = "credits", drop_amount: int = 1) -> void:
+func _on_enemy_destroyed(_enemy: Area2D, auto_turret: bool = false, drop_currency: String = "credits", drop_amount: int = 1) -> void:
 	get_node("/root/SoundManager").intercept()
 	threat.register_kill()
-	combo += 1
-	hud.update_combo(combo)
+	if not auto_turret:
+		combo += 1
+		hud.update_combo(combo)
 	if drop_currency != "" and drop_amount > 0:
 		var bonus: int = stats.credits_bonus if drop_currency == "credits" else (stats.crystals_bonus if drop_currency == "crystals" else stats.void_bonus)
 		var amount: int = (drop_amount + bonus) * stats.all_currencies_mult
@@ -489,10 +490,11 @@ func _connect_fragments() -> void:
 		if not frag.destroyed.is_connected(_on_fragment_destroyed):
 			frag.destroyed.connect(_on_fragment_destroyed)
 
-func _on_fragment_destroyed(_frag: Area2D) -> void:
+func _on_fragment_destroyed(_frag: Area2D, auto_turret: bool = false) -> void:
 	threat.register_kill()
-	combo += 1
-	hud.update_combo(combo)
+	if not auto_turret:
+		combo += 1
+		hud.update_combo(combo)
 	var void_amount: int = (1 + stats.void_bonus) * stats.all_currencies_mult
 	currency.add("void", void_amount)
 	run_earnings["void"] += void_amount
@@ -578,6 +580,7 @@ func _handle_auto_turret(delta: float) -> void:
 		missile.explosion_radius = 30.0 * stats.explosion_radius_mult * 0.7
 		missile.homing_strength = maxf(stats.homing_strength, 0.3)  # auto turret sempre tem leve homing
 		missile.pull_force = stats.pull_force
+		missile.is_auto_turret = true
 		missile.exploded.connect(_on_auto_turret_exploded)
 		add_child(missile)
 
