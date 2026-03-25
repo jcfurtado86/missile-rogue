@@ -50,11 +50,11 @@ var shake_intensity := 0.0
 var shake_timer := 0.0
 var flash_alpha := 0.0
 
-var PlayerMissileScene := preload("res://entities/missiles/player_missile.tscn")
-var BasicEnemyScene := preload("res://entities/missiles/basic_enemy.tscn")
-var FastEnemyScene := preload("res://entities/missiles/fast_enemy.tscn")
-var ClusterEnemyScene := preload("res://entities/missiles/cluster_enemy.tscn")
-var BossScene := preload("res://entities/boss/overlord.tscn")
+const PLAYER_MISSILE_SCENE = preload("res://entities/missiles/player_missile.tscn")
+const BASIC_ENEMY_SCENE = preload("res://entities/missiles/basic_enemy.tscn")
+const FAST_ENEMY_SCENE = preload("res://entities/missiles/fast_enemy.tscn")
+const CLUSTER_ENEMY_SCENE = preload("res://entities/missiles/cluster_enemy.tscn")
+const BOSS_SCENE = preload("res://entities/boss/overlord.tscn")
 
 var hud: CanvasLayer
 var warning_layer: Node2D
@@ -159,7 +159,7 @@ func _physics_process(delta: float) -> void:
 		# Detecta rage mode pra acelerar musica
 		if not boss_rage_triggered and boss.data.is_rage_mode():
 			boss_rage_triggered = true
-			get_node("/root/SoundManager").set_music_pitch(1.4)
+			SoundManager.set_music_pitch(1.4)
 
 var _fired_this_frame := false
 var _holding := false
@@ -208,6 +208,9 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _process(_delta: float) -> void:
 	_fired_this_frame = false
+	# Atualiza intercept preview continuamente enquanto segura
+	if _holding and stats and stats.has_target_lock:
+		_update_target_lock_preview(_hold_pos)
 
 func _fire_at(target: Vector2) -> void:
 	var closest_battery: Node2D = null
@@ -224,7 +227,7 @@ func _fire_at(target: Vector2) -> void:
 	if closest_battery:
 		# Gasta municao 1x
 		closest_battery.consume_ammo()
-		get_node("/root/SoundManager").fire()
+		SoundManager.fire()
 
 		# Target lock visual
 		if stats.has_target_lock:
@@ -327,7 +330,7 @@ func _calc_intercept(battery_pos: Vector2, aim_pos: Vector2) -> Vector2:
 
 func _show_no_ammo(pos: Vector2) -> void:
 	var lbl := Label.new()
-	lbl.text = get_node("/root/Tr").t("NO_AMMO")
+	lbl.text = Tr.t("NO_AMMO")
 	lbl.add_theme_font_size_override("font_size", 36)
 	lbl.add_theme_color_override("font_color", Themes.c("text_warning"))
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -340,7 +343,7 @@ func _show_no_ammo(pos: Vector2) -> void:
 	tw.chain().tween_callback(lbl.queue_free)
 
 func _spawn_player_missile(battery: Node2D, target: Vector2) -> void:
-	var missile = PlayerMissileScene.instantiate()
+	var missile = PLAYER_MISSILE_SCENE.instantiate()
 	missile.global_position = battery.global_position
 	missile.target = target
 	missile.speed *= stats.missile_speed_mult
@@ -384,12 +387,12 @@ func _spawn_enemy() -> void:
 	var target_pos: Vector2 = target_city.get_chip_center()
 
 	if dist.has("cluster") and roll > (dist["basic"] + dist["fast"]):
-		enemy = ClusterEnemyScene.instantiate()
+		enemy = CLUSTER_ENEMY_SCENE.instantiate()
 		enemy.target_position = target_pos
 		drop_currency = "void"
 		drop_amount = 1
 	elif dist.has("fast") and roll > dist["basic"]:
-		enemy = FastEnemyScene.instantiate()
+		enemy = FAST_ENEMY_SCENE.instantiate()
 		enemy.target_position = target_pos
 		var all_positions: Array[Vector2] = []
 		var active_positions: Array[Vector2] = []
@@ -401,7 +404,7 @@ func _spawn_enemy() -> void:
 		enemy.active_city_positions = active_positions
 		drop_currency = "crystals"
 	else:
-		enemy = BasicEnemyScene.instantiate()
+		enemy = BASIC_ENEMY_SCENE.instantiate()
 		enemy.target_position = target_pos
 		enemy.speed = lerpf(150.0, 400.0, threat_level / 100.0)
 
@@ -428,14 +431,14 @@ var bosses: Array[Area2D] = []
 
 func _spawn_boss() -> void:
 	boss_spawned = true
-	get_node("/root/SoundManager").boss_spawn()
-	get_node("/root/SoundManager").set_music_pitch(1.2)
+	SoundManager.boss_spawn()
+	SoundManager.set_music_pitch(1.2)
 	var is_omega: bool = stats.reward_boost_mult > 1.0
 	var boss_count := 2 if is_omega else 1
 	var heights := [200.0, 450.0] if is_omega else [300.0]
 	var directions := [1.0, -1.0]
 	for i in boss_count:
-		var b = BossScene.instantiate()
+		var b = BOSS_SCENE.instantiate()
 		b.position.x = 540.0
 		b.boss_y = heights[i]
 		if is_omega:
@@ -454,7 +457,7 @@ func _on_boss_hit(auto_turret: bool) -> void:
 		hud.update_combo(combo)
 
 func _on_boss_defeated() -> void:
-	get_node("/root/SoundManager").boss_defeated()
+	SoundManager.boss_defeated()
 	flash_alpha = 1.0
 	shake_intensity = 15.0
 	shake_timer = 1.5
@@ -463,7 +466,7 @@ func _on_boss_defeated() -> void:
 	# Atualiza referencia do HUD pro proximo boss vivo
 	boss = bosses[0] if not bosses.is_empty() else null
 	if bosses.is_empty():
-		get_node("/root/SoundManager").reset_music_pitch()
+		SoundManager.reset_music_pitch()
 		if upgrade_system:
 			upgrade_system.boss_cleared = true
 		# Desliga hitbox das cidades na vitoria
@@ -480,7 +483,7 @@ func _on_boss_defeated() -> void:
 		)
 
 func _on_enemy_destroyed(_enemy: Area2D, auto_turret: bool = false, drop_currency: String = "credits", drop_amount: int = 1) -> void:
-	get_node("/root/SoundManager").intercept()
+	SoundManager.intercept()
 	threat.register_kill()
 	if not auto_turret:
 		combo += 1
@@ -505,7 +508,7 @@ func _on_fragment_destroyed(_frag: Area2D, auto_turret: bool = false) -> void:
 	currency.add("void", void_amount)
 	run_earnings["void"] += void_amount
 
-var NovaBombWaveScene := preload("res://entities/nova_bomb_wave.tscn")
+const NOVA_BOMB_WAVE_SCENE = preload("res://entities/nova_bomb_wave.tscn")
 
 func activate_nova_bomb() -> void:
 	if is_game_over:
@@ -513,8 +516,8 @@ func activate_nova_bomb() -> void:
 	if not special.activate():
 		return
 
-	get_node("/root/SoundManager").nova_bomb()
-	var wave = NovaBombWaveScene.instantiate()
+	SoundManager.nova_bomb()
+	var wave = NOVA_BOMB_WAVE_SCENE.instantiate()
 	wave.position = Vector2(540.0, screen_height)
 	add_child(wave)
 
@@ -533,20 +536,24 @@ func _freeze_enemies(duration: float) -> void:
 	for enemy in get_tree().get_nodes_in_group("enemy"):
 		if is_instance_valid(enemy) and not enemy.is_in_group("boss"):
 			enemy.set_physics_process(false)
+			var ref: WeakRef = weakref(enemy)
 			var tw := create_tween()
 			tw.tween_interval(duration)
 			tw.tween_callback(func():
-				if is_instance_valid(enemy):
-					enemy.set_physics_process(true)
+				var e = ref.get_ref()
+				if e:
+					e.set_physics_process(true)
 			)
 	for frag in get_tree().get_nodes_in_group("fragment"):
 		if is_instance_valid(frag):
 			frag.set_physics_process(false)
+			var ref: WeakRef = weakref(frag)
 			var tw := create_tween()
 			tw.tween_interval(duration)
 			tw.tween_callback(func():
-				if is_instance_valid(frag):
-					frag.set_physics_process(true)
+				var f = ref.get_ref()
+				if f:
+					f.set_physics_process(true)
 			)
 
 # --- Auto turret ---
@@ -579,7 +586,7 @@ func _handle_auto_turret(delta: float) -> void:
 	if best_enemy:
 		# Auto turret nao gasta municao — dispara de bateria aleatoria
 		var battery = batteries.pick_random()
-		var missile = PlayerMissileScene.instantiate()
+		var missile = PLAYER_MISSILE_SCENE.instantiate()
 		missile.global_position = battery.global_position
 		missile.target = best_enemy.global_position
 		missile.speed = 400.0 * stats.missile_speed_mult
@@ -602,7 +609,7 @@ func _check_game_over() -> void:
 		if city.is_alive():
 			return
 	is_game_over = true
-	get_node("/root/SoundManager").reset_music_pitch()
+	SoundManager.reset_music_pitch()
 	hud.set_earnings(run_earnings)
 	if ad_system and ad_system.can_revive():
 		hud.show_revive_offer()
@@ -640,9 +647,9 @@ func _do_revive() -> void:
 	# Restaura pitch da musica se boss presente
 	if boss and is_instance_valid(boss):
 		if boss.data.is_rage_mode():
-			get_node("/root/SoundManager").set_music_pitch(1.4)
+			SoundManager.set_music_pitch(1.4)
 		else:
-			get_node("/root/SoundManager").set_music_pitch(1.2)
+			SoundManager.set_music_pitch(1.2)
 	hud.hide_revive_offer()
 
 func double_run_earnings() -> void:
@@ -680,20 +687,22 @@ func _on_city_destroyed(city: Node2D) -> void:
 	hud.break_combo()
 	combo = 0
 	destroyed_order.append(city)
-	get_node("/root/SoundManager").city_nuked()
+	SoundManager.city_nuked()
 	flash_alpha = 0.7
 	shake_intensity = 8.0
 	shake_timer = 0.3
 	# Phoenix protocol — revive automatico
 	if phoenix_revives_remaining > 0:
 		phoenix_revives_remaining -= 1
+		var ref: WeakRef = weakref(city)
 		var tw := create_tween()
 		tw.tween_interval(1.5)
 		tw.tween_callback(func():
-			if is_instance_valid(city) and not city.is_alive():
-				city.revive()
+			var c = ref.get_ref()
+			if c and not c.is_alive():
+				c.revive()
 				if stats.shield_cooldown > 0.0:
-					city.setup_shield(stats.shield_cooldown)
+					c.setup_shield(stats.shield_cooldown)
 		)
 
 # --- Early warning ---

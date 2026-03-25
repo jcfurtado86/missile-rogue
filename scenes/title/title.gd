@@ -55,13 +55,13 @@ func _ready() -> void:
 	_build_instagram_button()
 
 func _update_texts() -> void:
-	var tr_node = get_node("/root/Tr")
+	var tr_node = Tr
 	$Buttons/PlayButton.text = tr_node.t("PLAY")
 	$Buttons/ResetButton.text = tr_node.t("RESET_SAVE")
 	$Buttons/QuitButton.text = tr_node.t("QUIT")
 
 func _build_locale_selector() -> void:
-	var tr_node = get_node("/root/Tr")
+	var tr_node = Tr
 	var scr := get_viewport().get_visible_rect().size
 	var locales: Array = tr_node.LOCALES
 	var labels: Array = tr_node.LOCALE_LABELS
@@ -190,7 +190,7 @@ func _build_instagram_button() -> void:
 	add_child(web_draw)
 
 func _on_locale_selected(loc: String) -> void:
-	var tr_node = get_node("/root/Tr")
+	var tr_node = Tr
 	tr_node.set_locale(loc)
 	_update_texts()
 	# Rebuild selector to update active highlight
@@ -319,7 +319,7 @@ func _on_reset() -> void:
 	panel.add_child(border)
 
 	var title := Label.new()
-	var tr_node = get_node("/root/Tr")
+	var tr_node = Tr
 	title.text = tr_node.t("CONFIRM_DELETE")
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", _sf(32))

@@ -146,7 +146,7 @@ func _ready() -> void:
 	if has_meta("eter_mode"):
 		eter_mode = get_meta("eter_mode")
 
-	var tr_node = get_node("/root/Tr")
+	var tr_node = Tr
 	title_label.text = tr_node.t("SHOP_TITLE")
 	play_btn.text = tr_node.t("PLAY")
 	ascend_btn.text = tr_node.t("ASCEND")
@@ -355,11 +355,11 @@ func _on_node_tapped(key: String) -> void:
 		_try_buy(key)
 	else:
 		selected_key = key
-		get_node("/root/SoundManager").ui_click()
+		SoundManager.ui_click()
 
 func _try_buy(key: String) -> void:
 	if upgrade_system.buy(key, currency):
-		get_node("/root/SoundManager").purchase()
+		SoundManager.purchase()
 		buy_flash_key = key
 		buy_flash_time = BUY_FLASH_DURATION
 		purchase_made.emit()
@@ -461,7 +461,7 @@ func _draw_node(key: String) -> void:
 
 	if is_maxed:
 		var font := ThemeDB.fallback_font
-		graph_canvas.draw_string(font, center + Vector2(-40, r + 24), get_node("/root/Tr").t("MAX"), HORIZONTAL_ALIGNMENT_CENTER, 80, 28, Color(1.0, 0.85, 0.0))
+		graph_canvas.draw_string(font, center + Vector2(-40, r + 24), Tr.t("MAX"), HORIZONTAL_ALIGNMENT_CENTER, 80, 28, Color(1.0, 0.85, 0.0))
 
 # ============================================================
 # ICONES PROCEDURAIS (escala 1.5x)
@@ -655,7 +655,7 @@ func _draw_popup(key: String) -> void:
 	graph_canvas.draw_rect(popup_rect, Color(0.05, 0.06, 0.12, 0.95), true)
 	graph_canvas.draw_rect(popup_rect, Color(tier_col.r, tier_col.g, tier_col.b, 0.6), false, 2.0)
 
-	var tr_node = get_node("/root/Tr")
+	var tr_node = Tr
 	var font := ThemeDB.fallback_font
 	var tx: float = popup_pos.x + 16
 	var ty: float = popup_pos.y + 32
@@ -703,7 +703,7 @@ func _build_eter_list() -> void:
 	_update_header()
 
 func _build_theme_section() -> void:
-	var tr_node = get_node("/root/Tr")
+	var tr_node = Tr
 	var eter_col := Themes.c("gem_eter")
 	# Separador
 	var sep = HSeparator.new()
@@ -722,7 +722,7 @@ func _build_theme_section() -> void:
 		item_container.add_child(item)
 
 func _create_theme_item(theme_id: String) -> PanelContainer:
-	var tr_node = get_node("/root/Tr")
+	var tr_node = Tr
 	var eter_col := Themes.c("gem_eter")
 	var is_current: bool = Themes.current_theme == theme_id
 	var is_unlocked: bool = Themes.is_unlocked(theme_id)
@@ -799,7 +799,7 @@ func _on_theme_buy(theme_id: String) -> void:
 		return
 	currency.spend("eter", cost)
 	Themes.unlock(theme_id)
-	get_node("/root/SoundManager").purchase()
+	SoundManager.purchase()
 	_build_eter_list()
 	purchase_made.emit()
 
@@ -832,7 +832,7 @@ func _rebuild_theme_selector() -> void:
 func _populate_theme_buttons() -> void:
 	for child in _theme_buttons.get_children():
 		child.queue_free()
-	var tr_node = get_node("/root/Tr")
+	var tr_node = Tr
 	for theme_id in ["neon", "gameboy", "ascii"]:
 		if not Themes.is_unlocked(theme_id):
 			continue
@@ -850,7 +850,7 @@ func _populate_theme_buttons() -> void:
 		_theme_buttons.add_child(btn)
 
 func _create_list_item(key: String, u: Dictionary) -> PanelContainer:
-	var tr_node = get_node("/root/Tr")
+	var tr_node = Tr
 	var eter_col := Color(1.0, 0.5, 0.0)
 	var panel = PanelContainer.new()
 	var panel_style := StyleBoxFlat.new()
@@ -919,7 +919,7 @@ func _create_list_item(key: String, u: Dictionary) -> PanelContainer:
 
 func _on_eter_buy(key: String) -> void:
 	if upgrade_system.buy(key, currency):
-		get_node("/root/SoundManager").purchase()
+		SoundManager.purchase()
 		_build_eter_list()
 		purchase_made.emit()
 

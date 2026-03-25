@@ -12,6 +12,11 @@ var ad_system := AdSystem.new()
 
 func _ready() -> void:
 	_load_game()
+	# DEBUG: dinheiro infinito
+	currency.add("credits", 999999)
+	currency.add("crystals", 999999)
+	currency.add("void", 999999)
+	currency.add("eter", 999999)
 	_setup_scanlines()
 	_show_splash()
 
@@ -127,8 +132,8 @@ func _on_start_run() -> void:
 	_start_game()
 
 func _save_game() -> void:
-	save_system.locale_loaded = get_node("/root/Tr").locale
-	var sm = get_node("/root/SoundManager")
+	save_system.locale_loaded = Tr.locale
+	var sm = SoundManager
 	save_system.music_volume = sm.get_music_volume_linear()
 	save_system.sfx_volume = sm.get_sfx_volume_linear()
 	save_system.theme_id = Themes.current_theme
@@ -139,9 +144,9 @@ func _save_game() -> void:
 func _load_game() -> void:
 	var data = save_system.load_from_file(SAVE_PATH)
 	save_system.from_dict(data, upgrade_system, ascension_system, currency)
-	var tr_node = get_node("/root/Tr")
+	var tr_node = Tr
 	tr_node.set_locale(save_system.locale_loaded)
-	var sm = get_node("/root/SoundManager")
+	var sm = SoundManager
 	sm.set_music_volume(save_system.music_volume)
 	sm.set_sfx_volume(save_system.sfx_volume)
 	Themes.unlocked_themes = save_system.unlocked_themes.duplicate()

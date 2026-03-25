@@ -10,6 +10,7 @@ var move_speed := 120.0
 var move_direction := 1.0
 const MARGIN := 100.0
 var boss_y := 300.0
+var screen_width: float
 
 # Rajadas em leque
 var anim_time := 0.0
@@ -19,11 +20,12 @@ var burst_interval_rage := 1.5
 var burst_count := 5
 var burst_count_rage := 8
 
-var BurstMissileScene := preload("res://entities/missiles/basic_enemy.tscn")
-var BossExplosionScene := preload("res://entities/boss/boss_explosion.tscn")
+const BURST_MISSILE_SCENE = preload("res://entities/missiles/basic_enemy.tscn")
+const BOSS_EXPLOSION_SCENE = preload("res://entities/boss/boss_explosion.tscn")
 var ground_y := 1820.0
 
 func _ready() -> void:
+	screen_width = get_viewport().get_visible_rect().size.x
 	add_to_group("enemy")
 	add_to_group("boss")
 	area_entered.connect(_on_area_entered)
@@ -176,7 +178,7 @@ func _physics_process(delta: float) -> void:
 	anim_time += delta
 	# Movimento horizontal
 	position.x += move_direction * _current_speed() * delta
-	if position.x > 1080.0 - MARGIN:
+	if position.x > screen_width - MARGIN:
 		move_direction = -1.0
 	elif position.x < MARGIN:
 		move_direction = 1.0
@@ -205,7 +207,7 @@ func _fire_burst() -> void:
 
 	for i in count:
 		var angle = base_angle + lerpf(-spread / 2, spread / 2, float(i) / max(count - 1, 1))
-		var missile = BurstMissileScene.instantiate()
+		var missile = BURST_MISSILE_SCENE.instantiate()
 		missile.position = global_position + Vector2(0, 55)
 		# Misseis do boss nao contam como kill nem dropam moeda
 		missile.speed = 300.0 if data.is_rage_mode() else 200.0
@@ -236,7 +238,7 @@ func get_max_hp() -> int:
 	return data.get_max_hp()
 
 func _spawn_boss_explosion() -> void:
-	var explosion = BossExplosionScene.instantiate()
+	var explosion = BOSS_EXPLOSION_SCENE.instantiate()
 	explosion.position = global_position
 	get_parent().add_child(explosion)
 

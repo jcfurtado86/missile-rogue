@@ -46,8 +46,8 @@ func _register_tier4() -> void:
 	_add("ascendant_core", 4, "eter", 37, 2.0, 2, 1.0, "flat_all_currencies_mult")
 	_add("eternal_knowledge", 4, "eter", 150, 1.0, 1, 1.0, "bool_keep_upgrades")
 	_add("vault", 4, "eter", 112, 1.0, 1, 1.0, "bool_keep_currencies")
-	_add("omega_protocol", 4, "eter", 75, 1.0, 1, 0.50, "percent_reward_boost")
 	_add("phoenix_protocol", 4, "eter", 56, 2.5, 2, 1.0, "flat_city_revive")
+	_add("omega_protocol", 4, "eter", 75, 1.0, 1, 0.50, "percent_reward_boost")
 
 func _add(name: String, tier: int, currency: String, base_cost: int, multiplier: float, max_level: int, effect_per_level: float, effect_type: String, requires := "") -> void:
 	upgrades[name] = {

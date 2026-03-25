@@ -170,7 +170,7 @@ func _apply_pull(delta: float) -> void:
 func _explode() -> void:
 	arrived = true
 	queue_redraw()
-	get_node("/root/SoundManager").explosion()
+	SoundManager.explosion()
 
 	# Critical mass — chance de explosao 2x maior
 	if critical_mass_chance > 0.0 and randf() < critical_mass_chance:

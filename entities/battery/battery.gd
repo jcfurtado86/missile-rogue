@@ -160,7 +160,7 @@ func _draw_armed() -> void:
 
 	if reloading:
 		# Progresso de recarga — barra laranja enchendo
-		var reload_progress := 1.0 - (reload_timer.time_left / reload_time)
+		var reload_progress := 1.0 - (reload_timer.time_left / maxf(reload_time, 0.001))
 		var reload_col := Color(1.0, 0.6, 0.0, 0.6)
 		var reload_tr := bar_tl.lerp(bar_tr, reload_progress)
 		var reload_br := bar_bl.lerp(bar_br, reload_progress)
@@ -253,7 +253,7 @@ func _draw_empty() -> void:
 
 	# Texto "EMPTY" pulsando
 	var pulse_alpha: float = 0.3 + 0.5 * abs(sin(empty_pulse_time * 2.5))
-	var empty_text: String = get_node("/root/Tr").t("EMPTY")
+	var empty_text: String = Tr.t("EMPTY")
 	var font := ThemeDB.fallback_font
 	var font_size := 32
 	var text_size := font.get_string_size(empty_text, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size)

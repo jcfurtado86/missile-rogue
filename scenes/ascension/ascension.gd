@@ -52,7 +52,7 @@ func _draw_battle() -> void:
 	distant_battle.draw(battle_overlay)
 
 func _build_panel() -> void:
-	var tr_node = get_node("/root/Tr")
+	var tr_node = Tr
 	var scr := get_viewport().get_visible_rect().size
 	var pw := 620.0
 	var ph := 780.0
@@ -249,7 +249,7 @@ func _draw_ascension_icon(c: Control, center: Vector2) -> void:
 func _draw_eter_info(c: Control) -> void:
 	if not ascension_system or not upgrade_system:
 		return
-	var tr_node = get_node("/root/Tr")
+	var tr_node = Tr
 	var font := ThemeDB.fallback_font
 	var w := c.size.x
 	var y := 10.0
