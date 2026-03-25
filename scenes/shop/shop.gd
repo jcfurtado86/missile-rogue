@@ -717,7 +717,7 @@ func _build_theme_section() -> void:
 	section_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	item_container.add_child(section_label)
 	# Temas (neon ja vem desbloqueado, nao precisa aparecer)
-	for theme_id in ["gameboy", "ascii"]:
+	for theme_id in ["gameboy", "ascii", "mono", "hacker"]:
 		var item = _create_theme_item(theme_id)
 		item_container.add_child(item)
 

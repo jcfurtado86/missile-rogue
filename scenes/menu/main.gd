@@ -47,7 +47,7 @@ func _on_reset_save() -> void:
 	upgrade_system = UpgradeSystem.new()
 	ascension_system = AscensionSystem.new()
 	save_system = SaveSystem.new()
-	Themes.unlocked_themes = {"neon": true, "gameboy": false, "ascii": false}
+	Themes.unlocked_themes = {"neon": true, "gameboy": false, "ascii": false, "mono": false, "hacker": false}
 	Themes.set_theme_id("neon")
 	var dir := DirAccess.open("user://")
 	if dir and dir.file_exists("save.json"):

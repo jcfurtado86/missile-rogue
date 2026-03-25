@@ -7,7 +7,7 @@ var music_volume := 1.0
 var sfx_volume := 1.0
 var scanlines_enabled := false
 var theme_id := "neon"
-var unlocked_themes := {"neon": true, "gameboy": false, "ascii": false}
+var unlocked_themes := {"neon": true, "gameboy": false, "ascii": false, "mono": false, "hacker": false}
 
 func to_dict(upgrade_system: UpgradeSystem, ascension: AscensionSystem, currency: CurrencySystem) -> Dictionary:
 	var upgrade_levels := {}

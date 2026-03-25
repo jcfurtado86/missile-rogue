@@ -3,17 +3,17 @@ extends Node
 
 signal theme_changed
 
-enum Mode { NEON, GAMEBOY, ASCII }
+enum Mode { NEON, GAMEBOY, ASCII, MONO, HACKER }
 
 var current_theme := "neon"
 var _selected_mode: Mode = Mode.NEON
 var mode: Mode:
 	get: return _selected_mode if in_run else Mode.NEON
 var palette: Dictionary = {}
-var unlocked_themes: Dictionary = {"neon": true, "gameboy": false, "ascii": false}
+var unlocked_themes: Dictionary = {"neon": true, "gameboy": false, "ascii": false, "mono": false, "hacker": false}
 var in_run := false  # tema so aplica durante a run
 
-const THEME_COSTS := {"gameboy": 50, "ascii": 75}
+const THEME_COSTS := {"gameboy": 50, "ascii": 75, "mono": 60, "hacker": 80}
 
 # --- Paletas ---
 
@@ -193,16 +193,130 @@ const PALETTE_ASCII := {
 	"battery_fill": Color(0.0, 0.0, 0.0),
 }
 
+const PALETTE_MONO := {
+	"glow_alpha_mult": 0.3,
+	"outline_width_mult": 1.2,
+	"sky_top": Color(0.0, 0.0, 0.0),
+	"sky_mid": Color(0.03, 0.03, 0.03),
+	"sky_horizon": Color(0.08, 0.08, 0.08),
+	"floor_dark": Color(0.02, 0.02, 0.02),
+	"fill_dark": Color(0.05, 0.05, 0.05),
+	"fill_entity": Color(0.03, 0.03, 0.03),
+	"primary": Color(1.0, 1.0, 1.0),
+	"enemy_basic": Color(0.85, 0.85, 0.85),
+	"enemy_fast": Color(0.95, 0.95, 0.95),
+	"enemy_cluster": Color(0.75, 0.75, 0.75),
+	"enemy_boss": Color(1.0, 1.0, 1.0),
+	"enemy_boss_rage": Color(1.0, 1.0, 1.0),
+	"explosion_0": Color(1.0, 1.0, 1.0),
+	"explosion_1": Color(0.9, 0.9, 0.9),
+	"explosion_2": Color(0.8, 0.8, 0.8),
+	"explosion_3": Color(1.0, 1.0, 1.0),
+	"explosion_4": Color(0.85, 0.85, 0.85),
+	"explosion_5": Color(0.7, 0.7, 0.7),
+	"hud_threat": Color(0.9, 0.9, 0.9),
+	"hud_special": Color(1.0, 1.0, 1.0),
+	"hud_freeze": Color(0.8, 0.8, 0.8),
+	"hud_boss": Color(1.0, 1.0, 1.0),
+	"hud_combo": Color(1.0, 1.0, 1.0),
+	"gem_credits": Color(0.9, 0.9, 0.9),
+	"gem_crystals": Color(0.7, 0.7, 0.7),
+	"gem_void": Color(0.6, 0.6, 0.6),
+	"gem_eter": Color(1.0, 1.0, 1.0),
+	"text_primary": Color(1.0, 1.0, 1.0),
+	"text_warning": Color(0.9, 0.9, 0.9),
+	"warning": Color(1.0, 1.0, 1.0),
+	"target_lock": Color(0.8, 0.8, 0.8),
+	"intercept_valid": Color(1.0, 1.0, 1.0),
+	"intercept_invalid": Color(0.6, 0.6, 0.6),
+	"building_back_fill": Color(0.02, 0.02, 0.02),
+	"building_back_outline": Color(0.25, 0.25, 0.25, 0.3),
+	"building_back_window": Color(0.2, 0.2, 0.2, 0.1),
+	"building_front_fill": Color(0.01, 0.01, 0.01),
+	"building_front_outline": Color(0.5, 0.5, 0.5, 0.4),
+	"building_front_window": Color(0.4, 0.4, 0.4, 0.15),
+	"mountain_back": Color(0.2, 0.2, 0.2),
+	"mountain_front": Color(0.4, 0.4, 0.4),
+	"grid_line": Color(0.3, 0.3, 0.3, 0.15),
+	"grid_line_bright": Color(0.5, 0.5, 0.5, 0.3),
+	"horizon_line": Color(0.6, 0.6, 0.6),
+	"city_neon": Color(0.9, 0.9, 0.9),
+	"city_fill": Color(0.03, 0.03, 0.03),
+	"city_dead": Color(0.3, 0.3, 0.3, 0.3),
+	"shield": Color(0.8, 0.8, 0.8),
+	"battery_neon": Color(0.9, 0.9, 0.9),
+	"battery_fill": Color(0.03, 0.03, 0.03),
+}
+
+const PALETTE_HACKER := {
+	"glow_alpha_mult": 0.7,
+	"outline_width_mult": 1.0,
+	"sky_top": Color(0.0, 0.0, 0.0),
+	"sky_mid": Color(0.0, 0.02, 0.0),
+	"sky_horizon": Color(0.0, 0.06, 0.0),
+	"floor_dark": Color(0.0, 0.01, 0.0),
+	"fill_dark": Color(0.0, 0.03, 0.0),
+	"fill_entity": Color(0.0, 0.02, 0.0),
+	"primary": Color(0.0, 1.0, 0.0),
+	"enemy_basic": Color(0.0, 0.9, 0.0),
+	"enemy_fast": Color(0.4, 1.0, 0.0),
+	"enemy_cluster": Color(0.0, 0.7, 0.3),
+	"enemy_boss": Color(0.0, 1.0, 0.0),
+	"enemy_boss_rage": Color(0.5, 1.0, 0.0),
+	"explosion_0": Color(0.0, 1.0, 0.0),
+	"explosion_1": Color(0.2, 1.0, 0.0),
+	"explosion_2": Color(0.0, 0.8, 0.2),
+	"explosion_3": Color(0.4, 1.0, 0.0),
+	"explosion_4": Color(0.0, 1.0, 0.3),
+	"explosion_5": Color(0.0, 0.6, 0.0),
+	"hud_threat": Color(0.0, 1.0, 0.0),
+	"hud_special": Color(0.0, 1.0, 0.0),
+	"hud_freeze": Color(0.0, 0.7, 0.3),
+	"hud_boss": Color(0.0, 1.0, 0.0),
+	"hud_combo": Color(0.0, 1.0, 0.0),
+	"gem_credits": Color(0.0, 1.0, 0.0),
+	"gem_crystals": Color(0.0, 0.8, 0.2),
+	"gem_void": Color(0.0, 0.6, 0.4),
+	"gem_eter": Color(0.3, 1.0, 0.0),
+	"text_primary": Color(0.0, 1.0, 0.0),
+	"text_warning": Color(0.5, 1.0, 0.0),
+	"warning": Color(0.0, 1.0, 0.0),
+	"target_lock": Color(0.0, 1.0, 0.0),
+	"intercept_valid": Color(0.0, 1.0, 0.0),
+	"intercept_invalid": Color(0.4, 1.0, 0.0),
+	"building_back_fill": Color(0.0, 0.02, 0.0),
+	"building_back_outline": Color(0.0, 0.3, 0.0, 0.2),
+	"building_back_window": Color(0.0, 0.3, 0.0, 0.1),
+	"building_front_fill": Color(0.0, 0.01, 0.0),
+	"building_front_outline": Color(0.0, 0.6, 0.0, 0.4),
+	"building_front_window": Color(0.0, 0.6, 0.0, 0.15),
+	"mountain_back": Color(0.0, 0.2, 0.0),
+	"mountain_front": Color(0.0, 0.4, 0.0),
+	"grid_line": Color(0.0, 0.4, 0.0, 0.15),
+	"grid_line_bright": Color(0.0, 0.6, 0.0, 0.3),
+	"horizon_line": Color(0.0, 0.8, 0.0),
+	"city_neon": Color(0.0, 1.0, 0.0),
+	"city_fill": Color(0.0, 0.02, 0.0),
+	"city_dead": Color(0.0, 0.4, 0.0, 0.3),
+	"shield": Color(0.0, 1.0, 0.0),
+	"battery_neon": Color(0.0, 1.0, 0.0),
+	"battery_fill": Color(0.0, 0.02, 0.0),
+}
+
 const PALETTES := {
 	"neon": PALETTE_NEON,
 	"gameboy": PALETTE_GAMEBOY,
 	"ascii": PALETTE_ASCII,
+	"mono": PALETTE_MONO,
+	"hacker": PALETTE_HACKER,
 }
 
 const MODES := {
 	"neon": Mode.NEON,
 	"gameboy": Mode.GAMEBOY,
 	"ascii": Mode.ASCII,
+	"mono": Mode.MONO,
+	"hacker": Mode.HACKER,
 }
 
 # Post-process overlay

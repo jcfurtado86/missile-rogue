@@ -235,7 +235,7 @@ func _on_pause_pressed() -> void:
 
 	# Tema (so mostra se tiver mais de 1 desbloqueado)
 	var unlocked_themes: Array[String] = []
-	for tid in ["neon", "gameboy", "ascii"]:
+	for tid in ["neon", "gameboy", "ascii", "mono", "hacker"]:
 		if Themes.is_unlocked(tid):
 			unlocked_themes.append(tid)
 	if unlocked_themes.size() > 1:

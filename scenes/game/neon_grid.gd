@@ -57,6 +57,10 @@ var dogfight_explosion_timer := 0.0
 # Batalha distante no horizonte
 var distant_battle := DistantBattle.new()
 
+# Code rain (Hacker theme)
+var _rain_columns: Array[Dictionary] = []
+const RAIN_CHARS := "01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン"
+
 func _ready() -> void:
 	screen_size = get_viewport().get_visible_rect().size
 	horizon_y = screen_size.y * 0.90
@@ -70,6 +74,7 @@ func _ready() -> void:
 	else:
 		_generate_mountains(run_seed)
 
+	_generate_rain_columns()
 	flyby_next_time = randf_range(15.0, 40.0)
 
 # ============================================================
@@ -275,6 +280,8 @@ func _draw_sky() -> void:
 			var st := (t - 0.6) / 0.4
 			color = SKY_MID.lerp(SKY_HORIZON, st)
 		draw_rect(Rect2(-MARGIN, i * band_h, screen_size.x + MARGIN * 2, band_h + 1), color)
+	if Themes.mode == ThemeSystem.Mode.HACKER:
+		_draw_code_rain()
 
 # --- CIDADE ---
 
@@ -1154,3 +1161,55 @@ func _draw_ascii_grid() -> void:
 		var dx := rng.randf_range(0.0, screen_size.x)
 		var dy := horizon_y + rng.randf_range(10.0, floor_h - 10.0)
 		draw_string(font, Vector2(dx, dy), ".", HORIZONTAL_ALIGNMENT_LEFT, -1, 20, col)
+
+# ============================================================
+# CODE RAIN (Hacker theme)
+# ============================================================
+
+func _generate_rain_columns() -> void:
+	_rain_columns.clear()
+	var col_w := 24.0
+	var num_cols := int(screen_size.x / col_w) + 1
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 12345
+	for i in num_cols:
+		var num_streams := rng.randi_range(2, 3)
+		for s in num_streams:
+			_rain_columns.append({
+				"x": float(i) * col_w,
+				"speed": rng.randf_range(50.0, 150.0),
+				"length": rng.randi_range(8, 16),
+				"offset": rng.randf_range(0.0, 2000.0),
+				"char_seed": rng.randi(),
+			})
+
+func _draw_code_rain() -> void:
+	var font := ThemeDB.fallback_font
+	var fs := 14
+	var char_h := 16.0
+	var max_y := horizon_y
+	var green := Color(0.0, 1.0, 0.0)
+	var wrap_h: float = max_y + 500.0
+	# Pre-compute chars per column to avoid RNG per char
+	var rng := RandomNumberGenerator.new()
+	for col in _rain_columns:
+		var head_y: float = fmod(col["offset"] + anim_time * col["speed"], wrap_h) - 300.0
+		# Skip entire stream if fully off-screen
+		var tail_y: float = head_y + col["length"] * char_h
+		if tail_y < 0.0 or head_y > max_y:
+			continue
+		rng.seed = col["char_seed"] + int(head_y * 0.08)
+		var stream_len: int = col["length"]
+		# Clamp draw range to visible area
+		var j_start := maxi(0, int((-head_y) / char_h))
+		var j_end := mini(stream_len, int((max_y - head_y) / char_h) + 1)
+		# Advance RNG to j_start
+		for _skip in j_start:
+			rng.randi()
+		for j in range(j_start, j_end):
+			var cy: float = head_y + j * char_h
+			var t := float(j) / float(stream_len)
+			var alpha := lerpf(0.8, 0.03, t)
+			var ch := RAIN_CHARS[rng.randi() % RAIN_CHARS.length()]
+			var c := Color(0.7, 1.0, 0.7, 0.95) if j == 0 else Color(green.r, green.g, green.b, alpha)
+			draw_string(font, Vector2(col["x"], cy), ch, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, c)
