@@ -121,17 +121,14 @@ func purchase() -> void:
 
 func _on_node_added(node: Node) -> void:
 	if node is Button and not node.has_meta("no_click_sfx"):
-		node.ready.connect(_connect_button_click.bind(node))
-
-func _connect_button_click(node: Node) -> void:
-	if is_instance_valid(node) and not node.has_meta("no_click_sfx"):
-		node.pressed.connect(ui_click)
+		if not node.pressed.is_connected(ui_click):
+			node.pressed.connect(ui_click)
 
 func intercept(pitch_variation := 0.15) -> void:
 	_play(stream_intercept, -7.0, randf_range(1.0 - pitch_variation, 1.0 + pitch_variation))
 
 func combo_break() -> void:
-	_play(stream_combo_break, -5.0, 1.0)
+	_play(stream_combo_break, -1.0, 1.0)
 
 func boss_spawn() -> void:
 	_play(stream_boss_spawn, -2.0, 1.0)

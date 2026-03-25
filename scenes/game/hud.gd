@@ -47,7 +47,6 @@ var popup_icon_draw: Control
 var popup_earnings_draw: Control
 var popup_tween: Tween
 var cached_earnings: Dictionary = {}
-var _pause_theme_box: HBoxContainer
 
 func _s(val: float) -> float:
 	return val * ui_scale
@@ -161,36 +160,34 @@ func _setup_pause_button() -> void:
 
 func _on_pause_pressed() -> void:
 	get_tree().paused = true
-	var panel := _create_popup_panel(Color(0.5, 0.5, 0.5), 500.0, 580.0)
+	var panel := _create_popup_panel(Color(0.5, 0.5, 0.5), 500.0, 700.0)
 	panel.process_mode = Node.PROCESS_MODE_ALWAYS
 
+	# Layout vertical principal
+	var vbox := VBoxContainer.new()
+	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	vbox.offset_left = _s(60.0)
+	vbox.offset_top = _s(30.0)
+	vbox.offset_right = _s(440.0)
+	vbox.offset_bottom = _s(670.0)
+	vbox.add_theme_constant_override("separation", _sf(20))
+	panel.add_child(vbox)
+
+	# Titulo
 	var title := Label.new()
 	title.text = get_node("/root/Tr").t("PAUSED")
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", _sf(40))
 	title.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8))
-	title.offset_left = _s(20.0)
-	title.offset_top = _s(30.0)
-	title.offset_right = _s(480.0)
-	title.offset_bottom = _s(80.0)
-	panel.add_child(title)
+	vbox.add_child(title)
 
-	# Sliders de volume
+	# Music
 	var sm = get_node("/root/SoundManager")
-	var slider_box := VBoxContainer.new()
-	slider_box.offset_left = _s(60.0)
-	slider_box.offset_top = _s(100.0)
-	slider_box.offset_right = _s(440.0)
-	slider_box.offset_bottom = _s(280.0)
-	slider_box.add_theme_constant_override("separation", _sf(8))
-	panel.add_child(slider_box)
-
 	var music_label := Label.new()
 	music_label.text = get_node("/root/Tr").t("MUSIC")
-	music_label.add_theme_font_size_override("font_size", _sf(20))
+	music_label.add_theme_font_size_override("font_size", _sf(22))
 	music_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
-	slider_box.add_child(music_label)
-
+	vbox.add_child(music_label)
 	var music_slider := HSlider.new()
 	music_slider.min_value = 0.0
 	music_slider.max_value = 1.0
@@ -198,14 +195,14 @@ func _on_pause_pressed() -> void:
 	music_slider.value = sm.get_music_volume_linear()
 	music_slider.custom_minimum_size = Vector2(0, _s(40))
 	music_slider.value_changed.connect(func(val): sm.set_music_volume(val))
-	slider_box.add_child(music_slider)
+	vbox.add_child(music_slider)
 
+	# SFX
 	var sfx_label := Label.new()
 	sfx_label.text = get_node("/root/Tr").t("SFX")
-	sfx_label.add_theme_font_size_override("font_size", _sf(20))
+	sfx_label.add_theme_font_size_override("font_size", _sf(22))
 	sfx_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
-	slider_box.add_child(sfx_label)
-
+	vbox.add_child(sfx_label)
 	var sfx_slider := HSlider.new()
 	sfx_slider.min_value = 0.0
 	sfx_slider.max_value = 1.0
@@ -213,51 +210,67 @@ func _on_pause_pressed() -> void:
 	sfx_slider.value = sm.get_sfx_volume_linear()
 	sfx_slider.custom_minimum_size = Vector2(0, _s(40))
 	sfx_slider.value_changed.connect(func(val): sm.set_sfx_volume(val))
-	slider_box.add_child(sfx_slider)
+	vbox.add_child(sfx_slider)
 
-	# Scanlines toggle
-	var scanline_box := HBoxContainer.new()
-	scanline_box.offset_left = _s(60.0)
-	scanline_box.offset_top = _s(285.0)
-	scanline_box.offset_right = _s(440.0)
-	scanline_box.offset_bottom = _s(325.0)
-	scanline_box.alignment = BoxContainer.ALIGNMENT_CENTER
-	scanline_box.add_theme_constant_override("separation", _sf(12))
-	panel.add_child(scanline_box)
-
+	# Scanlines
+	var scanline_row := HBoxContainer.new()
+	scanline_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	scanline_row.add_theme_constant_override("separation", _sf(12))
+	vbox.add_child(scanline_row)
 	var scanline_label := Label.new()
 	scanline_label.text = get_node("/root/Tr").t("SCANLINES")
-	scanline_label.add_theme_font_size_override("font_size", _sf(20))
+	scanline_label.add_theme_font_size_override("font_size", _sf(22))
 	scanline_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
-	scanline_box.add_child(scanline_label)
-
+	scanline_row.add_child(scanline_label)
 	var scanline_toggle := CheckButton.new()
 	var main_node = get_node("/root/Main")
 	scanline_toggle.button_pressed = main_node.save_system.scanlines_enabled
 	scanline_toggle.toggled.connect(func(on: bool): main_node.set_scanlines(on))
-	scanline_box.add_child(scanline_toggle)
+	scanline_row.add_child(scanline_toggle)
 
-	# Seletor de tema
-	var theme_box := HBoxContainer.new()
-	theme_box.offset_left = _s(60.0)
-	theme_box.offset_top = _s(330.0)
-	theme_box.offset_right = _s(440.0)
-	theme_box.offset_bottom = _s(390.0)
-	theme_box.alignment = BoxContainer.ALIGNMENT_CENTER
-	theme_box.add_theme_constant_override("separation", _sf(8))
-	panel.add_child(theme_box)
-	_pause_theme_box = theme_box
-	_populate_pause_themes()
+	# Tema (so mostra se tiver mais de 1 desbloqueado)
+	var unlocked_themes: Array[String] = []
+	for tid in ["neon", "gameboy", "ascii"]:
+		if Themes.is_unlocked(tid):
+			unlocked_themes.append(tid)
+	if unlocked_themes.size() > 1:
+		var theme_row := HBoxContainer.new()
+		theme_row.alignment = BoxContainer.ALIGNMENT_CENTER
+		theme_row.add_theme_constant_override("separation", _sf(12))
+		vbox.add_child(theme_row)
+		var theme_label := Label.new()
+		theme_label.text = get_node("/root/Tr").t("THEMES_SECTION")
+		theme_label.add_theme_font_size_override("font_size", _sf(22))
+		theme_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
+		theme_row.add_child(theme_label)
+		var theme_dropdown := OptionButton.new()
+		theme_dropdown.add_theme_font_size_override("font_size", _sf(26))
+		theme_dropdown.custom_minimum_size = Vector2(_s(220), _s(50))
+		var tr_node = get_node("/root/Tr")
+		var selected_idx := 0
+		var idx := 0
+		for theme_id in unlocked_themes:
+			theme_dropdown.add_item(tr_node.t("THEME_" + theme_id), idx)
+			theme_dropdown.set_item_metadata(idx, theme_id)
+			if Themes.current_theme == theme_id:
+				selected_idx = idx
+			idx += 1
+		theme_dropdown.selected = selected_idx
+		theme_dropdown.item_selected.connect(func(index: int):
+			var sel_tid: String = theme_dropdown.get_item_metadata(index)
+			Themes.set_theme_id(sel_tid)
+			_force_redraw_all()
+		)
+		var popup: PopupMenu = theme_dropdown.get_popup()
+		popup.add_theme_font_size_override("font_size", _sf(28))
+		popup.add_theme_constant_override("v_separation", _sf(10))
+		theme_row.add_child(theme_dropdown)
 
 	# Botoes
 	var btn_box := VBoxContainer.new()
-	btn_box.offset_left = _s(80.0)
-	btn_box.offset_top = _s(410.0)
-	btn_box.offset_right = _s(420.0)
-	btn_box.offset_bottom = _s(560.0)
 	btn_box.alignment = BoxContainer.ALIGNMENT_CENTER
 	btn_box.add_theme_constant_override("separation", _sf(20))
-	panel.add_child(btn_box)
+	vbox.add_child(btn_box)
 
 	var resume_btn := Button.new()
 	resume_btn.text = get_node("/root/Tr").t("RESUME")
@@ -299,34 +312,6 @@ func _force_redraw_all() -> void:
 		if child.has_method("queue_redraw"):
 			child.queue_redraw()
 
-func _populate_pause_themes() -> void:
-	for child in _pause_theme_box.get_children():
-		child.queue_free()
-	var theme_label := Label.new()
-	theme_label.text = get_node("/root/Tr").t("THEMES_SECTION")
-	theme_label.add_theme_font_size_override("font_size", _sf(18))
-	theme_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
-	_pause_theme_box.add_child(theme_label)
-	for theme_id in ["neon", "gameboy", "ascii"]:
-		if not Themes.is_unlocked(theme_id):
-			continue
-		var is_current: bool = Themes.current_theme == theme_id
-		var tbtn := Button.new()
-		tbtn.text = get_node("/root/Tr").t("THEME_" + theme_id)
-		tbtn.add_theme_font_size_override("font_size", _sf(16))
-		tbtn.custom_minimum_size = Vector2(_s(100), _s(45))
-		var tcol: Color = Themes.ui("primary") if is_current else Color(0.5, 0.5, 0.5)
-		_style_popup_button(tbtn, tcol)
-		if is_current:
-			tbtn.disabled = true
-		else:
-			var tid: String = theme_id
-			tbtn.pressed.connect(func():
-				Themes.set_theme_id(tid)
-				_populate_pause_themes()
-				_force_redraw_all()
-			)
-		_pause_theme_box.add_child(tbtn)
 
 func _reposition_for_screen() -> void:
 	var screen := get_viewport().get_visible_rect().size
@@ -485,19 +470,48 @@ func break_combo() -> void:
 		return
 	_combo_breaking = true
 	get_node("/root/SoundManager").combo_break()
-	# Animacao de quebra — encolhe, rotaciona e some
 	if combo_tween and combo_tween.is_valid():
 		combo_tween.kill()
-	combo_tween = create_tween().set_parallel(true)
-	combo_label.add_theme_color_override("font_color", Themes.ui("text_warning"))
-	combo_tween.tween_property(combo_label, "scale", Vector2(0.3, 0.3), 0.3).set_ease(Tween.EASE_IN)
-	combo_tween.tween_property(combo_label, "rotation", randf_range(-0.3, 0.3), 0.3)
-	combo_tween.tween_property(combo_label, "modulate:a", 0.0, 0.3)
-	combo_tween.chain().tween_callback(func():
-		combo_label.visible = false
-		combo_label.rotation = 0.0
-		combo_label.scale = Vector2.ONE
-		combo_label.modulate.a = 1.0
+	# Pega posicao e texto antes de esconder
+	var text := combo_label.text
+	var scr := get_viewport().get_visible_rect().size
+	var font := combo_label.get_theme_font("font")
+	var font_size := _sf(96)
+	var text_w := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
+	var base_x := (scr.x - text_w) / 2.0
+	var base_y := combo_base_top + _s(10.0)
+	var red: Color = Themes.ui("text_warning")
+	combo_label.visible = false
+	# Cria um fragmento pra cada caractere
+	var char_x := base_x
+	for i in text.length():
+		var ch := text[i]
+		var ch_w := font.get_char_size(ch.unicode_at(0), font_size).x
+		var shard := Label.new()
+		shard.text = ch
+		shard.add_theme_font_size_override("font_size", font_size)
+		shard.add_theme_color_override("font_color", red)
+		shard.add_theme_color_override("font_outline_color", Color(red.r, red.g, red.b, 0.4))
+		shard.add_theme_constant_override("outline_size", _sf(4))
+		shard.position = Vector2(char_x, base_y)
+		shard.pivot_offset = Vector2(ch_w / 2.0, _s(48.0))
+		shard.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(shard)
+		# Cada pedaco voa em direcao aleatoria
+		var angle := randf_range(-PI * 0.8, PI * 0.8)
+		var dist := randf_range(_s(80.0), _s(200.0))
+		var target_pos := shard.position + Vector2(cos(angle), sin(angle)) * dist
+		var rot := randf_range(-1.5, 1.5)
+		var tw := create_tween().set_parallel(true)
+		tw.tween_property(shard, "position", target_pos, 0.5).set_ease(Tween.EASE_OUT)
+		tw.tween_property(shard, "rotation", rot, 0.5)
+		tw.tween_property(shard, "modulate:a", 0.0, 0.5).set_delay(0.1)
+		tw.chain().tween_callback(shard.queue_free)
+		char_x += ch_w
+	# Reseta estado depois da animacao
+	combo_tween = create_tween()
+	combo_tween.tween_interval(0.6)
+	combo_tween.tween_callback(func():
 		combo_label.add_theme_color_override("font_color", Themes.ui("hud_combo"))
 		_combo_breaking = false
 	)
